@@ -63,7 +63,8 @@ public class BetterSilentTyping extends Plugin {
                     LinearLayout group = (LinearLayout) et.getParent(); //getting edit Texts parent
                     button = new ImageButton(group.getContext());
                     button.setOnClickListener(v -> {
-                    if(settings.getBool("isEnabled",false)){setSetting(false);}else{setSetting(true);}updateButton(); });
+                        setSetting(!settings.getBool("isEnabled", false));
+                        updateButton(); });
                     button.setMaxHeight(80);
                     button.setAdjustViewBounds(true);
                     button.setMaxWidth(100);
@@ -117,5 +118,6 @@ public class BetterSilentTyping extends Plugin {
     @Override
     public void stop(Context context) {
         patcher.unpatchAll();
+        commands.unregisterAll();
     }
 }
