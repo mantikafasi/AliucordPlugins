@@ -1,8 +1,16 @@
 package com.mantikafasi.plugins;
+import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.res.ColorStateList;
+import android.content.res.Resources;
 import android.graphics.Color;
-import android.view.ViewGroup;
-import android.widget.Button;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
+import android.text.Editable;
+import android.view.View;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 
 import androidx.annotation.ColorInt;
 import androidx.appcompat.widget.AppCompatImageView;
@@ -15,9 +23,12 @@ import com.aliucord.entities.Plugin;
 import com.aliucord.patcher.PinePatchFn;
 import com.aliucord.plugins.R;
 import com.aliucord.utils.ReflectUtils;
+import com.discord.stores.StoreStream;
+import com.discord.stores.StoreUser;
 import com.discord.stores.StoreUserTyping;
 import com.discord.widgets.chat.input.MessageDraftsRepo;
 import com.discord.widgets.chat.input.WidgetChatInputEditText;
+import com.discord.widgets.chat.input.WidgetChatInputEditText$setOnTextChangedListener$1;
 import com.lytefast.flexinput.widget.FlexEditText;
 
 import java.lang.reflect.InvocationTargetException;
@@ -28,82 +39,67 @@ import top.canyie.pine.callback.MethodReplacement;
 @SuppressWarnings("unused")
 @AliucordPlugin
 public class BetterSilentTyping extends Plugin {
-
+    ImageButton button;
+    Logger logger = new Logger("SilentTyping");
+    int keyboardDisabledid;
+    int keyboardid ;
+    Drawable keyboard ;
+    Drawable keyboardDisabled;
+    public BetterSilentTyping(){
+        needsResources=true;
+    }
     @Override
     public void start(Context context) {
-
-      /*
-      TODO write something
-       */
-        int keyboard = Utils.getResId("keyboardxml","drawable");
-        int keyboardDisabled = Utils.getResId("keyboarddisabled","drawable");
-
-
-
+        keyboardDisabledid= resources.getIdentifier("keyboarddisabled","drawable","com.aliucord.plugins");
+        keyboardid = resources.getIdentifier("keyboard","drawable","com.aliucord.plugins");
+        keyboard= ResourcesCompat.getDrawable(resources,keyboardid,null);
+        keyboardDisabled=ResourcesCompat.getDrawable(resources,keyboardDisabledid,null);
         try {
-            patcher.patch(WidgetChatInputEditText.class.getConstructor(new Class[]{FlexEditText.class , MessageDraftsRepo.class}),new PinePatchFn(callFrame -> {
-
-                try {
-                    callFrame.invokeOriginalMethod();
-                } catch (InvocationTargetException e) {
-                    e.printStackTrace();
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                }
-
+            patcher.patch(WidgetChatInputEditText.class.getConstructor(FlexEditText.class, MessageDraftsRepo.class),new PinePatchFn(callFrame -> {
+                try {callFrame.invokeOriginalMethod();} catch (InvocationTargetException | IllegalAccessException e) {logger.error(e);}
                 WidgetChatInputEditText thisobj = ((WidgetChatInputEditText)callFrame.thisObject);
                 try {
-                    FlexEditText et = (FlexEditText) ReflectUtils.getField(thisobj,"editText");
-                    ViewGroup group = (ViewGroup) et.getParent();
-                    Button  button = new Button(group.getContext());
-                    //int id  = resources.getIdentifier("keyboard","drawable","com.mantikafasi.plugins");
-                    //new Logger("dakofoakdf").info(keyboard + " " + R.drawable.keyboard);
-                    //button.setBackgroundResource(keyboard);
-                    button.setBackgroundColor(100);
-                    button.setText("Disabled");
-                    button.setTextColor(Color.parseColor("#FFFFFF"));
-
+                    FlexEditText et = (FlexEditText) ReflectUtils.getField (thisobj,"editText");
+                    LinearLayout group = (LinearLayout) et.getParent(); //getting edit Texts parent
+                    button = new ImageButton(group.getContext());
                     button.setOnClickListener(v -> {
-
-                        String status = "";
-
-                        settings.setBool("isEnabled",!settings.getBool("isEnabled",false));
-                        if (settings.getBool("isEnabled",false)){
-                            status = "Enabled";
-                        } else {status ="Disabled";}
-
-                        patchUserTyping();
-
-
-                        ((Button)v).setText(status);
-                    });
-
-                    new Logger("afddasd").info(String.valueOf(keyboard));
-
+                    if(settings.getBool("isEnabled",false)){setSetting(false);}else{setSetting(true);}updateButton(); });
+                    button.setMaxHeight(80);
+                    button.setAdjustViewBounds(true);
+                    button.setMaxWidth(100);
+                    button.setBackgroundColor(0);
+                    View v= group.getChildAt(1);
+                    group.removeView(v); //remove emoji button and add if after ImageButton so emojibutton will be at the end of layout
                     group.addView(button);
-
-
-
-
-                    new Logger("koasdasd").info( et.getParent().toString());
-                } catch (NoSuchFieldException e) {
-                    e.printStackTrace();
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace(); }
+                    group.addView(v);
+                    updateButton();
+                } catch (NoSuchFieldException | IllegalAccessException e) {
+                    logger.error(e);
+                }
             }));
         } catch (NoSuchMethodException e) {
-            e.printStackTrace();
+            logger.error(e);
         }
     }
 
 
     Runnable patch = null;
+    public void updateButton(){
+        if (button!=null){
+            if (settings.getBool("isEnabled",false)){
+                button.setImageDrawable(keyboardDisabled);
+
+            } else {button.setImageDrawable(keyboard);}
+        }
+        patchUserTyping();
+    }
+
     public void patchUserTyping(){
         if (settings.getBool("isEnabled", false)) {
             try {
                 patch = patcher.patch(StoreUserTyping.class.getDeclaredMethod("setUserTyping", long.class), MethodReplacement.DO_NOTHING);
             } catch (NoSuchMethodException e) {
-                e.printStackTrace();
+                logger.error(e);
             }
         }
         else
@@ -114,7 +110,9 @@ public class BetterSilentTyping extends Plugin {
             }
         }
 
-
+    public void setSetting(boolean val){
+        settings.setBool("isEnabled",val);
+    }
 
     @Override
     public void stop(Context context) {

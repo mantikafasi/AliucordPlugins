@@ -34,6 +34,7 @@ subprojects {
 
     aliucord {
         author("mantikafasi", 4444)
+
         updateUrl.set("https://raw.githubusercontent.com/USERNAME/REPONAME/builds/updater.json")
         buildUrl.set("https://raw.githubusercontent.com/USERNAME/REPONAME/builds/%s.zip")
     }
