@@ -9,6 +9,18 @@ import com.aliucord.fragments.SettingsPage;
 import com.aliucord.patcher.PinePatchFn;
 import com.aliucord.utils.ReflectUtils;
 import com.discord.models.message.Message;
+import com.discord.widgets.chat.input.WidgetChatInputDiscoveryCommandsModel;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.lang.reflect.Method;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import dalvik.system.DexClassLoader;
+import top.canyie.pine.utils.ReflectionHelper;
 
 @SuppressWarnings("unused")
 @AliucordPlugin
@@ -17,10 +29,6 @@ public class POGPatch extends Plugin {
     @Override
     public void start(Context context) {
 
-
-        SettingsPage page = new SettingsPage();
-
-        logger.info( "POG" );
         patcher.patch("com.discord.models.message.Message","getContent",null,new PinePatchFn(cf -> {
             Message _this =(Message) cf.thisObject;
 
@@ -36,8 +44,11 @@ public class POGPatch extends Plugin {
             }
         }));
 
-
     }
+
+
+
+
 
     @Override
     public void stop(Context context) {

@@ -14,5 +14,10 @@ project(":someone").projectDir= File("./someone")
 
 include(":byebyeSlashCommands")
 project(":byebyeSlashCommands").projectDir = File("./byebyeSlashCommands")
+
+include(":betterSilentTyping")
+project(":betterSilentTyping").projectDir = File("./betterSilentTyping")
+
+
 rootProject.name = "AliucordPlugins"
 

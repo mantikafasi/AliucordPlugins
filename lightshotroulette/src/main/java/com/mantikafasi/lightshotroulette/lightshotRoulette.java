@@ -34,15 +34,7 @@ import kotlin.jvm.functions.Function1;
 
 @AliucordPlugin
 public class lightshotRoulette extends Plugin {
-    @NonNull
-    @Override
-    public Manifest getManifest() {
-        Manifest manifest = new Manifest() ;
-        manifest.authors = new Manifest.Author[]{new Manifest.Author("mantikafasi",4444)};
-        manifest.name = "LightShot Roulette";
-        manifest.description = "Uh...";
-        manifest.version = "46.3";
-        return manifest; }
+
     @Override
     public void start(Context context) throws Throwable {
 
