@@ -18,6 +18,8 @@ project(":byebyeSlashCommands").projectDir = File("./byebyeSlashCommands")
 include(":betterSilentTyping")
 project(":betterSilentTyping").projectDir = File("./betterSilentTyping")
 
+include(":HighlightReplies")
+project(":HighlightReplies").projectDir = File("./HighlightReplies")
 
 rootProject.name = "AliucordPlugins"
 
