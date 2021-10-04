@@ -41,92 +41,14 @@ import java.util.stream.Collectors;
 @SuppressWarnings("unused")
 @AliucordPlugin
 public class byebyeSlashCommands extends Plugin {
-    int tryCount=0;
     public static final Logger logger = new Logger("byebyeSlashCommands");
 
 
-    Context context ;
-    Message currentMessage=null;
 
     WidgetChatListAdapterItemMessage currentView = null;
     @Override
     public void start(Context context) {
         this.context= context;
-
-        patcher.patch(WidgetChatListAdapterItemMessage$onConfigure$4.class,"invoke",new Class[]{View.class},new PinePatchFn(callFrame -> {
-            try {
-                WidgetChatListAdapterItemMessage view = (WidgetChatListAdapterItemMessage) ReflectUtils.getField(callFrame.thisObject,"this$0");
-                logger.info(view.toString());
-
-                Message message = (Message) ReflectUtils.getField(callFrame.thisObject,"$message");
-                currentMessage= message;
-                currentView = view;
-
-                currentView.setIsRecyclable(false);
-
-                //view.data
-                 } catch (NoSuchFieldException | IllegalAccessException e) {
-                logger.error(e);
-            }
-        }
-        ));
-        patcher.patch(WidgetChatListActions$configureUI$14.class,"onClick",new Class[]{View.class},
-                new PinePatchFn(callFrame -> {
-                    try {
-                        WidgetChatListActions.Model model = (WidgetChatListActions.Model) ReflectUtils.getField(callFrame.thisObject,"$data");
-                        //model.getMessage()
-                        if (model.getMessage().equals(currentMessage)){
-                            //currentView.itemView.setBackgroundColor(Color.parseColor("#FFFFFF"));
-                            int id = Utils.getResId("selectableItemBackground","attr");
-
-                            currentView.itemView.setBackgroundColor(Color.HSVToColor(100,new float[]{0,0,0}));
-
-
-
-
-                        }
-                        logger.info("sas");
-                    } catch (NoSuchFieldException | IllegalAccessException e) {
-                        e.printStackTrace();
-                    }
-                }));
-
-        patcher.patch(WidgetChatInput.class,"configureContextBarReplying",new Class[]{ChatInputViewModel.ViewState.Loaded.PendingReplyState.Replying.class},
-        new PinePatchFn(callFrame -> {
-
-            try {
-                callFrame.invokeOriginalMethod();
-            } catch (InvocationTargetException | IllegalAccessException e) {
-                e.printStackTrace();
-            }
-            try {
-                Method method = ReflectUtils.getMethodByArgs(callFrame.thisObject.getClass(),"getBinding");
-                WidgetChatInputBinding binding = (WidgetChatInputBinding) method.invoke(callFrame.thisObject);
-
-                RelativeLayout lay = binding.e;
-
-
-               // button.setOnClickListener(v -> currentView.itemView.setBackgroundColor(0));
-
-                logger.info("a");
-            } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-                e.printStackTrace();
-            }
-
-
-        }));
-        patcher.patch(WidgetChatInput$configureContextBarReplying$3.class,"onClick",new Class[]{View.class},
-                new PinePatchFn(callFrame -> {
-                    try {
-                        callFrame.invokeOriginalMethod();
-                        currentView.itemView.setBackgroundColor(0);
-
-                    } catch (InvocationTargetException | IllegalAccessException e) {
-                        e.printStackTrace();
-                    }
-
-                }));
-
 
 
         for (Method m: WidgetChatInputDiscoveryCommandsModel.class.getDeclaredMethods()) {
