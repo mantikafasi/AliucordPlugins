@@ -33,7 +33,7 @@ subprojects {
 
 
     aliucord {
-        author("mantikafasi", 4444)
+        author("mantikafasi", 287555395151593473)
 
         updateUrl.set("https://raw.githubusercontent.com/mantikafasi/AliucordPlugins/builds/updater.json")
         buildUrl.set("https://raw.githubusercontent.com/mantikafasi/AliucordPlugins/builds/%s.zip")
