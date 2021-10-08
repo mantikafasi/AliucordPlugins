@@ -21,8 +21,11 @@ import com.discord.widgets.chat.input.WidgetChatInput;
 import com.discord.widgets.chat.input.WidgetChatInput$configureContextBarReplying$3;
 import com.discord.widgets.chat.list.actions.WidgetChatListActions;
 import com.discord.widgets.chat.list.actions.WidgetChatListActions$configureUI$14;
+import com.discord.widgets.chat.list.adapter.WidgetChatListAdapter;
 import com.discord.widgets.chat.list.adapter.WidgetChatListAdapterItemMessage;
 import com.discord.widgets.chat.list.adapter.WidgetChatListAdapterItemMessage$onConfigure$4;
+import com.discord.widgets.chat.list.entries.ChatListEntry;
+import com.discord.widgets.chat.list.entries.MessageEntry;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -43,27 +46,57 @@ public class HighLightReplies extends Plugin {
 
         patcher.patch(WidgetChatListAdapterItemMessage$onConfigure$4.class,"invoke",new Class[]{View.class},new PinePatchFn(callFrame -> {
             try {
+
+                if(currentView !=null){
+                    currentView.itemView.setBackgroundColor(0);
+                }
                 WidgetChatListAdapterItemMessage view = (WidgetChatListAdapterItemMessage) ReflectUtils.getField(callFrame.thisObject,"this$0");
+
+
                 logger.info(view.toString());
 
                 Message message = (Message) ReflectUtils.getField(callFrame.thisObject,"$message");
                 currentMessage= message;
                 currentView = view;
 
-                currentView.setIsRecyclable(false);
 
             } catch (NoSuchFieldException | IllegalAccessException e) {
                 logger.error(e);
             }
         }
         ));
+
+        try {
+            patcher.patch(WidgetChatListAdapterItemMessage.class.getDeclaredMethod("onConfigure", int.class, ChatListEntry.class),new PinePatchFn(callFrame ->{
+                // if view gets recycled change its background color again
+                try {
+                    callFrame.invokeOriginalMethod();
+                } catch (InvocationTargetException | IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+
+                MessageEntry message = (MessageEntry) callFrame.args[1];
+
+                if (message.getMessage().getId() == currentMessage.getId()){
+                    WidgetChatListAdapterItemMessage view = (WidgetChatListAdapterItemMessage) callFrame.thisObject;
+
+                    view.itemView.setBackgroundColor(Color.HSVToColor(100,new float[]{0,0,0}));
+                    currentView = view;
+
+                }
+
+
+            } ));
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        }
+        //Reply Button on Context Menu clicked
         patcher.patch(WidgetChatListActions$configureUI$14.class,"onClick",new Class[]{View.class},
                 new PinePatchFn(callFrame -> {
                     try {
                         WidgetChatListActions.Model model = (WidgetChatListActions.Model) ReflectUtils.getField(callFrame.thisObject,"$data");
                         //model.getMessage()
                         if (model.getMessage().equals(currentMessage)){
-                            //currentView.itemView.setBackgroundColor(Color.parseColor("#FFFFFF"));
                             int id = Utils.getResId("selectableItemBackground","attr");
 
                             currentView.itemView.setBackgroundColor(Color.HSVToColor(100,new float[]{0,0,0}));
@@ -72,41 +105,21 @@ public class HighLightReplies extends Plugin {
 
 
                         }
-                        logger.info("sas");
                     } catch (NoSuchFieldException | IllegalAccessException e) {
                         e.printStackTrace();
                     }
                 }));
 
-        patcher.patch(WidgetChatInput.class,"configureContextBarReplying",new Class[]{ChatInputViewModel.ViewState.Loaded.PendingReplyState.Replying.class},
-                new PinePatchFn(callFrame -> {
-
-                    try {
-                        callFrame.invokeOriginalMethod();
-                    } catch (InvocationTargetException | IllegalAccessException e) {
-                        e.printStackTrace();
-                    }
-                    try {
-                        Method method = ReflectUtils.getMethodByArgs(callFrame.thisObject.getClass(),"getBinding");
-                        WidgetChatInputBinding binding = (WidgetChatInputBinding) method.invoke(callFrame.thisObject);
-
-                        RelativeLayout lay = binding.e;
 
 
-                        // button.setOnClickListener(v -> currentView.itemView.setBackgroundColor(0));
-
-                        logger.info("a");
-                    } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-                        e.printStackTrace();
-                    }
-
-
-                }));
+        //When Close Reply Button Clicked.
         patcher.patch(WidgetChatInput$configureContextBarReplying$3.class,"onClick",new Class[]{View.class},
                 new PinePatchFn(callFrame -> {
                     try {
                         callFrame.invokeOriginalMethod();
                         currentView.itemView.setBackgroundColor(0);
+                        currentMessage = null;
+                        currentView=null;
 
                     } catch (InvocationTargetException | IllegalAccessException e) {
                         e.printStackTrace();

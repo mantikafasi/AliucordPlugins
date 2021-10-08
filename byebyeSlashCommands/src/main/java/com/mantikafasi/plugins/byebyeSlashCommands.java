@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
 @AliucordPlugin
 public class byebyeSlashCommands extends Plugin {
     public static final Logger logger = new Logger("byebyeSlashCommands");
-
+    public Context context;
 
 
     WidgetChatListAdapterItemMessage currentView = null;
