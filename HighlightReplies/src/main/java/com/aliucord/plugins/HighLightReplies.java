@@ -46,20 +46,15 @@ public class HighLightReplies extends Plugin {
 
         patcher.patch(WidgetChatListAdapterItemMessage$onConfigure$4.class,"invoke",new Class[]{View.class},new PinePatchFn(callFrame -> {
             try {
+                //callFrame.invokeOriginalMethod(); for some reason it pop ups context menu second time
 
                 if(currentView !=null){
                     currentView.itemView.setBackgroundColor(0);
                 }
                 WidgetChatListAdapterItemMessage view = (WidgetChatListAdapterItemMessage) ReflectUtils.getField(callFrame.thisObject,"this$0");
-
-
-                logger.info(view.toString());
-
                 Message message = (Message) ReflectUtils.getField(callFrame.thisObject,"$message");
                 currentMessage= message;
                 currentView = view;
-
-
             } catch (NoSuchFieldException | IllegalAccessException e) {
                 logger.error(e);
             }
@@ -79,13 +74,9 @@ public class HighLightReplies extends Plugin {
 
                 if (message.getMessage().getId() == currentMessage.getId()){
                     WidgetChatListAdapterItemMessage view = (WidgetChatListAdapterItemMessage) callFrame.thisObject;
-
                     view.itemView.setBackgroundColor(Color.HSVToColor(100,new float[]{0,0,0}));
                     currentView = view;
-
                 }
-
-
             } ));
         } catch (NoSuchMethodException e) {
             e.printStackTrace();
@@ -94,25 +85,21 @@ public class HighLightReplies extends Plugin {
         patcher.patch(WidgetChatListActions$configureUI$14.class,"onClick",new Class[]{View.class},
                 new PinePatchFn(callFrame -> {
                     try {
+                        callFrame.invokeOriginalMethod();
                         WidgetChatListActions.Model model = (WidgetChatListActions.Model) ReflectUtils.getField(callFrame.thisObject,"$data");
-                        //model.getMessage()
                         if (model.getMessage().equals(currentMessage)){
-                            int id = Utils.getResId("selectableItemBackground","attr");
+                            //int id = Utils.getResId("selectableItemBackground","attr");
 
                             currentView.itemView.setBackgroundColor(Color.HSVToColor(100,new float[]{0,0,0}));
-
-
-
-
                         }
-                    } catch (NoSuchFieldException | IllegalAccessException e) {
+                    } catch (NoSuchFieldException | IllegalAccessException | InvocationTargetException e) {
                         e.printStackTrace();
                     }
                 }));
 
 
 
-        //When Close Reply Button Clicked.
+        //When Close Button Clicked.
         patcher.patch(WidgetChatInput$configureContextBarReplying$3.class,"onClick",new Class[]{View.class},
                 new PinePatchFn(callFrame -> {
                     try {
