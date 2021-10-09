@@ -37,7 +37,7 @@ public class lightshotRoulette extends Plugin {
 
     @Override
     public void start(Context context) throws Throwable {
-
+/*
 
         List<ApplicationCommandOption> options =
                 Arrays.asList(new ApplicationCommandOption(ApplicationCommandType.INTEGER,
@@ -45,8 +45,11 @@ public class lightshotRoulette extends Plugin {
         commands.registerCommand(
                 "lightlette", "Try your luck to see if you can find something interesting",
                  options,
-                commandContext -> new CommandsAPI.CommandResult(generateLinks(commandContext.getIntOrDefault("number",1)), null, true));
-    }
+    
+    commandContext -> new CommandsAPI.CommandResult(generateLinks(commandContext.getIntOrDefault("number",1)), null, true));
+   */
+   }
+    
     public String generateLinks(int count) {
         String val = "";
         String str = "abcdefghijklmnoprstuxwyz0123456789";
