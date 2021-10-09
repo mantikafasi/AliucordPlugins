@@ -1,12 +1,19 @@
 package com.aliucord.plugins;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.RelativeLayout;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.aliucord.CollectionUtils;
+import com.aliucord.api.SettingsAPI;
+import com.aliucord.fragments.SettingsPage;
+import com.discord.api.channel.Channel;
 import com.discord.restapi.PayloadJSON;
 import com.discord.restapi.RestAPIInterface;
 import com.discord.restapi.RestAPIParams;
@@ -17,6 +24,9 @@ import com.discord.utilities.messagesend.MessageQueue$doSend$2;
 import com.discord.utilities.rest.RestAPI;
 import com.discord.utilities.rest.SendUtils;
 import com.discord.widgets.chat.input.expression.WidgetExpressionPickerAdapter$onAttachedToRecyclerView$1;
+import com.discord.widgets.chat.list.adapter.WidgetChatListItem;
+import com.jaredrummler.android.colorpicker.ColorPickerDialog;
+import com.jaredrummler.android.colorpicker.ColorPickerDialog$a;
 import com.lytefast.flexinput.R;
 import com.aliucord.Logger;
 import com.aliucord.Utils;
@@ -41,6 +51,7 @@ import com.discord.widgets.chat.list.entries.MessageEntry;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collections;
+import java.util.List;
 
 import okhttp3.MultipartBody;
 
@@ -50,22 +61,32 @@ public class HighLightReplies extends Plugin {
 
     public static final Logger logger = new Logger("HighlightReplies");
 
+
     Context context ;
+    public static SettingsAPI setting = null;
     Message currentMessage=null;
-
-    WidgetChatListAdapterItemMessage currentView=null;
+    WidgetChatListAdapter adapter ;
+    WidgetChatListItem currentView=null;
+    /*
     Message tempMessage=null;
-    WidgetChatListAdapterItemMessage oldView=null;
     WidgetChatListAdapterItemMessage tempView=null;
+     */
 
 
-    public int getColor(Context context){
-       return ColorCompat.getThemedColor(context,R.b.selectableItemBackground);
+    public int getColor(){
+     // return ColorCompat.getThemedColor(context,R.b.selectableItemBackground);
+
+        return settings.getInt("colorInt",1677721600);
 
     }
 
+
     @Override
-    public void start(Context context) {
+    public void start(Context context) throws NoSuchMethodException {
+        setting = settings;
+        logger.info(String.valueOf(Color.HSVToColor(100,new float[]{0,0,0})));
+        settingsTab = new SettingsTab(Page.class);
+
         this.context= context;
         try {
             patcher.patch(MessageQueue$doSend$2.class.getDeclaredMethod("call", SendUtils.SendPayload.ReadyToSend.class),new PinePatchFn(callFrame -> {
@@ -82,12 +103,13 @@ public class HighLightReplies extends Plugin {
             logger.error(e);
         }
 
-
+        /*
         patcher.patch(WidgetChatListAdapterItemMessage$onConfigure$4.class,"invoke",new Class[]{View.class},new PinePatchFn(callFrame -> {
             try {
                 WidgetChatListAdapterItemMessage view = (WidgetChatListAdapterItemMessage) ReflectUtils.getField(callFrame.thisObject,"this$0");
                 Message message = (Message) ReflectUtils.getField(callFrame.thisObject,"$message");
                 tempMessage= message;
+
                 tempView = view;
             } catch (NoSuchFieldException | IllegalAccessException e) {
                 logger.error(e);
@@ -95,22 +117,26 @@ public class HighLightReplies extends Plugin {
         }
         ));
 
+         */
+
         try {
             patcher.patch(WidgetChatListAdapterItemMessage.class.getDeclaredMethod("onConfigure", int.class, ChatListEntry.class),new PinePatchFn(callFrame ->{
                 // if view gets recycled change its background color again
+                WidgetChatListAdapterItemMessage item = (WidgetChatListAdapterItemMessage) callFrame.thisObject;
+                adapter = item.adapter;
                 MessageEntry message = (MessageEntry) callFrame.args[1];
                 if (currentMessage!=null && currentView!=null){
                     if (message.getMessage().getId() == currentMessage.getId()){
                         WidgetChatListAdapterItemMessage view = (WidgetChatListAdapterItemMessage) callFrame.thisObject;
-                        view.itemView.setBackgroundColor(Color.HSVToColor(100,new float[]{0,0,0}));
+                        view.itemView.setBackgroundColor(getColor());
                         currentView = view;
                     }
                 }
-
             } ));
         } catch (NoSuchMethodException e) {
             e.printStackTrace();
         }
+        /*
         //Reply Button on Context Menu clicked
         patcher.patch(WidgetChatListActions$configureUI$14.class,"onClick",new Class[]{View.class},
                 new PinePatchFn(callFrame -> {
@@ -126,6 +152,7 @@ public class HighLightReplies extends Plugin {
                         if (model.getMessage().equals(currentMessage)){
                             //int id = Utils.getResId("selectableItemBackground","attr");
 
+
                             currentView.itemView.setBackgroundColor(Color.HSVToColor(100,new float[]{0,0,0}));
                         }
                     } catch (NoSuchFieldException | IllegalAccessException e) {
@@ -133,12 +160,36 @@ public class HighLightReplies extends Plugin {
                     }
                 }));
 
+         */
+
 
 
         //When Close Button Clicked.
         patcher.patch(WidgetChatInput$configureContextBarReplying$3.class,"onClick",new Class[]{View.class},
                 new PinePatchFn(callFrame -> {unHighLight();}));
 
+
+        patcher.patch(WidgetChatListActions.class.getDeclaredMethod("access$replyMessage", WidgetChatListActions.class, Message.class, Channel.class),
+                new PinePatchFn(callFrame -> {
+                    unHighLight();
+
+                    Message message = (Message) callFrame.args[1];
+
+
+                    Utils.mainThread.post(()->{
+                        try{
+                            List<ChatListEntry> data = adapter.getInternalData();
+                            int i = CollectionUtils.findIndex(data, e -> e instanceof MessageEntry && ((MessageEntry) e).getMessage().getId() == message.getId());
+                            WidgetChatListItem a= (WidgetChatListItem)adapter.getRecycler().findViewHolderForAdapterPosition(i);
+                            currentMessage=message;
+                            currentView=a;
+
+                            a.itemView.setBackgroundColor(getColor()); }catch (Exception e){ logger.error(e); }
+
+                    });
+
+
+                }));
 
     }
     public void unHighLight(){

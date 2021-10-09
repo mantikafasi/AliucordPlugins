@@ -65,11 +65,12 @@ public class BetterSilentTyping extends Plugin {
                     button.setOnClickListener(v -> {
                         setSetting(!settings.getBool("isEnabled", false));
                         updateButton(); });
-                    button.setMaxHeight(80);
+
                     button.setAdjustViewBounds(true);
                     button.setMaxWidth(100);
                     button.setBackgroundColor(0);
                     View v= group.getChildAt(1);
+                    button.setMaxHeight(100);
                     group.removeView(v); //remove emoji button and add if after ImageButton so emojibutton will be at the end of layout
                     group.addView(button);
                     group.addView(v);
