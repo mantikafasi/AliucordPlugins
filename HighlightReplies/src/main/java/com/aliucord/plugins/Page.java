@@ -1,8 +1,10 @@
 package com.aliucord.plugins;
 
+import android.app.ActionBar;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.hardware.SensorEventListener;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
@@ -10,9 +12,12 @@ import android.text.TextWatcher;
 import android.view.Gravity;
 import android.view.View;
 
+import com.aliucord.Logger;
 import com.aliucord.Utils;
 import com.aliucord.api.SettingsAPI;
 import com.lytefast.flexinput.R;
+
+import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
@@ -28,9 +33,12 @@ import com.aliucord.fragments.SettingsPage;
 import com.discord.utilities.color.ColorCompat;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class Page extends SettingsPage {
+    float scale ;
     public int getColor(Context context){
 
         //return ColorCompat.getThemedColor(context, Utils.getResId("primary_dark_200","color"));
@@ -43,100 +51,64 @@ public class Page extends SettingsPage {
 
         super.onCreate(savedInstanceState);
     }
-    List<EditText> editTextList= new ArrayList<>();
+    List<SeekBar> seekBarList= new ArrayList<>();
 
-    EditText r;
-    EditText g;
-    EditText b;
-    EditText a;
+    SeekBar r;
+    SeekBar g;
+    SeekBar b;
+    SeekBar a;
+    LinearLayout lay ;
 
     Context ctx;
+
+
+
+
+
+
     @Override
     public void onViewBound(View view) {
 
         super.onViewBound(view);
 
-        ctx = ctx;
+        ctx = view.getContext();
+
+        scale  = ctx.getResources().getDisplayMetrics().density;
 
 
-        r=new EditText(ctx);
-        b=new EditText(ctx);
-        g=new EditText(ctx);
-        a=new EditText(ctx);
+        lay = getLinearLayout();
 
-        editTextList.add(r);
-        editTextList.add(g);
-        editTextList.add(b);
-        editTextList.add(a);
-
-
-        LinearLayout lay = getLinearLayout();
-
-
-        SeekBar red = new SeekBar(ctx);
-        lay.addView(red);
-        red.setMax(255);
-
-        SeekBar blue = new SeekBar(ctx);
-        lay.addView(red);
-        red.setMax(255);
-
-        SeekBar green = new SeekBar(ctx);
-        lay.addView(red);
-        red.setMax(255);
-
-        SeekBar alpha = new SeekBar(ctx);
-        lay.addView(red);
-        red.setMax(100);
-
-
-
-        for (EditText e : editTextList) {
-            lay.addView(e);
-            e.setInputType(EditorInfo.TYPE_CLASS_NUMBER);
-            e.setTextColor(getColor(ctx));
-            e.setHintTextColor(getColor(ctx));
-            e.addTextChangedListener(new TextWatcher() {
-                @Override
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-                }
-
-                @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
-
-                }
-
-                @RequiresApi(api = Build.VERSION_CODES.O)
-                @Override
-                public void afterTextChanged(Editable s) {
-                    button.setBackgroundColor(getColors());
-                }
-            });
-
-
-
-        }
-
-
-        r.setHint("Set R Value");
-        g.setHint("Set B Value");
-        b.setHint("Set G Value");
-        a.setHint("Set Alpha");
 
         button = new Button(ctx);
+
+
+
+
+
+        r=createSeekBar("Red");
+        b=createSeekBar("Blue");
+        g=createSeekBar("Green");
+        a=createSeekBar("Alpha");
+
+        seekBarList.addAll(Arrays.asList(r,b,g,a));
+
         button.setText("Reset");
         button.setTextColor(getColor(ctx));
         button.setOnClickListener(v -> {
-                    for (EditText e : editTextList) {
-                        e.setText("");
+                    for (SeekBar e : seekBarList) {
+                        e.setProgress(0);
                         button.setBackgroundColor(1677721600);
                         HighLightReplies.setting.setInt("colorInt",1677721600);
                     }
+                    a.setProgress(100);
         });
         button.setWidth(200);
         button.setHeight(200);
+
         lay.addView(button);
+        LinearLayout.LayoutParams param = (LinearLayout.LayoutParams) button.getLayoutParams();
+        param.bottomMargin=20;
+        button.setLayoutParams(param);
 
         LinearLayout optLay = new LinearLayout(ctx);
         optLay.setOrientation(LinearLayout.HORIZONTAL);
@@ -159,16 +131,17 @@ public class Page extends SettingsPage {
         optLay.addView(save);
         optLay.addView(cancel);
         lay.addView(optLay);
+        updateButtonColor();
 
     }
     Button button;
     public int getColors(){
         int[] objects = {0,0,0,100};
         try {
-            objects[0]=Integer.parseInt(a.getText().toString());
-            objects[1]=Integer.parseInt(r.getText().toString());
-            objects[2]=Integer.parseInt(g.getText().toString());
-            objects[3]=Integer.parseInt(b.getText().toString());
+            objects[0]=a.getProgress();
+            objects[1]=r.getProgress();
+            objects[2]=g.getProgress();
+            objects[3]=b.getProgress();
 
         } catch (Exception e){}
         return Color.argb(objects[0],objects[1],objects[2],objects[3]);
@@ -177,11 +150,17 @@ public class Page extends SettingsPage {
     public void setSettings(){
         SettingsAPI api = HighLightReplies.setting;
         api.setInt("colorInt",getColors());
+
+        api.setInt("Red",r.getProgress());
+        api.setInt("Green",g.getProgress());
+        api.setInt("Blue",b.getProgress());
+        api.setInt("Alpha",a.getProgress());
     }
 
     public SeekBar createSeekBar(String name){
         LinearLayout upperLayout = new LinearLayout(ctx);
         upperLayout.setOrientation(LinearLayout.VERTICAL);
+
         TextView tw = new TextView(ctx);
         tw.setText(name);
         tw.setTextColor(getColor(ctx));
@@ -193,16 +172,20 @@ public class Page extends SettingsPage {
         upperLayout.addView(lay);
 
         SeekBar sb = new SeekBar(ctx);
+
+        int defvalue=125;
+        sb.setMax(255);
+        if(name.equals("Alpha")){defvalue=100;sb.setMax(100);}
+        sb.setProgress(HighLightReplies.setting.getInt(name,defvalue));
+
         EditText et = new EditText(ctx);
         et.setInputType(EditorInfo.TYPE_CLASS_NUMBER);
 
 
-        if (name.equals("Alpha")){sb.setMax(100);sb.setProgress(100);} else{sb.setMax(255);}
-
         sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-
+                et.setText(String.valueOf(seekBar.getProgress()));
             }
 
             @Override
@@ -212,7 +195,7 @@ public class Page extends SettingsPage {
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                et.setText(seekBar.getProgress());
+
             }
         });
 
@@ -230,9 +213,10 @@ public class Page extends SettingsPage {
             @Override
             public void afterTextChanged(Editable s) {
                 int prog = Integer.parseInt(s.toString());
+                String progs = String.valueOf(prog);
 
-                if (name.equals("Alpha") && prog>100){prog=100;et.setText(prog);}
-                if (prog>255){ prog=255;et.setText(prog); } else if(prog>0){ prog=0;et.setText(prog);}
+                if (name.equals("Alpha") && prog>100){prog=100;et.setText(progs);}
+                if (prog>255){ prog=255;et.setText(progs); } else if(prog<0){ prog=0;et.setText(progs);}
                 sb.setProgress(prog);
                 updateButtonColor();
 
@@ -240,11 +224,29 @@ public class Page extends SettingsPage {
         });
 
 
+        et.setEnabled(false); //disabled for now
+
+
         lay.addView(sb);
         lay.addView(et);
+        this.lay.addView(upperLayout);
+
+        LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) sb.getLayoutParams();
+        params.width= 0;
+        et.setLayoutParams(params);
+        //Logger logger = new Logger("Highlight replies");
+        //logger.info(String.valueOf(sb.getLayoutParams().width ) + " " + upperLayout.getLayoutParams().width);
+        params.width = ActionBar.LayoutParams.MATCH_PARENT;
+        sb.setLayoutParams(params);
+
+
+
         return sb;
     }
     public void updateButtonColor(){
-        button.setBackgroundColor(getColors());
+        if(button!=null){
+            button.setBackgroundColor(getColors());
+        }
+
     }
 }
