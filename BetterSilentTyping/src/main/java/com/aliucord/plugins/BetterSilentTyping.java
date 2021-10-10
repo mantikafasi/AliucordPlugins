@@ -22,6 +22,7 @@ import com.aliucord.annotations.AliucordPlugin;
 import com.aliucord.entities.Plugin;
 import com.aliucord.patcher.PinePatchFn;
 import com.aliucord.plugins.R;
+import com.aliucord.utils.DimenUtils;
 import com.aliucord.utils.ReflectUtils;
 import com.discord.stores.StoreStream;
 import com.discord.stores.StoreUser;
@@ -55,6 +56,7 @@ public class BetterSilentTyping extends Plugin {
         keyboard= ResourcesCompat.getDrawable(resources,keyboardid,null);
         keyboardDisabled=ResourcesCompat.getDrawable(resources,keyboardDisabledid,null);
         try {
+
             patcher.patch(WidgetChatInputEditText.class.getConstructor(FlexEditText.class, MessageDraftsRepo.class),new PinePatchFn(callFrame -> {
                 try {callFrame.invokeOriginalMethod();} catch (InvocationTargetException | IllegalAccessException e) {logger.error(e);}
                 WidgetChatInputEditText thisobj = ((WidgetChatInputEditText)callFrame.thisObject);
@@ -67,10 +69,10 @@ public class BetterSilentTyping extends Plugin {
                         updateButton(); });
 
                     button.setAdjustViewBounds(true);
-                    button.setMaxWidth(100);
+                    button.setMaxWidth(DimenUtils.dpToPx(40));
                     button.setBackgroundColor(0);
                     View v= group.getChildAt(1);
-                    button.setMaxHeight(100);
+                    button.setMaxHeight(DimenUtils.dpToPx(45));
                     group.removeView(v); //remove emoji button and add if after ImageButton so emojibutton will be at the end of layout
                     group.addView(button);
                     group.addView(v);

@@ -66,9 +66,7 @@ public class HighLightReplies extends Plugin {
     WidgetChatListItem currentView=null;
 
 
-    public int getColor(){
-        return settings.getInt("colorInt",1677721600);
-    }
+    public int getColor(){return settings.getInt("colorInt",1677721600); }
 
 
     @Override
