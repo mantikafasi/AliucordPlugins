@@ -40,56 +40,32 @@ import java.util.List;
 public class Page extends SettingsPage {
     float scale ;
     public int getColor(Context context){
-
         //return ColorCompat.getThemedColor(context, Utils.getResId("primary_dark_200","color"));
         return context.getResources().getColor(R.c.primary_dark_200);
-
     }
-
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
-
         super.onCreate(savedInstanceState);
     }
-    List<SeekBar> seekBarList= new ArrayList<>();
 
+    List<SeekBar> seekBarList= new ArrayList<>();
     SeekBar r;
     SeekBar g;
     SeekBar b;
     SeekBar a;
     LinearLayout lay ;
-
     Context ctx;
-
-
-
-
-
-
     @Override
     public void onViewBound(View view) {
-
         super.onViewBound(view);
-
         ctx = view.getContext();
-
         scale  = ctx.getResources().getDisplayMetrics().density;
-
-
         lay = getLinearLayout();
-
-
         button = new Button(ctx);
-
-
-
-
-
         r=createSeekBar("Red");
         b=createSeekBar("Blue");
         g=createSeekBar("Green");
         a=createSeekBar("Alpha");
-
         seekBarList.addAll(Arrays.asList(r,b,g,a));
 
         button.setText("Reset");
@@ -104,7 +80,6 @@ public class Page extends SettingsPage {
         });
         button.setWidth(200);
         button.setHeight(200);
-
         lay.addView(button);
         LinearLayout.LayoutParams param = (LinearLayout.LayoutParams) button.getLayoutParams();
         param.bottomMargin=20;
@@ -113,6 +88,7 @@ public class Page extends SettingsPage {
         LinearLayout optLay = new LinearLayout(ctx);
         optLay.setOrientation(LinearLayout.HORIZONTAL);
         optLay.setGravity(Gravity.RIGHT);
+
         Button save = new Button(ctx);
         save.setTextColor(getColor(ctx));
         save.setText("Save");
@@ -127,7 +103,6 @@ public class Page extends SettingsPage {
         cancel.setTextColor(getColor(ctx));
         cancel.setOnClickListener(v -> {close();});
 
-
         optLay.addView(save);
         optLay.addView(cancel);
         lay.addView(optLay);
@@ -135,22 +110,10 @@ public class Page extends SettingsPage {
 
     }
     Button button;
-    public int getColors(){
-        int[] objects = {0,0,0,100};
-        try {
-            objects[0]=a.getProgress();
-            objects[1]=r.getProgress();
-            objects[2]=g.getProgress();
-            objects[3]=b.getProgress();
-
-        } catch (Exception e){}
-        return Color.argb(objects[0],objects[1],objects[2],objects[3]);
-
-    }
+    public int getColors(){return Color.argb(a.getProgress(),r.getProgress(),g.getProgress(),b.getProgress()); }
     public void setSettings(){
         SettingsAPI api = HighLightReplies.setting;
         api.setInt("colorInt",getColors());
-
         api.setInt("Red",r.getProgress());
         api.setInt("Green",g.getProgress());
         api.setInt("Blue",b.getProgress());

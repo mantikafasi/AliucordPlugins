@@ -58,26 +58,16 @@ import okhttp3.MultipartBody;
 @SuppressWarnings("unused")
 @AliucordPlugin
 public class HighLightReplies extends Plugin {
-
     public static final Logger logger = new Logger("HighlightReplies");
-
-
     Context context ;
     public static SettingsAPI setting = null;
     Message currentMessage=null;
     WidgetChatListAdapter adapter ;
     WidgetChatListItem currentView=null;
-    /*
-    Message tempMessage=null;
-    WidgetChatListAdapterItemMessage tempView=null;
-     */
 
 
     public int getColor(){
-     // return ColorCompat.getThemedColor(context,R.b.selectableItemBackground);
-
         return settings.getInt("colorInt",1677721600);
-
     }
 
 
@@ -103,22 +93,6 @@ public class HighLightReplies extends Plugin {
             logger.error(e);
         }
 
-        /*
-        patcher.patch(WidgetChatListAdapterItemMessage$onConfigure$4.class,"invoke",new Class[]{View.class},new PinePatchFn(callFrame -> {
-            try {
-                WidgetChatListAdapterItemMessage view = (WidgetChatListAdapterItemMessage) ReflectUtils.getField(callFrame.thisObject,"this$0");
-                Message message = (Message) ReflectUtils.getField(callFrame.thisObject,"$message");
-                tempMessage= message;
-
-                tempView = view;
-            } catch (NoSuchFieldException | IllegalAccessException e) {
-                logger.error(e);
-            }
-        }
-        ));
-
-         */
-
         try {
             patcher.patch(WidgetChatListAdapterItemMessage.class.getDeclaredMethod("onConfigure", int.class, ChatListEntry.class),new PinePatchFn(callFrame ->{
                 // if view gets recycled change its background color again
@@ -136,33 +110,6 @@ public class HighLightReplies extends Plugin {
         } catch (NoSuchMethodException e) {
             e.printStackTrace();
         }
-        /*
-        //Reply Button on Context Menu clicked
-        patcher.patch(WidgetChatListActions$configureUI$14.class,"onClick",new Class[]{View.class},
-                new PinePatchFn(callFrame -> {
-                    try {
-                        unHighLight();
-                        currentMessage=tempMessage;
-                        currentView=tempView;
-                        tempView=null;
-                        tempMessage=null;
-
-
-                        WidgetChatListActions.Model model = (WidgetChatListActions.Model) ReflectUtils.getField(callFrame.thisObject,"$data");
-                        if (model.getMessage().equals(currentMessage)){
-                            //int id = Utils.getResId("selectableItemBackground","attr");
-
-
-                            currentView.itemView.setBackgroundColor(Color.HSVToColor(100,new float[]{0,0,0}));
-                        }
-                    } catch (NoSuchFieldException | IllegalAccessException e) {
-                        e.printStackTrace();
-                    }
-                }));
-
-         */
-
-
 
         //When Close Button Clicked.
         patcher.patch(WidgetChatInput$configureContextBarReplying$3.class,"onClick",new Class[]{View.class},

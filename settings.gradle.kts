@@ -5,18 +5,18 @@ include("")
 include(":POGlugin")
 project(":POGlugin").projectDir = File("./POGlugin")
 
-include(":lightshotroulette")
-project(":lightshotroulette").projectDir = File("./lightshotroulette")
+include(":LightShotRoulette")
+project(":LightShotRoulette").projectDir = File("./LightShotRoulette")
 
 
-include(":someone")
-project(":someone").projectDir= File("./someone")
+include(":Someone")
+project(":Someone").projectDir= File("./Someone")
 
 include(":byebyeSlashCommands")
 project(":byebyeSlashCommands").projectDir = File("./byebyeSlashCommands")
 
-include(":betterSilentTyping")
-project(":betterSilentTyping").projectDir = File("./betterSilentTyping")
+include(":BetterSilentTyping")
+project(":BetterSilentTyping").projectDir = File("./BetterSilentTyping")
 
 include(":HighlightReplies")
 project(":HighlightReplies").projectDir = File("./HighlightReplies")
