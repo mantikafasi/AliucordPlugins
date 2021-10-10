@@ -1,0 +1,5 @@
+version = "1.0.0"
+description = "Allows you to edit channel names locally\n" +
+        "WIP rn\n" +
+        "Currently you can only set names to text channels,and you have to restart app to order to apply that\n" +
+        "To set name long press on channel name and press 'Set Channel Name'"
