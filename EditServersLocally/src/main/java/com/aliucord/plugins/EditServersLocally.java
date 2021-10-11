@@ -3,9 +3,6 @@ package com.aliucord.plugins;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
-import android.database.sqlite.SQLiteDatabase;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
@@ -17,8 +14,12 @@ import androidx.core.widget.NestedScrollView;
 import com.aliucord.CollectionUtils;
 import com.aliucord.Logger;
 import com.aliucord.annotations.AliucordPlugin;
+import com.aliucord.utils.DimenUtils;
 import com.discord.databinding.WidgetChannelsListItemChannelBinding;
-import com.discord.stores.StoreApplication;
+import com.discord.stores.StoreStream;
+import com.discord.stores.StoreStream$initGatewaySocketListeners$18;
+import com.discord.widgets.channels.list.WidgetChannelListModel;
+import com.discord.widgets.channels.list.WidgetChannelsList;
 import com.discord.widgets.channels.list.WidgetChannelsListAdapter;
 import com.discord.widgets.channels.list.items.ChannelListItem;
 import com.discord.widgets.channels.list.items.ChannelListItemTextChannel;
@@ -26,40 +27,37 @@ import com.google.gson.reflect.TypeToken;
 import com.lytefast.flexinput.R;
 import com.aliucord.entities.Plugin;
 import com.aliucord.patcher.Hook;
-import com.aliucord.patcher.PinePatchFn;
 import com.aliucord.utils.ReflectUtils;
 import com.aliucord.wrappers.ChannelWrapper;
 import com.discord.api.channel.Channel;
 import com.discord.databinding.WidgetChannelsListItemActionsBinding;
 import com.discord.widgets.channels.list.WidgetChannelsListItemChannelActions;
 
-import org.json.JSONObject;
-import org.w3c.dom.Text;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 @AliucordPlugin
 public class EditServersLocally extends Plugin {
 
     ArrayList<ChannelData> dataList =settings.getObject("data",new ArrayList<>(), TypeToken.getParameterized(ArrayList.class, ChannelData.class).getType());
-
+    AtomicReference<HashMap<Long, View>> channels = new AtomicReference<>(new HashMap<>());
+    AtomicLong currentGuild= new AtomicLong();
     Logger logger = new Logger("EditServersLocally");
     @SuppressLint("ResourceType")
     @Override
     public void start(Context context) throws Throwable {
-        JSONObject jsonObject = new JSONObject();
-        //settings.setObject("data",new ArrayList<ChannelData>());
-
-
+        settingsTab = new SettingsTab(BottomSheet.class, SettingsTab.Type.BOTTOM_SHEET).withArgs(settings);
         logger.info(dataList.toString());
-        patcher.patch(Channel.class.getDeclaredMethod("m"), new Hook(cf -> {
+        /*
+        patcher.patch(Channel.class.getDeclaredMethod("m"), new PreHook(cf -> {
             //method gets Channel names
             Channel ch = (Channel) cf.thisObject;
             ChannelWrapper channel = new ChannelWrapper(ch);
-            //logger.info(String.valueOf(channel.getId()));
+
             int i =findIndex(channel.getId());
             logger.info(String.valueOf(i!=-1));
             if (i!=-1){
@@ -67,17 +65,25 @@ public class EditServersLocally extends Plugin {
             }
 
         }));
-        patcher.patch(WidgetChannelsListAdapter.ItemChannelText.class.getDeclaredMethod("onConfigure", int.class, ChannelListItem.class),new Hook((cf)->{
+
+         */
+
+
+        patcher.patch(WidgetChannelsListAdapter.ItemChannelText.class.getDeclaredMethod("onConfigure", int.class, ChannelListItem.class),new Hook(
+                (cf)->{
             WidgetChannelsListAdapter.ItemChannelText thisobj = (WidgetChannelsListAdapter.ItemChannelText) cf.thisObject;
             try {
                 WidgetChannelsListItemChannelBinding binding = (WidgetChannelsListItemChannelBinding) ReflectUtils.getField(thisobj,"binding");
                 ChannelListItemTextChannel channelListItemTextChannel  = (ChannelListItemTextChannel) cf.args[1];
+                ChannelWrapper ch = new ChannelWrapper(channelListItemTextChannel.getChannel());
+                if (ch.getGuildId()!= currentGuild.get()){
+                    currentGuild.set(ch.getGuildId());
+                    channels.set(new HashMap<>());
+                }
+                channels.get().put(ch.getId(),binding.d);
 
                 //method gets Channel names
-
-
                 int i =findIndex(ChannelWrapper.getId(channelListItemTextChannel.component1()));
-                logger.info(String.valueOf(i!=-1));
                 if (i!=-1){
                     binding.d.setText(dataList.get(i).channelName);;
                 }
@@ -86,6 +92,8 @@ public class EditServersLocally extends Plugin {
                 e.printStackTrace();
             }
         }));
+
+        //patcher.patch(WidgetChatListAdapter.class.getDeclaredMethod(""))
 
 
 
@@ -104,8 +112,19 @@ public class EditServersLocally extends Plugin {
                         View v =  binding.j;
 
                         EditText et =new EditText(v.getContext());
-                        et.setLayoutParams(a.getLayoutParams());
+                        et.setSelectAllOnFocus(true);
+                        ViewGroup.LayoutParams param = a.getLayoutParams();
+                        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(param.width,param.height);
+                        params.leftMargin = DimenUtils.dpToPx(20);
 
+                        LinearLayout lay = new LinearLayout(v.getContext());
+                        lay.addView(et);
+                        et.setLayoutParams(params);
+
+                        int index = findIndex(ChannelWrapper.getId(model.getChannel()));
+                        if (index!=-1){
+                            et.setText(dataList.get(index).getChannelName());
+                        }
                         TextView tw = new TextView(v.getContext(),null,0,R.h.UiKit_Settings_Item_Icon);
                         tw.setText("Set Channel Name");
                         tw.setLayoutParams(v.getLayoutParams());
@@ -114,27 +133,28 @@ public class EditServersLocally extends Plugin {
                         tw.setOnClickListener(v1 -> {
                             AlertDialog.Builder builder = new AlertDialog.Builder(v.getContext());
                             builder.setMessage("Set Channel Name")
-                                    .setPositiveButton("Set", (dialog, id) -> {
-                                        addData(new ChannelData(model.getGuild().getId(),ChannelWrapper.getId(model.getChannel()),et.getText().toString()));
-                                    })
-                                    .setNegativeButton("Cancel", (dialog, id) -> {
+                                    .setPositiveButton("Set", (dialog, id) -> addData(new ChannelData(model.getGuild().getId(),ChannelWrapper.getId(model.getChannel()),et.getText().toString())))
+                                    .setNegativeButton("Cancel", (dialog, id) -> {}).setView(lay).setNeutralButton("Remove",(dialog, which) -> removeData(ChannelWrapper.getId(model.getChannel())));
 
-                                    }).setView(et).setNeutralButton("Remove",(dialog, which) -> {
-                                        removeData(ChannelWrapper.getId(model.getChannel()));
+                            builder.create().show();
 
-                            });
-                             builder.create().show();
-                            // Intent intent = new Intent(tw.getContext(),);
                         });
                         layout.addView(tw);
 
                     } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-                        e.printStackTrace();
+                        logger.error(e);
                     }
 
                 }));
 
+        patcher.patch(WidgetChannelsList.class.getDeclaredMethod("configureUI", WidgetChannelListModel.class),new Hook((cf)->{
+            channelsList = (WidgetChannelsList) cf.thisObject;
+
+        }));
+
     }
+    WidgetChannelsList channelsList;
+
 
     public void addData(ChannelData data){
         int index =findIndex(data.getChannelID());
@@ -142,7 +162,9 @@ public class EditServersLocally extends Plugin {
             dataList.remove(index);
         }
         dataList.add(data);
-        settings.setObject("data",dataList);
+
+        updateChannel(data.getChannelID(),data.getChannelName());
+        setData();
 
     }
     public int findIndex(long channelID){
@@ -151,12 +173,46 @@ public class EditServersLocally extends Plugin {
 
     public void removeData(long channelID){
         dataList.remove(findIndex(channelID));
+        updateChannel(channelID,"");
+        setData();
+    }
+    public void updateChannel(long channelID,String chname)  {
+        try{
+            TextView v = (TextView) channels.get().get(channelID);
+            v.setText(chname);
+        }catch (Exception e){logger.error(e);}
+
+
+
+        /*
+        Channel ch = StoreStream.getChannels().getChannel(channelID);
+
+        if(!chname.isEmpty()){
+            try {
+                ReflectUtils.setField(ch,"name",chname);
+                ReflectUtils.setField(ch,"guildHashes",null);
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                logger.error(e);
+            }
+
+        }
+
+        StoreStream.getChannels().handleChannelOrThreadCreateOrUpdate(ch);
+        StoreStream$initGatewaySocketListeners$18 abc = new StoreStream$initGatewaySocketListeners$18(StoreStream.getPresences().getStream());
+        abc.invoke(ch);
+        StoreStream.access$handleChannelCreateOrUpdate(new StoreStream(), ch);
+
+         */
+
+    }
+
+    public void setData(){
         settings.setObject("data",dataList);
     }
 
 
     @Override
-    public void stop(Context context) throws Throwable {
+    public void stop(Context context) {
 
     }
 }
