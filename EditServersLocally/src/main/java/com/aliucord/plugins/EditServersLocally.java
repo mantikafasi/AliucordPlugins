@@ -90,20 +90,12 @@ public class EditServersLocally extends Plugin {
                         WidgetChannelsListItemActionsBinding binding = (WidgetChannelsListItemActionsBinding) method.invoke(cf.thisObject);
                         View v =  binding.j;
 
-                        EditText et =new EditText(v.getContext());
-                        et.setSelectAllOnFocus(true);
                         ViewGroup.LayoutParams param = a.getLayoutParams();
                         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(param.width,param.height);
                         params.leftMargin = DimenUtils.dpToPx(20);
 
-                        LinearLayout lay = new LinearLayout(v.getContext());
-                        lay.addView(et);
-                        et.setLayoutParams(params);
 
-                        int index = findIndex(ChannelWrapper.getId(model.getChannel()));
-                        if (index!=-1){
-                            et.setText(dataList.get(index).getChannelName());
-                        }
+
                         TextView tw = new TextView(v.getContext(),null,0,R.h.UiKit_Settings_Item_Icon);
                         tw.setText("Set Channel Name");
                         tw.setLayoutParams(v.getLayoutParams());
@@ -112,7 +104,20 @@ public class EditServersLocally extends Plugin {
                         tw.setOnClickListener(v1 -> {
                             AlertDialog.Builder builder = new AlertDialog.Builder(v.getContext());
                             builder.setMessage("Set Channel Name")
-                                    .setPositiveButton("Set", (dialog, id) -> addData(new ChannelData(model.getGuild().getId(),ChannelWrapper.getId(model.getChannel()),et.getText().toString())))
+                                    .setPositiveButton("Set", (dialog, id) -> {
+                                        EditText et =new EditText(v.getContext());
+                                        et.setSelectAllOnFocus(true);
+                                        LinearLayout lay = new LinearLayout(v.getContext());
+                                        lay.addView(et);
+                                        et.setLayoutParams(params);
+                
+                                        int index = findIndex(ChannelWrapper.getId(model.getChannel()));
+                                        if (index!=-1){
+                                            et.setText(dataList.get(index).getChannelName());
+                                        }
+                                        
+                                        addData(new ChannelData(model.getGuild().getId(),ChannelWrapper.getId(model.getChannel()),et.getText().toString()));
+                                    })
                                     .setNegativeButton("Cancel", (dialog, id) -> {}).setView(lay).setNeutralButton("Remove",(dialog, which) -> removeData(ChannelWrapper.getId(model.getChannel())));
 
                             builder.create().show();
