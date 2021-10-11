@@ -116,7 +116,7 @@ public class EditServersLocally extends Plugin {
                                             et.setText(dataList.get(index).getChannelName());
                                         }
                                         
-                                        addData(new ChannelData(model.getGuild().getId(),ChannelWrapper.getId(model.getChannel()),et.getText().toString()));
+                                        addData(new ChannelData(model.getGuild().getId(),ChannelWrapper.getId(model.getChannel()),et.getText().toString());
                                     })
                                     .setNegativeButton("Cancel", (dialog, id) -> {}).setView(lay).setNeutralButton("Remove",(dialog, which) -> removeData(ChannelWrapper.getId(model.getChannel())));
 
