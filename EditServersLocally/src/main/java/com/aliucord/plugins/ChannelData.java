@@ -11,11 +11,6 @@ public class ChannelData {
         this.channelID = channelID;
         this.channelName = channelName;
     }
-    public ChannelData (String text){
-        String[] objs = text.split(", ");
-
-    }
-
     public long getGuildID() {
         return guildID;
     }

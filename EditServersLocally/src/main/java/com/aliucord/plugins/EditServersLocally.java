@@ -51,23 +51,6 @@ public class EditServersLocally extends Plugin {
     @Override
     public void start(Context context) throws Throwable {
         settingsTab = new SettingsTab(BottomSheet.class, SettingsTab.Type.BOTTOM_SHEET).withArgs(settings);
-        logger.info(dataList.toString());
-        /*
-        patcher.patch(Channel.class.getDeclaredMethod("m"), new PreHook(cf -> {
-            //method gets Channel names
-            Channel ch = (Channel) cf.thisObject;
-            ChannelWrapper channel = new ChannelWrapper(ch);
-
-            int i =findIndex(channel.getId());
-            logger.info(String.valueOf(i!=-1));
-            if (i!=-1){
-                cf.setResult(dataList.get(i).channelName);
-            }
-
-        }));
-
-         */
-
 
         patcher.patch(WidgetChannelsListAdapter.ItemChannelText.class.getDeclaredMethod("onConfigure", int.class, ChannelListItem.class),new Hook(
                 (cf)->{
@@ -93,13 +76,9 @@ public class EditServersLocally extends Plugin {
             }
         }));
 
-        //patcher.patch(WidgetChatListAdapter.class.getDeclaredMethod(""))
-
-
-
         patcher.patch(WidgetChannelsListItemChannelActions.class.getDeclaredMethod("configureUI", WidgetChannelsListItemChannelActions.Model.class),
                 new Hook((cf)->{
-                    //Putting ConfigureUI
+                    //Putting ChannelName button to actions
                     WidgetChannelsListItemChannelActions.Model model = (WidgetChannelsListItemChannelActions.Model) cf.args[0];
                     try {
                         WidgetChannelsListItemChannelActions actions = (WidgetChannelsListItemChannelActions) cf.thisObject;
@@ -146,14 +125,7 @@ public class EditServersLocally extends Plugin {
                     }
 
                 }));
-
-        patcher.patch(WidgetChannelsList.class.getDeclaredMethod("configureUI", WidgetChannelListModel.class),new Hook((cf)->{
-            channelsList = (WidgetChannelsList) cf.thisObject;
-
-        }));
-
     }
-    WidgetChannelsList channelsList;
 
 
     public void addData(ChannelData data){
@@ -179,31 +151,13 @@ public class EditServersLocally extends Plugin {
     public void updateChannel(long channelID,String chname)  {
         try{
             TextView v = (TextView) channels.get().get(channelID);
-            v.setText(chname);
-        }catch (Exception e){logger.error(e);}
-
-
-
-        /*
-        Channel ch = StoreStream.getChannels().getChannel(channelID);
-
-        if(!chname.isEmpty()){
-            try {
-                ReflectUtils.setField(ch,"name",chname);
-                ReflectUtils.setField(ch,"guildHashes",null);
-            } catch (NoSuchFieldException | IllegalAccessException e) {
-                logger.error(e);
+            if (!chname.isEmpty()){
+                v.setText(chname);
+            } else{
+                v.setText(ChannelWrapper.getName(StoreStream.getChannels().getChannel(channelID)));
             }
 
-        }
-
-        StoreStream.getChannels().handleChannelOrThreadCreateOrUpdate(ch);
-        StoreStream$initGatewaySocketListeners$18 abc = new StoreStream$initGatewaySocketListeners$18(StoreStream.getPresences().getStream());
-        abc.invoke(ch);
-        StoreStream.access$handleChannelCreateOrUpdate(new StoreStream(), ch);
-
-         */
-
+        }catch (Exception e){logger.error(e);}
     }
 
     public void setData(){
@@ -213,6 +167,6 @@ public class EditServersLocally extends Plugin {
 
     @Override
     public void stop(Context context) {
-
+        patcher.unpatchAll();
     }
 }
