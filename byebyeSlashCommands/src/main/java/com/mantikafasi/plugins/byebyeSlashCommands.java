@@ -15,6 +15,7 @@ import com.aliucord.Logger;
 import com.aliucord.Utils;
 import com.aliucord.annotations.AliucordPlugin;
 import com.aliucord.entities.Plugin;
+import com.aliucord.patcher.Hook;
 import com.aliucord.patcher.PinePatchFn;
 import com.aliucord.utils.ReflectUtils;
 
@@ -50,11 +51,13 @@ public class byebyeSlashCommands extends Plugin {
     public void start(Context context) {
         this.context= context;
 
-
+        /* disabled for now because it breaks emoji and mentions also some people downloaded it even though I didnt release it
         for (Method m: WidgetChatInputDiscoveryCommandsModel.class.getDeclaredMethods()) {
-            patcher.patch("com.discord.widgets.chat.input.WidgetChatInputDiscoveryCommandsModel",m.getName(), m.getParameterTypes() ,new PinePatchFn(callFrame -> {
+            patcher.patch("com.discord.widgets.chat.input.WidgetChatInputDiscoveryCommandsModel",m.getName(), m.getParameterTypes() ,new Hook(callFrame -> {
                 callFrame.setResult(null);}));
         }
+
+         */
     }
 
 

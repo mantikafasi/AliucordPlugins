@@ -6,6 +6,7 @@ import com.aliucord.Logger;
 import com.aliucord.annotations.AliucordPlugin;
 import com.aliucord.entities.Plugin;
 import com.aliucord.fragments.SettingsPage;
+import com.aliucord.patcher.Hook;
 import com.aliucord.patcher.PinePatchFn;
 import com.aliucord.utils.ReflectUtils;
 import com.discord.models.message.Message;
@@ -29,7 +30,7 @@ public class POGPatch extends Plugin {
     @Override
     public void start(Context context) {
 
-        patcher.patch("com.discord.models.message.Message","getContent",null,new PinePatchFn(cf -> {
+        patcher.patch("com.discord.models.message.Message","getContent",null,new Hook(cf -> {
             Message _this =(Message) cf.thisObject;
 
             String cont = null;

@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.aliucord.CollectionUtils;
 import com.aliucord.api.SettingsAPI;
 import com.aliucord.fragments.SettingsPage;
+import com.aliucord.patcher.Hook;
 import com.discord.api.channel.Channel;
 import com.discord.restapi.PayloadJSON;
 import com.discord.restapi.RestAPIInterface;
@@ -77,14 +78,14 @@ public class HighLightReplies extends Plugin {
 
         this.context= context;
         try {
-            patcher.patch(MessageQueue$doSend$2.class.getDeclaredMethod("call", SendUtils.SendPayload.ReadyToSend.class),new PinePatchFn(callFrame -> {
+            patcher.patch(MessageQueue$doSend$2.class.getDeclaredMethod("call", SendUtils.SendPayload.ReadyToSend.class),new Hook(callFrame -> {
                 //if I dont patch this RestAPI.sendMessage doesnt get called for some reason
             }));
-            patcher.patch(RestAPI.class.getDeclaredMethod("sendMessage", long.class, RestAPIParams.Message.class),new PinePatchFn(callFrame -> {
+            patcher.patch(RestAPI.class.getDeclaredMethod("sendMessage", long.class, RestAPIParams.Message.class),new Hook(callFrame -> {
                 unHighLight();
             }));
 
-            patcher.patch(RestAPI.class.getDeclaredMethod("sendMessage", long.class, PayloadJSON.class, MultipartBody.Part[].class),new PinePatchFn(callFrame -> {
+            patcher.patch(RestAPI.class.getDeclaredMethod("sendMessage", long.class, PayloadJSON.class, MultipartBody.Part[].class),new Hook(callFrame -> {
                 unHighLight();
             }));
         } catch (NoSuchMethodException e) {
@@ -92,7 +93,7 @@ public class HighLightReplies extends Plugin {
         }
 
         try {
-            patcher.patch(WidgetChatListAdapterItemMessage.class.getDeclaredMethod("onConfigure", int.class, ChatListEntry.class),new PinePatchFn(callFrame ->{
+            patcher.patch(WidgetChatListAdapterItemMessage.class.getDeclaredMethod("onConfigure", int.class, ChatListEntry.class),new Hook(callFrame ->{
                 // if view gets recycled change its background color again
                 WidgetChatListAdapterItemMessage item = (WidgetChatListAdapterItemMessage) callFrame.thisObject;
                 adapter = item.adapter;
@@ -111,11 +112,11 @@ public class HighLightReplies extends Plugin {
 
         //When Close Button Clicked.
         patcher.patch(WidgetChatInput$configureContextBarReplying$3.class,"onClick",new Class[]{View.class},
-                new PinePatchFn(callFrame -> {unHighLight();}));
+                new Hook(callFrame -> {unHighLight();}));
 
 
         patcher.patch(WidgetChatListActions.class.getDeclaredMethod("access$replyMessage", WidgetChatListActions.class, Message.class, Channel.class),
-                new PinePatchFn(callFrame -> {
+                new Hook(callFrame -> {
                     unHighLight();
 
                     Message message = (Message) callFrame.args[1];
