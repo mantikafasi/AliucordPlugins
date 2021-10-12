@@ -1,5 +1,6 @@
 version = "1.0.0"
 description = "Allows you to edit channel names locally\n" +
-        "WIP rn\n" +
-        "Currently you can only set names to text channels\n" +
+        "Its WIP\n" +
+        "Currently you can only set names for text channels\n" +
         "To set name long press on channel name and press 'Set Channel Name'"
+aliucord.changelog.set("")

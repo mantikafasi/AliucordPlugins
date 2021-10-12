@@ -95,28 +95,29 @@ public class EditServersLocally extends Plugin {
                         params.leftMargin = DimenUtils.dpToPx(20);
 
 
-
                         TextView tw = new TextView(v.getContext(),null,0,R.h.UiKit_Settings_Item_Icon);
                         tw.setText("Set Channel Name");
                         tw.setLayoutParams(v.getLayoutParams());
 
                         tw.setId(View.generateViewId());
                         tw.setOnClickListener(v1 -> {
+
+                            EditText et =new EditText(v.getContext());
+                            et.setSelectAllOnFocus(true);
+                            LinearLayout lay = new LinearLayout(v.getContext());
+                            lay.addView(et);
+                            et.setLayoutParams(params);
+
+                            int index = findIndex(ChannelWrapper.getId(model.getChannel()));
+                            if (index!=-1){
+                                et.setText(dataList.get(index).getChannelName());
+                            }
+
                             AlertDialog.Builder builder = new AlertDialog.Builder(v.getContext());
                             builder.setMessage("Set Channel Name")
                                     .setPositiveButton("Set", (dialog, id) -> {
-                                        EditText et =new EditText(v.getContext());
-                                        et.setSelectAllOnFocus(true);
-                                        LinearLayout lay = new LinearLayout(v.getContext());
-                                        lay.addView(et);
-                                        et.setLayoutParams(params);
-                
-                                        int index = findIndex(ChannelWrapper.getId(model.getChannel()));
-                                        if (index!=-1){
-                                            et.setText(dataList.get(index).getChannelName());
-                                        }
-                                        
-                                        addData(new ChannelData(model.getGuild().getId(),ChannelWrapper.getId(model.getChannel()),et.getText().toString());
+                                        addData(new ChannelData(model.getGuild().getId(),ChannelWrapper.getId(model.getChannel()),et.getText().toString()));
+
                                     })
                                     .setNegativeButton("Cancel", (dialog, id) -> {}).setView(lay).setNeutralButton("Remove",(dialog, which) -> removeData(ChannelWrapper.getId(model.getChannel())));
 
