@@ -50,7 +50,13 @@ public class EditServersLocally extends Plugin {
     @SuppressLint("ResourceType")
     @Override
     public void start(Context context) throws Throwable {
+        //TODO add opinion to edit server names and logos
+        //TODO change channelName in chat too
         settingsTab = new SettingsTab(BottomSheet.class, SettingsTab.Type.BOTTOM_SHEET).withArgs(settings);
+
+        patcher.patch(Channel.class.getDeclaredMethod("m"),new Hook((cf)->{
+            Channel ch = (Channel) cf.thisObject;
+        }));
 
         patcher.patch(WidgetChannelsListAdapter.ItemChannelText.class.getDeclaredMethod("onConfigure", int.class, ChannelListItem.class),new Hook(
                 (cf)->{
@@ -164,6 +170,9 @@ public class EditServersLocally extends Plugin {
             }
 
         }catch (Exception e){logger.error(e);}
+        Channel ch = StoreStream.getChannels().getChannel(channelID);
+        try { ReflectUtils.setField(ch,"name",chname); } catch (NoSuchFieldException | IllegalAccessException e) { e.printStackTrace(); }
+        StoreStream.getChannels().handleChannelOrThreadCreateOrUpdate(ch);
     }
 
     public void setData(){

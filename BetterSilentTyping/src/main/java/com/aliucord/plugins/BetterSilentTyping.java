@@ -11,6 +11,7 @@ import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 
 import androidx.annotation.ColorInt;
 import androidx.appcompat.widget.AppCompatImageView;
@@ -61,11 +62,14 @@ public class BetterSilentTyping extends Plugin {
     @Override
     public void start(Context context) {
 
+        settingsTab=new SettingsTab(Settings.class, SettingsTab.Type.BOTTOM_SHEET).withArgs(settings,this);
+
         commands.registerCommand("togglekeyboard","Hides/Shows BetterSilentTyping Keyboard Icon",commandContext -> {
             Boolean bool = settings.getBool("hideKeyboard",false);
             hideButton(!bool);
             return new CommandsAPI.CommandResult();
         });
+        registerCommand();
 
 
         keyboardDisabledid= resources.getIdentifier("keyboarddisabled","drawable","com.aliucord.plugins");
@@ -84,9 +88,7 @@ public class BetterSilentTyping extends Plugin {
                         button.setVisibility(View.GONE);
                     }
 
-                    button.setOnClickListener(v -> {
-                        setSetting(!settings.getBool("isEnabled", false));
-                        updateButton(); });
+                    button.setOnClickListener(v -> { setSetting(!settings.getBool("isEnabled",false)); });
 
                     button.setAdjustViewBounds(true);
                     button.setMaxWidth(DimenUtils.dpToPx(40));
@@ -106,6 +108,16 @@ public class BetterSilentTyping extends Plugin {
         } catch (NoSuchMethodException e) {
             logger.error(e);
         }
+    }
+
+    public void registerCommand(){
+        var isEnabled = settings.getBool("isEnabled",false);
+        var val  = isEnabled ? "Enabled" : "Disabled";
+        commands.registerCommand("silentTyping","Toggles Silent Typing, Its Currently "+ val,commandContext -> {
+
+            setSetting(!isEnabled);
+            return new CommandsAPI.CommandResult();
+        });
     }
 
 
@@ -154,6 +166,24 @@ public class BetterSilentTyping extends Plugin {
 
     public void setSetting(boolean val){
         settings.setBool("isEnabled",val);
+        patchUserTyping();
+        updateButton();
+        commands.unregisterCommand("silentTyping");
+        registerCommand();
+
+        if (settings.getBool("showToast",false)){
+            var value = ((val) ? "Enabled" :"Disabled");
+            var status = ((val) ? "Invisible" :"Visible");
+            Utils.mainThread.post(() -> {
+                try {
+                    Toast.makeText(button.getContext(),  value + " Silent Typing " + "You are Now " + status, Toast.LENGTH_SHORT).show();
+
+                }catch (Exception e){
+                    logger.error(e);
+                }
+
+            });
+               }
     }
 
     @Override

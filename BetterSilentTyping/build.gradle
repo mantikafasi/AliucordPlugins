@@ -1,6 +1,11 @@
-version = "1.0.2"
-description = "Adds Silent Typing Button"
+version = "1.0.3"
+description = "Silent Typing"
 aliucord.changelog.set("""
+    #1.0.3
+    *Added /silentTyping to toggle silent typing
+    *Added setting to show toast when silent typing toggled
+   
+    
     #1.0.2
     *Changed keyboards background color and made it slighlty smaller    
     *Added /togglekeyboard command to Hide/Show keyboard icon
