@@ -1,4 +1,4 @@
-package com.aliucord.plugins;
+package com.aliucord.plugins.DataClasses;
 
 import com.google.gson.Gson;
 
@@ -25,7 +25,7 @@ public class ChannelData {
 
 
 
-    long guildID;
-    long channelID;
-    String channelName;
+    public long guildID;
+    public long channelID;
+    public String channelName;
 }

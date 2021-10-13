@@ -12,6 +12,7 @@ import android.widget.Toast;
 
 import com.aliucord.api.SettingsAPI;
 import com.aliucord.fragments.ConfirmDialog;
+import com.aliucord.plugins.DataClasses.ChannelData;
 import com.discord.app.AppBottomSheet;
 
 import java.util.ArrayList;

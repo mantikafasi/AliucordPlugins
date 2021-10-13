@@ -9,13 +9,21 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.core.content.res.ResourcesCompat;
 import androidx.core.widget.NestedScrollView;
 
 import com.aliucord.CollectionUtils;
 import com.aliucord.Logger;
+import com.aliucord.Utils;
 import com.aliucord.annotations.AliucordPlugin;
+import com.aliucord.patcher.PreHook;
+import com.aliucord.plugins.DataClasses.ChannelData;
+import com.aliucord.plugins.DataClasses.GuildData;
 import com.aliucord.utils.DimenUtils;
+import com.aliucord.wrappers.GuildWrapper;
+import com.discord.api.guild.Guild;
 import com.discord.databinding.WidgetChannelsListItemChannelBinding;
+import com.discord.databinding.WidgetGuildContextMenuBinding;
 import com.discord.stores.StoreStream;
 import com.discord.stores.StoreStream$initGatewaySocketListeners$18;
 import com.discord.widgets.channels.list.WidgetChannelListModel;
@@ -23,6 +31,8 @@ import com.discord.widgets.channels.list.WidgetChannelsList;
 import com.discord.widgets.channels.list.WidgetChannelsListAdapter;
 import com.discord.widgets.channels.list.items.ChannelListItem;
 import com.discord.widgets.channels.list.items.ChannelListItemTextChannel;
+import com.discord.widgets.guilds.contextmenu.GuildContextMenuViewModel;
+import com.discord.widgets.guilds.contextmenu.WidgetGuildContextMenu;
 import com.google.gson.reflect.TypeToken;
 import com.lytefast.flexinput.R;
 import com.aliucord.entities.Plugin;
@@ -33,8 +43,10 @@ import com.discord.api.channel.Channel;
 import com.discord.databinding.WidgetChannelsListItemActionsBinding;
 import com.discord.widgets.channels.list.WidgetChannelsListItemChannelActions;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.sql.Ref;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -47,21 +59,101 @@ public class EditServersLocally extends Plugin {
     AtomicReference<HashMap<Long, View>> channels = new AtomicReference<>(new HashMap<>());
     AtomicLong currentGuild= new AtomicLong();
     Logger logger = new Logger("EditServersLocally");
+
+    Context context;
     @SuppressLint("ResourceType")
     @Override
     public void start(Context context) throws Throwable {
-        //TODO add opinion to edit server names and logos
-        //TODO change channelName in chat too
+        this.context= context;
+
         settingsTab = new SettingsTab(BottomSheet.class, SettingsTab.Type.BOTTOM_SHEET).withArgs(settings);
 
         patcher.patch(Channel.class.getDeclaredMethod("m"),new Hook((cf)->{
+            //patching 'getChannelName' method so I can change channels name
             Channel ch = (Channel) cf.thisObject;
+            ChannelData data =getData(ChannelWrapper.getId(ch));
+            if(data!=null){cf.setResult(data.channelName);logger
+            .info("done");}
+        }));
+
+        patcher.patch(Guild.class.getDeclaredMethod("v"),new PreHook((cf)->{
+            var thisobj =(Channel) cf.thisObject;
+            try {
+                long guildid = (long) ReflectUtils.getField(thisobj,"f1573id");
+                GuildData data = settings.getObject(String.valueOf(guildid),null);
+
+                logger.info(String.valueOf(guildid));
+                if (data!=null){
+                    cf.setResult(data.serverName);
+                }
+                cf.setResult("pog");
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                logger.error(e);
+            }
+        }));
+
+        patcher.patch(com.discord.models.guild.Guild.class.getDeclaredMethod("getName"),new PreHook((cf)->{
+            com.discord.models.guild.Guild guild = (com.discord.models.guild.Guild) cf.thisObject;
+            GuildData data = settings.getObject(String.valueOf(guild.getId()),null);
+            if(data!=null){
+                cf.setResult(data.serverName);
+            }
+           // cf.setResult("pog");
+
+        }));
+        for (Constructor<?> constructor : com.discord.models.guild.Guild.class.getConstructors()) {
+            patcher.patch(constructor,new Hook((cf)->{
+                try {
+                    com.discord.models.guild.Guild guild = (com.discord.models.guild.Guild) cf.thisObject;
+                    GuildData data = settings.getObject(String.valueOf(guild.getId()),null);
+                    if(data!=null){
+                        ReflectUtils.setField(cf.thisObject,"name",data.serverName);
+                    }
+
+                } catch (NoSuchFieldException | IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+
+            }));
+        }
+
+
+
+        patcher.patch(WidgetGuildContextMenu.class.getDeclaredMethod("configureUI", GuildContextMenuViewModel.ViewState.class),new Hook((cf)->{
+            //adding set server name,photo to Guild Settings
+            var thisObject = (WidgetGuildContextMenu)cf.thisObject;
+
+            try {
+                var state = (GuildContextMenuViewModel.ViewState.Valid) cf.args[0];
+                Method method = ReflectUtils.getMethodByArgs(WidgetGuildContextMenu.class,"getBinding");
+                WidgetGuildContextMenuBinding binding = (WidgetGuildContextMenuBinding) method.invoke(thisObject);
+                LinearLayout v = (LinearLayout) binding.e.getParent();
+                var guild =state.getGuild();
+
+                TextView tw = new TextView(v.getContext(),null,0,R.h.UiKit_Settings_Item_Icon);
+                tw.setLayoutParams(binding.e.getLayoutParams());
+                Context ctx = binding.e.getContext();
+                tw.setText("Server Settings");
+                tw.setOnClickListener(v1 -> {
+                    ServerSettingsFragment page = new ServerSettingsFragment(guild,settings);
+
+                    Utils.openPageWithProxy(ctx, page);
+
+                });
+                v.addView(tw);
+
+                logger.info(v.toString());
+            } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+                e.printStackTrace();
+            }
+
         }));
 
         patcher.patch(WidgetChannelsListAdapter.ItemChannelText.class.getDeclaredMethod("onConfigure", int.class, ChannelListItem.class),new Hook(
                 (cf)->{
             WidgetChannelsListAdapter.ItemChannelText thisobj = (WidgetChannelsListAdapter.ItemChannelText) cf.thisObject;
             try {
+
                 WidgetChannelsListItemChannelBinding binding = (WidgetChannelsListItemChannelBinding) ReflectUtils.getField(thisobj,"binding");
                 ChannelListItemTextChannel channelListItemTextChannel  = (ChannelListItemTextChannel) cf.args[1];
                 ChannelWrapper ch = new ChannelWrapper(channelListItemTextChannel.getChannel());
@@ -71,10 +163,13 @@ public class EditServersLocally extends Plugin {
                 }
                 channels.get().put(ch.getId(),binding.d);
 
-                //method gets Channel names
+                //getting saved names and changing channel name to it
                 int i =findIndex(ChannelWrapper.getId(channelListItemTextChannel.component1()));
                 if (i!=-1){
-                    binding.d.setText(dataList.get(i).channelName);;
+                    binding.d.setText(dataList.get(i).channelName);
+                    Channel cha =channelListItemTextChannel.component1();
+                    ReflectUtils.setField(cha,"name",dataList.get(i).channelName);
+                   // StoreStream.getChannels().handleChannelOrThreadCreateOrUpdate(cha);
                 }
 
             } catch (NoSuchFieldException | IllegalAccessException e) {
@@ -84,7 +179,7 @@ public class EditServersLocally extends Plugin {
 
         patcher.patch(WidgetChannelsListItemChannelActions.class.getDeclaredMethod("configureUI", WidgetChannelsListItemChannelActions.Model.class),
                 new Hook((cf)->{
-                    //Putting ChannelName button to actions
+                    //Putting Set ChannelName button to actions
                     WidgetChannelsListItemChannelActions.Model model = (WidgetChannelsListItemChannelActions.Model) cf.args[0];
                     try {
                         WidgetChannelsListItemChannelActions actions = (WidgetChannelsListItemChannelActions) cf.thisObject;
@@ -138,8 +233,31 @@ public class EditServersLocally extends Plugin {
 
                 }));
     }
+    public ChannelData getData(long id){
+        //gets ChannelData from saved data if exists
+        int i = findIndex(id);
+        if (i!=-1){
+            return dataList.get(i);
+        }
+        return null;
+    }
+    public Channel getModifiedChannel(long id){
+        //gets Channel,replaces its name and returns it
+        Channel ch = StoreStream.getChannels().getChannel(id);
+        ChannelData data = getData(id);
+        if(data!=null){
+            try {
+                ReflectUtils.setField(ch,"name",data.getChannelName());
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                e.printStackTrace();
+            }
+            return ch;
+        }
+        return null;
 
 
+
+    }
     public void addData(ChannelData data){
         int index =findIndex(data.getChannelID());
         if(index!=-1){
@@ -154,7 +272,6 @@ public class EditServersLocally extends Plugin {
     public int findIndex(long channelID){
        return CollectionUtils.findIndex(dataList,channelData -> channelData.getChannelID()==channelID);
     }
-
     public void removeData(long channelID){
         dataList.remove(findIndex(channelID));
         updateChannel(channelID,"");
@@ -174,10 +291,10 @@ public class EditServersLocally extends Plugin {
         try { ReflectUtils.setField(ch,"name",chname); } catch (NoSuchFieldException | IllegalAccessException e) { e.printStackTrace(); }
         StoreStream.getChannels().handleChannelOrThreadCreateOrUpdate(ch);
     }
-
     public void setData(){
         settings.setObject("data",dataList);
     }
+
 
 
     @Override
