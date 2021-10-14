@@ -1,31 +1,29 @@
 package com.aliucord.plugins.DataClasses;
 
-import com.google.gson.Gson;
-
-import java.io.Serializable;
-
-public class ChannelData implements DataBase{
+public class ChannelData {
 
     public ChannelData(long guildID, long channelID, String channelName) {
         this.guildID = guildID;
         this.channelID = channelID;
         this.channelName = channelName;
     }
-    public long getGuildID() {
-        return guildID;
-    }
-
-    public long getChannelID() {
-        return channelID;
-    }
-
-    public String getChannelName() {
-        return channelName;
+    public ChannelData(long id){
+        this.channelID =id ;
     }
 
 
+    @Override
+    public String toString() {
+        return "ChannelData{" +
+                "guildID=" + guildID +
+                ", channelID=" + channelID +
+                ", channelName='" + channelName + '\'' +
+                ", orginalName='" + orginalName + '\'' +
+                '}';
+    }
 
     public long guildID;
     public long channelID;
     public String channelName;
+    public String orginalName;
 }

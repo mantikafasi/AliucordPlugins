@@ -1,6 +1,6 @@
 package com.aliucord.plugins.DataClasses;
 
-public class GuildData implements DataBase{
+public class GuildData {
 
     public long guildID;
 
@@ -12,18 +12,6 @@ public class GuildData implements DataBase{
 
     public String serverName;
     public String imageURL;
-
-    public long getGuildID() {
-        return guildID;
-    }
-
-    public String getServerName() {
-        return serverName;
-    }
-
-    public String getImageURL() {
-        return imageURL;
-    }
 
 
 

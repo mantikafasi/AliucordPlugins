@@ -35,14 +35,14 @@ public class ServerSettingsFragment extends AppFragment {
 
     Context ctx;
     Guild guild;
-    SettingsAPI settings;
+    EditServersLocally plugin;
     GuildData data ;
 
 
-    public ServerSettingsFragment(Guild guild, SettingsAPI settings){
+    public ServerSettingsFragment(Guild guild, EditServersLocally plugin){
         this.guild=guild;
-        this.settings=settings;
-        data=settings.getObject(String.valueOf(guild.getId()),new GuildData(guild.getId()));
+        this.plugin=plugin;
+        data=plugin.getGuildData(guild.getId());
     }
 
     @Nullable
@@ -146,11 +146,15 @@ public class ServerSettingsFragment extends AppFragment {
     }
 
     public void setSettings(){
-        settings.setObject(String.valueOf(guild.getId()),data);
+
+        var map = plugin.guildData;
+        map.put(guild.getId(),data);
+        plugin.settings.setObject("guildData",map);
+        plugin.updateData();
         Toast.makeText(ctx, "Settings Saved", Toast.LENGTH_SHORT).show();
         var guild2 = GuildUtilsKt.createApiGuild(StoreStream.getGuilds().getGuild(guild.getId()));
-        //try { ReflectUtils.setField(guild2,"icon","changed"); } catch (NoSuchFieldException | IllegalAccessException e) { e.printStackTrace(); }
-        //StoreStream.access$handleGuildUpdate(StoreStream.getPresences().getStream(), guild2);
+        try { ReflectUtils.setField(guild2,"icon","changed");if (data.serverName!=null && !data.serverName.isEmpty())ReflectUtils.setField(guild2,"name",data.serverName); } catch (NoSuchFieldException | IllegalAccessException e) { e.printStackTrace(); }
+        StoreStream.access$handleGuildUpdate(StoreStream.getPresences().getStream(), guild2);
         getActivity().onBackPressed();
     }
 
