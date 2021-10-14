@@ -1,6 +1,6 @@
 package com.aliucord.plugins.DataClasses;
 
-public class GuildData{
+public class GuildData implements DataBase{
 
     public long guildID;
 

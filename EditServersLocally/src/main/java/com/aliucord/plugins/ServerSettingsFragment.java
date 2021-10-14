@@ -15,6 +15,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.aliucord.plugins.DataClasses.GuildData;
+import com.aliucord.utils.ReflectUtils;
+import com.aliucord.views.Divider;
+import com.discord.api.voice.state.StageRequestToSpeakState;
+import com.discord.models.domain.ModelApplicationStream;
+import com.discord.stores.StoreStream;
+import com.discord.utilities.guilds.GuildUtilsKt;
+import com.discord.utilities.icon.IconUtils;
 import com.lytefast.flexinput.R;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -38,6 +45,13 @@ public class ServerSettingsFragment extends AppFragment {
         data=settings.getObject(String.valueOf(guild.getId()),new GuildData(guild.getId()));
     }
 
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        ctx=inflater.getContext();
+        return createLayout();
+    }
+
     enum optionType{
         SERVERNAME,
         SERVERIMAGE
@@ -50,124 +64,83 @@ public class ServerSettingsFragment extends AppFragment {
         lay.setOrientation(LinearLayout.VERTICAL);
 
         lay.addView(createOption(optionType.SERVERNAME));
+        lay.addView(new Divider(ctx));
         lay.addView(createOption(optionType.SERVERIMAGE));
 
-        LinearLayout buttonlay = new LinearLayout(ctx);
 
-        Button button = new Button(ctx);
-        button.setTextColor(getColor());
-        button.setGravity(View.FOCUS_RIGHT);
-        button.setText("Save");
-        button.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        button.setWidth(DimenUtils.dpToPx(50));
-        button.setOnClickListener(v -> setSettings());
+        LinearLayout buttonLay= new LinearLayout(ctx);
 
-        Button cancel = new Button(ctx);
-        cancel.setTextColor(getColor());
-        cancel.setGravity(View.FOCUS_RIGHT);
-        cancel.setText("Cancel");
-        cancel.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        cancel.setWidth(DimenUtils.dpToPx(50));
-        cancel.setOnClickListener(v -> getActivity().onBackPressed());
+        Button saveButton = new Button(ctx);
+        saveButton.setTextColor(getColor());
+        saveButton.setGravity(View.FOCUS_RIGHT);
+        saveButton.setText("Save");
+        saveButton.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        saveButton.setWidth(DimenUtils.dpToPx(50));
+        saveButton.setOnClickListener(v -> setSettings());
 
-        buttonlay.addView(button);
-        buttonlay.addView(cancel);
+        Button cancelButton = new Button(ctx);
+        cancelButton.setTextColor(getColor());
+        cancelButton.setGravity(View.FOCUS_RIGHT);
+        cancelButton.setText("Cancel");
+        cancelButton.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        cancelButton.setWidth(DimenUtils.dpToPx(50));
+        cancelButton.setOnClickListener(v -> getActivity().onBackPressed());
 
-        buttonlay.setGravity(Gravity.RIGHT);
+        buttonLay.addView(saveButton);
+        buttonLay.addView(cancelButton);
+        buttonLay.setGravity(Gravity.RIGHT);
 
-        lay.addView(buttonlay);
+        lay.addView(buttonLay);
 
         return lay;
     }
     public View createOption(optionType optionName){
-
-
         LinearLayout lay = new LinearLayout(ctx);
 
         lay.setOrientation(LinearLayout.VERTICAL);
         TextView tw = new TextView(ctx);
         EditText et = new EditText(ctx);
-        Button button = new Button(ctx);
-
 
         tw.setTextColor(getColor());
         et.setTextColor(getColor());
-        button.setTextColor(getColor());
-
+        et.setHintTextColor(ctx.getResources().getColor(R.c.primary_dark_400));
 
         switch (optionName){
             case SERVERNAME:
-
-                button.setOnClickListener(v -> data.serverName=null);
-
+                et.setHint(guild.getName());
                 tw.setText("Server Name");
                 if (data.serverName!=null){
                     et.setText(data.serverName);
-
-                } else {
-                    et.setText(guild.getName());
                 }
+
                 et.addTextChangedListener(new TextWatcher() {
-                    @Override
-                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-                    }
-
-                    @Override
-                    public void onTextChanged(CharSequence s, int start, int before, int count) {
-
-                    }
-
-                    @Override
-                    public void afterTextChanged(Editable s) {
-                        data.serverName = s.toString();
-                    }
-
-                });
+                    @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+                    @Override public void onTextChanged(CharSequence s, int start, int before, int count) { }
+                    @Override public void afterTextChanged(Editable s) { data.serverName = s.toString().isEmpty()?null:s.toString(); }});
                 break;
+
             case SERVERIMAGE:
-                var iconURL = "https://cdn.discordapp.com/icons/"+guild.getId()+"/"+guild.getIcon();
-                tw.setText("Server Image");
-                et.setText(data.imageURL!=null?data.imageURL:iconURL);
 
-                button.setOnClickListener(v -> data.imageURL=null);
-
+                var iconURL = "https://cdn.discordapp.com/icons/"+guild.getId() +"/"+guild.getIcon() +".*";
+                tw.setText("Server Image (switch servers or restart discord for changes to take effect)");
+                et.setText(data.imageURL!=null?data.imageURL:"");
+                et.setHint(iconURL);
                 et.addTextChangedListener(new TextWatcher() {
-                    @Override
-                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-                    }
-
-                    @Override
-                    public void onTextChanged(CharSequence s, int start, int before, int count) {
-
-                    }
-
-                    @Override
-                    public void afterTextChanged(Editable s) {
-                        data.imageURL = s.toString();
-                    }
-
-                });
-
+                    @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+                    @Override public void onTextChanged(CharSequence s, int start, int before, int count) { }
+                    @Override public void afterTextChanged(Editable s) { data.imageURL = s.toString().isEmpty()?null:s.toString(); }});
                 break;
         }
 
-        button.setText("RESET");
-
-
-
         lay.addView(tw);
         lay.addView(et);
-        lay.addView(button);
 
         LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) tw.getLayoutParams();
-        int size = DimenUtils.dpToPx(20);
-        int size2 = DimenUtils.dpToPx(2);
-        params.setMargins(size2,size2,size2,size2);
+        int size = DimenUtils.dpToPx(2);
+        int size2 = DimenUtils.dpToPx(10);
 
-        et.setLayoutParams(params);
-        tw.setLayoutParams(params);
+        params.setMargins(size,size2,size,size2);
+        lay.setLayoutParams(params);
 
         return lay;
     }
@@ -175,16 +148,14 @@ public class ServerSettingsFragment extends AppFragment {
     public void setSettings(){
         settings.setObject(String.valueOf(guild.getId()),data);
         Toast.makeText(ctx, "Settings Saved", Toast.LENGTH_SHORT).show();
+        var guild2 = GuildUtilsKt.createApiGuild(StoreStream.getGuilds().getGuild(guild.getId()));
+        //try { ReflectUtils.setField(guild2,"icon","changed"); } catch (NoSuchFieldException | IllegalAccessException e) { e.printStackTrace(); }
+        //StoreStream.access$handleGuildUpdate(StoreStream.getPresences().getStream(), guild2);
         getActivity().onBackPressed();
     }
 
     public int getColor(){
         return ctx.getResources().getColor(R.c.primary_dark_200);
     }
-    @Nullable
-    @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        ctx=inflater.getContext();
-        return createLayout();
-    }
+
 }

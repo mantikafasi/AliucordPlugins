@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 
 import java.io.Serializable;
 
-public class ChannelData {
+public class ChannelData implements DataBase{
 
     public ChannelData(long guildID, long channelID, String channelName) {
         this.guildID = guildID;

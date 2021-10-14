@@ -18,14 +18,21 @@ import com.aliucord.Utils;
 import com.aliucord.annotations.AliucordPlugin;
 import com.aliucord.patcher.PreHook;
 import com.aliucord.plugins.DataClasses.ChannelData;
+import com.aliucord.plugins.DataClasses.DataBase;
 import com.aliucord.plugins.DataClasses.GuildData;
 import com.aliucord.utils.DimenUtils;
 import com.aliucord.wrappers.GuildWrapper;
 import com.discord.api.guild.Guild;
 import com.discord.databinding.WidgetChannelsListItemChannelBinding;
 import com.discord.databinding.WidgetGuildContextMenuBinding;
+import com.discord.databinding.WidgetGuildsListItemGuildBinding;
+import com.discord.gateway.io.OutgoingPayload;
+import com.discord.models.domain.ModelApplicationStream;
+import com.discord.stores.Store;
 import com.discord.stores.StoreStream;
 import com.discord.stores.StoreStream$initGatewaySocketListeners$18;
+import com.discord.utilities.guilds.GuildUtilsKt;
+import com.discord.utilities.icon.IconUtils;
 import com.discord.widgets.channels.list.WidgetChannelListModel;
 import com.discord.widgets.channels.list.WidgetChannelsList;
 import com.discord.widgets.channels.list.WidgetChannelsListAdapter;
@@ -33,6 +40,8 @@ import com.discord.widgets.channels.list.items.ChannelListItem;
 import com.discord.widgets.channels.list.items.ChannelListItemTextChannel;
 import com.discord.widgets.guilds.contextmenu.GuildContextMenuViewModel;
 import com.discord.widgets.guilds.contextmenu.WidgetGuildContextMenu;
+import com.discord.widgets.guilds.list.GuildListViewHolder;
+import com.facebook.drawee.interfaces.DraweeController;
 import com.google.gson.reflect.TypeToken;
 import com.lytefast.flexinput.R;
 import com.aliucord.entities.Plugin;
@@ -55,15 +64,21 @@ import java.util.concurrent.atomic.AtomicReference;
 @AliucordPlugin
 public class EditServersLocally extends Plugin {
 
-    ArrayList<ChannelData> dataList =settings.getObject("data",new ArrayList<>(), TypeToken.getParameterized(ArrayList.class, ChannelData.class).getType());
+   // ArrayList<ChannelData> dataList =settings.getObject("data",new ArrayList<>(), TypeToken.getParameterized(ArrayList.class, ChannelData.class).getType());
     AtomicReference<HashMap<Long, View>> channels = new AtomicReference<>(new HashMap<>());
     AtomicLong currentGuild= new AtomicLong();
     Logger logger = new Logger("EditServersLocally");
+    HashMap<Long, ChannelData> channelData = settings.getObject("channelData",new HashMap<Long, ChannelData>(),TypeToken.getParameterized(HashMap.class, Long.class,ChannelData.class).getType());
+    HashMap<Long,GuildData> guildData = settings.getObject("channelData",new HashMap<Long, GuildData>(),TypeToken.getParameterized(HashMap.class, Long.class,GuildData.class).getType());
+
+
+
 
     Context context;
     @SuppressLint("ResourceType")
     @Override
     public void start(Context context) throws Throwable {
+
         this.context= context;
 
         settingsTab = new SettingsTab(BottomSheet.class, SettingsTab.Type.BOTTOM_SHEET).withArgs(settings);
@@ -72,8 +87,7 @@ public class EditServersLocally extends Plugin {
             //patching 'getChannelName' method so I can change channels name
             Channel ch = (Channel) cf.thisObject;
             ChannelData data =getData(ChannelWrapper.getId(ch));
-            if(data!=null){cf.setResult(data.channelName);logger
-            .info("done");}
+            if(data!=null){cf.setResult(data.channelName);}
         }));
 
         patcher.patch(Guild.class.getDeclaredMethod("v"),new PreHook((cf)->{
@@ -86,7 +100,7 @@ public class EditServersLocally extends Plugin {
                 if (data!=null){
                     cf.setResult(data.serverName);
                 }
-                cf.setResult("pog");
+
             } catch (NoSuchFieldException | IllegalAccessException e) {
                 logger.error(e);
             }
@@ -94,19 +108,19 @@ public class EditServersLocally extends Plugin {
 
         patcher.patch(com.discord.models.guild.Guild.class.getDeclaredMethod("getName"),new PreHook((cf)->{
             com.discord.models.guild.Guild guild = (com.discord.models.guild.Guild) cf.thisObject;
-            GuildData data = settings.getObject(String.valueOf(guild.getId()),null);
-            if(data!=null){
+            GuildData data = settings.getObject(String.valueOf(guild.getId()),new GuildData(guild.getId()));
+            if(data.serverName!=null){
                 cf.setResult(data.serverName);
             }
-           // cf.setResult("pog");
+
 
         }));
         for (Constructor<?> constructor : com.discord.models.guild.Guild.class.getConstructors()) {
             patcher.patch(constructor,new Hook((cf)->{
                 try {
                     com.discord.models.guild.Guild guild = (com.discord.models.guild.Guild) cf.thisObject;
-                    GuildData data = settings.getObject(String.valueOf(guild.getId()),null);
-                    if(data!=null){
+                    GuildData data = settings.getObject(String.valueOf(guild.getId()),new GuildData(guild.getId()));
+                    if(data.serverName!=null){
                         ReflectUtils.setField(cf.thisObject,"name",data.serverName);
                     }
 
@@ -176,6 +190,41 @@ public class EditServersLocally extends Plugin {
                 e.printStackTrace();
             }
         }));
+        /*
+        patcher.patch(GuildListViewHolder.GuildViewHolder.class.getDeclaredMethod("configureGuildIconImage", com.discord.models.guild.Guild.class, boolean.class),
+                new Hook((cf)->{
+                    var thisobj = (GuildListViewHolder.GuildViewHolder)cf.thisObject;
+                    var guild = (com.discord.models.guild.Guild)cf.args[0];
+                    try {
+                        WidgetGuildsListItemGuildBinding binding = (WidgetGuildsListItemGuildBinding) ReflectUtils.getField(thisobj,"bindingGuild");
+                        GuildData data = getGuildData(guild.getId());
+                        if (data.imageURL!=null){
+
+                            binding.d.setImageURI(data.imageURL);
+                            logger.info(IconUtils.getForGuild(guild));
+
+                            //ReflectUtils.setField(guild,"icon","changed");
+                            //StoreStream.access$handleGuildUpdate(StoreStream.getNotices().getStream(),GuildUtilsKt.createApiGuild(guild));
+                        }
+
+
+                    } catch (NoSuchFieldException | IllegalAccessException e) {
+                        e.printStackTrace();
+                    }
+                }));
+
+         */
+
+        patcher.patch(IconUtils.class.getDeclaredMethod("getForGuild", Long.class, String.class, String.class, boolean.class, Integer.class),
+                new PreHook((cf)->{
+                    long guildID = (long) cf.args[0];
+
+                    GuildData data = getGuildData(guildID);
+                    if(data.imageURL!=null){
+                        cf.setResult(data.imageURL);
+                    }
+                }));
+
 
         patcher.patch(WidgetChannelsListItemChannelActions.class.getDeclaredMethod("configureUI", WidgetChannelsListItemChannelActions.Model.class),
                 new Hook((cf)->{
@@ -241,6 +290,12 @@ public class EditServersLocally extends Plugin {
         }
         return null;
     }
+    public GuildData getGuildData(long id){
+        return settings.getObject(String.valueOf(id),new GuildData(id));
+    }
+
+
+
     public Channel getModifiedChannel(long id){
         //gets Channel,replaces its name and returns it
         Channel ch = StoreStream.getChannels().getChannel(id);
@@ -266,16 +321,17 @@ public class EditServersLocally extends Plugin {
         dataList.add(data);
 
         updateChannel(data.getChannelID(),data.getChannelName());
-        setData();
+        setChannelData();
 
     }
     public int findIndex(long channelID){
-       return CollectionUtils.findIndex(dataList,channelData -> channelData.getChannelID()==channelID);
+
+       //return CollectionUtils.findIndex(dataList,channelData -> channelData.getChannelID()==channelID);
     }
     public void removeData(long channelID){
         dataList.remove(findIndex(channelID));
         updateChannel(channelID,"");
-        setData();
+        setChannelData();
     }
     public void updateChannel(long channelID,String chname)  {
         try{
@@ -291,8 +347,9 @@ public class EditServersLocally extends Plugin {
         try { ReflectUtils.setField(ch,"name",chname); } catch (NoSuchFieldException | IllegalAccessException e) { e.printStackTrace(); }
         StoreStream.getChannels().handleChannelOrThreadCreateOrUpdate(ch);
     }
-    public void setData(){
-        settings.setObject("data",dataList);
+    public void setChannelData(){
+        settings.setObject("channelData",channelData);
+
     }
 
 
