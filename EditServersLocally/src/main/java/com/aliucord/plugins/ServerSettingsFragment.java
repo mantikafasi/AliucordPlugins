@@ -96,7 +96,6 @@ public class ServerSettingsFragment extends AppFragment {
 
         buttonLay.setPadding(DimenUtils.dpToPx(15),DimenUtils.dpToPx(15),DimenUtils.dpToPx(15),0);
         lay.addView(buttonLay);
-        lay.setShowDividers(LinearLayout.SHOW_DIVIDER_MIDDLE);
 
 
         //lay.setPadding(DimenUtils.dpToPx(30),DimenUtils.dpToPx(60),DimenUtils.dpToPx(10),DimenUtils.dpToPx(10));
@@ -156,15 +155,14 @@ public class ServerSettingsFragment extends AppFragment {
     }
 
     public void setSettings(){
-
-       // var map = plugin.guildData;
-        //map.put(guild.getId(),data);
         plugin.updateGuildData(data);
-        //plugin.settings.setObject("guildData",map);
-        //plugin.updateData();
         Toast.makeText(ctx, "Settings Saved", Toast.LENGTH_SHORT).show();
         var guild2 = GuildUtilsKt.createApiGuild(StoreStream.getGuilds().getGuild(guild.getId()));
-        try { ReflectUtils.setField(guild2,"icon","changed");ReflectUtils.setField(guild2,"name",data.serverName==null?data.orginalName:data.serverName); } catch (NoSuchFieldException | IllegalAccessException e) { e.printStackTrace(); }
+        try {
+            if(data.imageURL!=null){
+                ReflectUtils.setField(guild2,"icon",data.imageURL);
+            }
+            ReflectUtils.setField(guild2,"name",data.serverName==null?data.orginalName:data.serverName); } catch (NoSuchFieldException | IllegalAccessException e) { e.printStackTrace(); }
         StoreStream.access$handleGuildUpdate(StoreStream.getPresences().getStream(), guild2);
         getActivity().onBackPressed();
     }

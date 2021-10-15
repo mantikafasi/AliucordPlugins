@@ -84,14 +84,14 @@ public class EditServersLocally extends Plugin {
          */
 
 
-
+        /*
         patcher.patch(Guild.class.getDeclaredMethod("v"),new PreHook((cf)->{
             var thisobj =(Guild) cf.thisObject;
             try {
-                long guildid = (long) ReflectUtils.getField(thisobj,"f1573id");
+                long guildid = (long) ReflectUtils.getField(thisobj,"id");
                 GuildData data = guildData.get(guildid);
 
-                logger.info(String.valueOf(guildid));
+                //logger.info(String.valueOf(guildid));
                 if (data.serverName!=null){
                     cf.setResult(data.serverName);
                 }
@@ -100,6 +100,10 @@ public class EditServersLocally extends Plugin {
                 logger.error(e);
             }
         }));
+
+         */
+
+
 
 
         patcher.patch(com.discord.models.guild.Guild.class.getDeclaredMethod("getName"),new PreHook((cf)->{
