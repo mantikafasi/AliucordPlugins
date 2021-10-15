@@ -86,7 +86,7 @@ public class EditServersLocally extends Plugin {
 
 
         patcher.patch(Guild.class.getDeclaredMethod("v"),new PreHook((cf)->{
-            var thisobj =(Channel) cf.thisObject;
+            var thisobj =(Guild) cf.thisObject;
             try {
                 long guildid = (long) ReflectUtils.getField(thisobj,"f1573id");
                 GuildData data = guildData.get(guildid);
