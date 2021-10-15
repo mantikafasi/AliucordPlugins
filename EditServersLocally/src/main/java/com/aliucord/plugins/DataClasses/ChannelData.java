@@ -7,6 +7,12 @@ public class ChannelData {
         this.channelID = channelID;
         this.channelName = channelName;
     }
+    public ChannelData(long guildID, long channelID, String channelName,String orginalName) {
+        this.guildID = guildID;
+        this.channelID = channelID;
+        this.channelName = channelName;
+        this.orginalName = orginalName;
+    }
     public ChannelData(long id){
         this.channelID =id ;
     }

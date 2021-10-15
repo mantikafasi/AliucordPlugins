@@ -14,6 +14,7 @@ import androidx.core.widget.NestedScrollView;
 import com.aliucord.Logger;
 import com.aliucord.Utils;
 import com.aliucord.annotations.AliucordPlugin;
+import com.aliucord.patcher.PinePatchFn;
 import com.aliucord.patcher.PreHook;
 import com.aliucord.plugins.DataClasses.ChannelData;
 import com.aliucord.plugins.DataClasses.GuildData;
@@ -45,8 +46,13 @@ import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import de.robv.android.xposed.XposedBridge;
+
 @AliucordPlugin
 public class EditServersLocally extends Plugin {
+
+
+    //WARNING : NOT SAFE TO READ
 
    // ArrayList<ChannelData> dataList =settings.getObject("data",new ArrayList<>(), TypeToken.getParameterized(ArrayList.class, ChannelData.class).getType());
     AtomicReference<HashMap<Long, View>> channels = new AtomicReference<>(new HashMap<>());
@@ -110,6 +116,7 @@ public class EditServersLocally extends Plugin {
                     com.discord.models.guild.Guild guild = (com.discord.models.guild.Guild) cf.thisObject;
 
                     GuildData data = getGuildData(guild.getId());
+                    if (data.orginalName==null){data.orginalName= (String) ReflectUtils.getField(cf.thisObject,"name");updateGuildData(data);}
                     if(data.serverName!=null){
                         ReflectUtils.setField(cf.thisObject,"name",data.serverName);
                     }
@@ -172,12 +179,14 @@ public class EditServersLocally extends Plugin {
 
                 if (channelData.containsKey(i)){
                     var chdata =getChannelData(i);
-                    binding.d.setText(chdata.channelName);
+                    if(chdata.channelName!=null){
+                        binding.d.setText(chdata.channelName);
+                    }
+
                     Channel cha =channelListItemTextChannel.component1();
 
-                    chdata.orginalName=ChannelWrapper.getName(cha);
-                    channelData.put(chdata.channelID,chdata);
-                    setChannelData();
+                    if (chdata.orginalName==null){chdata.orginalName=ChannelWrapper.getName(cha);}
+                    updateChannelData(chdata);
                     ReflectUtils.setField(cha,"name",chdata.channelName);
                     logger.info(channelData.toString());
                 }
@@ -214,8 +223,17 @@ public class EditServersLocally extends Plugin {
         patcher.patch(IconUtils.class.getDeclaredMethod("getForGuild", Long.class, String.class, String.class, boolean.class, Integer.class),
                 new PreHook((cf)->{
                     long guildID = (long) cf.args[0];
-
+                    // Changing Server Icon to saved one if exists
                     GuildData data = getGuildData(guildID);
+                    if (data.orginalURL==null){
+                        try {
+                            data.orginalURL = (XposedBridge.invokeOriginalMethod(cf.method, cf.thisObject, cf.args).toString());
+                        } catch (IllegalAccessException | InvocationTargetException e) {
+                            e.printStackTrace();
+                        }
+                        updateGuildData(data);
+                    }
+
                     if(data.imageURL!=null){
                         cf.setResult(data.imageURL);
                     }
@@ -262,7 +280,16 @@ public class EditServersLocally extends Plugin {
                             AlertDialog.Builder builder = new AlertDialog.Builder(v.getContext());
                             builder.setMessage("Set Channel Name")
                                     .setPositiveButton("Set", (dialog, id) -> {
-                                        addData(new ChannelData(model.getGuild().getId(),ChannelWrapper.getId(model.getChannel()),et.getText().toString()));
+
+
+                                        ChannelData data = getChannelData(ChannelWrapper.getId(model.getChannel()));
+                                        if (data.orginalName==null){
+                                            data.orginalName=ChannelWrapper.getName(model.getChannel());
+                                        }
+                                        data.channelName=et.getText().toString();
+                                        updateChannelData(data);
+                                        updateChannel(data);
+
 
                                     })
                                     .setNegativeButton("Cancel", (dialog, id) -> {}).setView(lay).setNeutralButton("Remove",(dialog, which) -> removeData(ChannelWrapper.getId(model.getChannel())));
@@ -278,6 +305,19 @@ public class EditServersLocally extends Plugin {
 
                 }));
     }
+    public void updateChannelData(ChannelData data){
+        channelData.put(data.channelID,data);
+        setChannelData();
+    }
+    public void updateGuildData(GuildData data){
+        guildData.put(data.guildID,data);
+        setGuildData();
+    }
+
+    public void updateTextChannel(ChannelData data){
+        TextView b = (TextView) channels.get().get(data.channelID);
+        b.setText(data.channelName==null?data.orginalName:data.channelName);
+    }
     public ChannelData getChannelData(long id){ return channelData.get(id)!=null?channelData.get(id):new ChannelData(id); }
     public GuildData getGuildData(long id){ return guildData.get(id)!=null?guildData.get(id):new GuildData(id); }
     public void setGuildData() { settings.setObject("guildData",guildData); }
@@ -286,6 +326,7 @@ public class EditServersLocally extends Plugin {
         guildData = settings.getObject("guildData",new HashMap<Long, GuildData>(),TypeToken.getParameterized(HashMap.class, Long.class,GuildData.class).getType());
     }
 
+    /*
     public Channel getModifiedChannel(long id){
         //gets Channel,replaces its name and returns it
         Channel ch = StoreStream.getChannels().getChannel(id);
@@ -301,17 +342,24 @@ public class EditServersLocally extends Plugin {
         return null;
     }
 
+     */
+
     public void addData(ChannelData data){
         channelData.put(data.channelID,data);
-        updateChannel(data.channelID,data.channelName);
+        updateChannel(data);
         setChannelData();
     }
 
     public void removeData(long channelID){
 
         updateChannel(channelID,"");
+
+        ChannelData data = getChannelData(channelID);
+        data.channelName=null;
+        updateTextChannel(data);
         channelData.remove(channelID);
         setChannelData();
+
 
     }
     public void updateChannel(long channelID,String chname)  {
@@ -333,6 +381,29 @@ public class EditServersLocally extends Plugin {
 
         try {ReflectUtils.setField(ch,"name",chname); } catch (NoSuchFieldException | IllegalAccessException e) { e.printStackTrace(); }
         StoreStream.getChannels().handleChannelOrThreadCreateOrUpdate(ch);
+
+    }
+
+    public void updateChannel(ChannelData data)  {
+
+        try{
+            logger.info(data.orginalName);
+            if (data.channelName.isEmpty()) data.channelName=data.orginalName;
+            TextView v = (TextView) channels.get().get(data.channelID);
+            if (!data.channelName.isEmpty()){
+                v.setText(data.channelName);
+            } else{
+                v.setText(ChannelWrapper.getName(StoreStream.getChannels().getChannel(data.channelID)));
+            }
+
+        }catch (Exception e){logger.error(e);}
+
+        Channel ch = StoreStream.getChannels().getChannel(data.channelID);
+
+
+        try {ReflectUtils.setField(ch,"name",data.channelName); } catch (NoSuchFieldException | IllegalAccessException e) { e.printStackTrace(); }
+        StoreStream.getChannels().handleChannelOrThreadCreateOrUpdate(ch);
+
     }
 
     public void setChannelData(){ settings.setObject("channelData",channelData); }

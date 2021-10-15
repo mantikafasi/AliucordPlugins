@@ -1,6 +1,7 @@
 package com.aliucord.plugins;
 
 import android.content.Context;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -14,9 +15,11 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.aliucord.fragments.SettingsPage;
 import com.aliucord.plugins.DataClasses.GuildData;
 import com.aliucord.utils.ReflectUtils;
 import com.aliucord.views.Divider;
+
 import com.discord.api.voice.state.StageRequestToSpeakState;
 import com.discord.models.domain.ModelApplicationStream;
 import com.discord.stores.StoreStream;
@@ -62,9 +65,10 @@ public class ServerSettingsFragment extends AppFragment {
         var lay = new LinearLayout(ctx);
 
         lay.setOrientation(LinearLayout.VERTICAL);
-
+        lay.setBackgroundResource(R.c.primary_dark_600);
         lay.addView(createOption(optionType.SERVERNAME));
         lay.addView(new Divider(ctx));
+
         lay.addView(createOption(optionType.SERVERIMAGE));
 
 
@@ -90,8 +94,12 @@ public class ServerSettingsFragment extends AppFragment {
         buttonLay.addView(cancelButton);
         buttonLay.setGravity(Gravity.RIGHT);
 
+        buttonLay.setPadding(DimenUtils.dpToPx(15),DimenUtils.dpToPx(15),DimenUtils.dpToPx(15),0);
         lay.addView(buttonLay);
+        lay.setShowDividers(LinearLayout.SHOW_DIVIDER_MIDDLE);
 
+
+        //lay.setPadding(DimenUtils.dpToPx(30),DimenUtils.dpToPx(60),DimenUtils.dpToPx(10),DimenUtils.dpToPx(10));
         return lay;
     }
     public View createOption(optionType optionName){
@@ -104,10 +112,11 @@ public class ServerSettingsFragment extends AppFragment {
         tw.setTextColor(getColor());
         et.setTextColor(getColor());
         et.setHintTextColor(ctx.getResources().getColor(R.c.primary_dark_400));
+        tw.setTextSize(16);
 
         switch (optionName){
             case SERVERNAME:
-                et.setHint(guild.getName());
+                et.setHint(data.orginalName==null?guild.getName():data.orginalName);
                 tw.setText("Server Name");
                 if (data.serverName!=null){
                     et.setText(data.serverName);
@@ -121,7 +130,7 @@ public class ServerSettingsFragment extends AppFragment {
 
             case SERVERIMAGE:
 
-                var iconURL = "https://cdn.discordapp.com/icons/"+guild.getId() +"/"+guild.getIcon() +".*";
+                var iconURL = data.orginalURL==null?"https://cdn.discordapp.com/icons/"+guild.getId() +"/"+guild.getIcon() +".*":data.orginalURL;
                 tw.setText("Server Image (switch servers or restart discord for changes to take effect)");
                 et.setText(data.imageURL!=null?data.imageURL:"");
                 et.setHint(iconURL);
@@ -141,19 +150,21 @@ public class ServerSettingsFragment extends AppFragment {
 
         params.setMargins(size,size2,size,size2);
         lay.setLayoutParams(params);
+        lay.setPadding(DimenUtils.dpToPx(15),DimenUtils.dpToPx(15),DimenUtils.dpToPx(15),0);
 
         return lay;
     }
 
     public void setSettings(){
 
-        var map = plugin.guildData;
-        map.put(guild.getId(),data);
-        plugin.settings.setObject("guildData",map);
-        plugin.updateData();
+       // var map = plugin.guildData;
+        //map.put(guild.getId(),data);
+        plugin.updateGuildData(data);
+        //plugin.settings.setObject("guildData",map);
+        //plugin.updateData();
         Toast.makeText(ctx, "Settings Saved", Toast.LENGTH_SHORT).show();
         var guild2 = GuildUtilsKt.createApiGuild(StoreStream.getGuilds().getGuild(guild.getId()));
-        try { ReflectUtils.setField(guild2,"icon","changed");if (data.serverName!=null && !data.serverName.isEmpty())ReflectUtils.setField(guild2,"name",data.serverName); } catch (NoSuchFieldException | IllegalAccessException e) { e.printStackTrace(); }
+        try { ReflectUtils.setField(guild2,"icon","changed");ReflectUtils.setField(guild2,"name",data.serverName==null?data.orginalName:data.serverName); } catch (NoSuchFieldException | IllegalAccessException e) { e.printStackTrace(); }
         StoreStream.access$handleGuildUpdate(StoreStream.getPresences().getStream(), guild2);
         getActivity().onBackPressed();
     }

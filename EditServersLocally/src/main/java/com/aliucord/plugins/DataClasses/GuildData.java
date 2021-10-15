@@ -12,6 +12,8 @@ public class GuildData {
 
     public String serverName;
     public String imageURL;
+    public String orginalURL;
+    public String orginalName;
 
 
 
