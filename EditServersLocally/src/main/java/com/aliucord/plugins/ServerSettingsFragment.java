@@ -11,6 +11,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -20,11 +22,17 @@ import com.aliucord.plugins.DataClasses.GuildData;
 import com.aliucord.utils.ReflectUtils;
 import com.aliucord.views.Divider;
 
+import com.discord.BuildConfig;
 import com.discord.api.voice.state.StageRequestToSpeakState;
 import com.discord.models.domain.ModelApplicationStream;
 import com.discord.stores.StoreStream;
+import com.discord.utilities.extensions.SimpleDraweeViewExtensionsKt;
 import com.discord.utilities.guilds.GuildUtilsKt;
 import com.discord.utilities.icon.IconUtils;
+import com.discord.utilities.images.MGImages;
+import com.facebook.drawee.view.SimpleDraweeView;
+import com.facebook.imagepipeline.request.ImageRequest;
+import com.facebook.imagepipeline.request.ImageRequestBuilder;
 import com.lytefast.flexinput.R;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -41,6 +49,7 @@ public class ServerSettingsFragment extends AppFragment {
     EditServersLocally plugin;
     GuildData data ;
 
+    //NSTW !!! DO NOT READ !!!
 
     public ServerSettingsFragment(Guild guild, EditServersLocally plugin){
         this.guild=guild;
@@ -55,11 +64,7 @@ public class ServerSettingsFragment extends AppFragment {
         return createLayout();
     }
 
-    enum optionType{
-        SERVERNAME,
-        SERVERIMAGE
-
-    }
+    enum optionType{SERVERNAME, SERVERIMAGE}
     public LinearLayout createLayout(){
 
         var lay = new LinearLayout(ctx);
@@ -113,10 +118,12 @@ public class ServerSettingsFragment extends AppFragment {
         et.setHintTextColor(ctx.getResources().getColor(R.c.primary_dark_400));
         tw.setTextSize(16);
 
+
+        FrameLayout imageLayout=new FrameLayout(ctx);
         switch (optionName){
             case SERVERNAME:
                 et.setHint(data.orginalName==null?guild.getName():data.orginalName);
-                tw.setText("Server Name");
+                tw.setText("Server Name (If changes are not shown after saving,try restarting discord)");
                 if (data.serverName!=null){
                     et.setText(data.serverName);
                 }
@@ -128,24 +135,43 @@ public class ServerSettingsFragment extends AppFragment {
                 break;
 
             case SERVERIMAGE:
+                SimpleDraweeView imageView = new SimpleDraweeView(ctx);
+
+
+                imageLayout.addView(imageView);
+
+
+                FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) imageView.getLayoutParams();
+                params.width= DimenUtils.dpToPx(70);
+                params.height=DimenUtils.dpToPx(70);
+                imageView.setLayoutParams(params);
+                int mediaProxySize = IconUtils.getMediaProxySize(imageView.getLayoutParams().width);
+                MGImages.setImage$default(imageView,data.imageURL==null?data.orginalURL:data.imageURL+"?size="+mediaProxySize,imageView.getWidth(),lay.getHeight(),true,null,(o, o1) -> {return true;},112,null);
+               // SimpleDraweeViewExtensionsKt.setGuildIcon(view,true,guild,(float) 500f,20,0,0,360f,true,imageRequestBuilder -> { return null; });
+                //MGImages.setRoundingParams(view,100,false,0,0,100f);
 
                 var iconURL = data.orginalURL==null?"https://cdn.discordapp.com/icons/"+guild.getId() +"/"+guild.getIcon() +".*":data.orginalURL;
+
                 tw.setText("Server Image (switch servers or restart discord for changes to take effect)");
                 et.setText(data.imageURL!=null?data.imageURL:"");
                 et.setHint(iconURL);
                 et.addTextChangedListener(new TextWatcher() {
                     @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
                     @Override public void onTextChanged(CharSequence s, int start, int before, int count) { }
-                    @Override public void afterTextChanged(Editable s) { data.imageURL = s.toString().isEmpty()?null:s.toString(); }});
+                    @Override public void afterTextChanged(Editable s) { data.imageURL = s.toString().trim().isEmpty()?null:s.toString();MGImages.setImage$default(imageView,data.imageURL==null?data.orginalURL:data.imageURL+"?size="+mediaProxySize,imageView.getWidth(),lay.getHeight(),true,null,(o, o1) -> {return true;},112,null);
+                    }});
                 break;
         }
 
         lay.addView(tw);
         lay.addView(et);
+        lay.addView(imageLayout);
 
         LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) tw.getLayoutParams();
         int size = DimenUtils.dpToPx(2);
         int size2 = DimenUtils.dpToPx(10);
+
+
 
         params.setMargins(size,size2,size,size2);
         lay.setLayoutParams(params);
