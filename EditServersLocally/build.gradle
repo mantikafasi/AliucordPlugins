@@ -1,4 +1,4 @@
-version = "1.0.1"
+version = "1.0.2"
 description = "It causes Aliucord to freeze and crash! dont use it for now "+"Allows you to edit Servers locally\n" +
         "Its Still in WIP \n" +
         "Currently you can set Server Names,Server Icons and Channel Names \n" +

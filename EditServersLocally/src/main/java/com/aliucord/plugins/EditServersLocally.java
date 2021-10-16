@@ -52,7 +52,7 @@ public class EditServersLocally extends Plugin {
 
     //WARNING : NOT SAFE TO READ
 
-   // ArrayList<ChannelData> dataList =settings.getObject("data",new ArrayList<>(), TypeToken.getParameterized(ArrayList.class, ChannelData.class).getType());
+
     AtomicReference<HashMap<Long, View>> channels = new AtomicReference<>(new HashMap<>());
     AtomicLong currentGuild= new AtomicLong();
     Logger logger = new Logger("EditServersLocally");
@@ -64,8 +64,9 @@ public class EditServersLocally extends Plugin {
 
     Context context;
     @SuppressLint({"ResourceType", "SetTextI18n"})
-
-    public void start() throws Throwable {
+    @Override
+    public void start(Context context) throws Throwable {
+        logger.info(channelData.size() + " " + guildData.size());
 
 
         this.context= context;
@@ -105,7 +106,7 @@ public class EditServersLocally extends Plugin {
 
         patcher.patch(com.discord.models.guild.Guild.class.getDeclaredMethod("getName"),new PreHook((cf)->{
             com.discord.models.guild.Guild guild = (com.discord.models.guild.Guild) cf.thisObject;
-            GuildData data = guildData.get(guild.getId());
+            GuildData data = getGuildData(guild.getId());
             if(data.serverName!=null){
                 cf.setResult(data.serverName);
             }
@@ -162,7 +163,7 @@ public class EditServersLocally extends Plugin {
         }));
 
         patcher.patch(WidgetChannelsListAdapter.ItemChannelText.class.getDeclaredMethod("onConfigure", int.class, ChannelListItem.class),new Hook(
-                (cf)->{
+                (cf)->  {
             WidgetChannelsListAdapter.ItemChannelText thisobj = (WidgetChannelsListAdapter.ItemChannelText) cf.thisObject;
             try {
 
@@ -220,7 +221,9 @@ public class EditServersLocally extends Plugin {
                     long guildID = (long) cf.args[0];
                     // Changing Server Icon to saved one if exists
                     GuildData data = getGuildData(guildID);
+
                     if (data.orginalURL==null){
+
                         try { data.orginalURL = (XposedBridge.invokeOriginalMethod(cf.method, cf.thisObject, cf.args).toString());updateGuildData(data);
                         } catch (IllegalAccessException | InvocationTargetException e) { logger.error(e); }
                     }
@@ -233,6 +236,7 @@ public class EditServersLocally extends Plugin {
                 new Hook((cf)->{
                     //Putting 'Set Channel Name' button to actions
                     WidgetChannelsListItemChannelActions.Model model = (WidgetChannelsListItemChannelActions.Model) cf.args[0];
+
                     try {
                         WidgetChannelsListItemChannelActions actions = (WidgetChannelsListItemChannelActions) cf.thisObject;
 
@@ -347,10 +351,7 @@ public class EditServersLocally extends Plugin {
     }
     public void setChannelData(){ settings.setObject("channelData",channelData); }
 
-    @Override
-    public void start(Context context) throws Throwable {
 
-    }
 
     @Override public void stop(Context context) {
         patcher.unpatchAll();
