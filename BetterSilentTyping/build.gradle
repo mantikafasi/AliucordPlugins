@@ -1,6 +1,9 @@
-version = "1.0.3"
+version = "1.0.4"
 description = "Silent Typing"
 aliucord.changelog.set("""
+    #1.0.4
+    *Added setting to hide keyboard when text is entered
+    
     #1.0.3
     *Added /silentTyping to toggle silent typing
     *Added setting to show toast when silent typing toggled

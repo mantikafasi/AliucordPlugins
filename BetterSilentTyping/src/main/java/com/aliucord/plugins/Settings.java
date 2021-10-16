@@ -38,10 +38,16 @@ public class Settings extends AppBottomSheet {
         b.setChecked(settings.getBool("hideKeyboard",false));
         b.setOnCheckedListener(aBoolean -> {
             settings.setBool("hideKeyboard",aBoolean);
-            plugin.hideButton(aBoolean);
+            plugin.setSettings(aBoolean);
         });
+        CheckedSetting c= Utils.createCheckedSetting(context,CheckedSetting.ViewType.SWITCH,"Hide Keyboard When Text Gets Entered" ,"");
+        c.setChecked(settings.getBool("hideOnText",false));
+
+        c.setOnCheckedListener(aBoolean -> { settings.setBool("hideOnText",aBoolean);if(aBoolean){ plugin.patchHideKeybordOnText();} else{ plugin.unpatchHideKeybordOnText(); }});
+
         lay.addView(a);
         lay.addView(b);
+        lay.addView(c);
         return lay;
     }
 }

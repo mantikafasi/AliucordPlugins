@@ -66,7 +66,7 @@ public class BetterSilentTyping extends Plugin {
 
         commands.registerCommand("togglekeyboard","Hides/Shows BetterSilentTyping Keyboard Icon",commandContext -> {
             Boolean bool = settings.getBool("hideKeyboard",false);
-            hideButton(!bool);
+            setSettings(!bool);
             return new CommandsAPI.CommandResult();
         });
         registerCommand();
@@ -108,6 +108,28 @@ public class BetterSilentTyping extends Plugin {
         } catch (NoSuchMethodException e) {
             logger.error(e);
         }
+
+        if(settings.getBool("hideOnText",false)){
+
+            patchHideKeybordOnText();
+        }
+
+    }
+    Runnable hideKeyboardOnTextPatch;
+    public void patchHideKeybordOnText() {
+        try {
+            hideKeyboardOnTextPatch=patcher.patch(WidgetChatInputEditText$setOnTextChangedListener$1.class.getDeclaredMethod("afterTextChanged", Editable.class),new Hook(
+                    (cf)->{
+                        Editable et = (Editable) cf.args[0];
+                        hideButton(!et.toString().isEmpty());
+                    }
+            ));
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        }
+    }
+    public void unpatchHideKeybordOnText(){
+        if (hideKeyboardOnTextPatch!=null)hideKeyboardOnTextPatch.run();
     }
 
     public void registerCommand(){
@@ -143,9 +165,14 @@ public class BetterSilentTyping extends Plugin {
             } catch (Exception e){logger.error(e);}
         });
 
-        hideKeyboard=bool;
-        settings.setBool("hideKeyboard",bool);
 
+
+    }
+
+    public  void setSettings(Boolean bool) {
+        hideButton(bool);
+        hideKeyboard= bool;
+        settings.setBool("hideKeyboard", bool);
     }
 
     public void patchUserTyping(){
