@@ -64,8 +64,9 @@ public class EditServersLocally extends Plugin {
 
     Context context;
     @SuppressLint({"ResourceType", "SetTextI18n"})
-    @Override
-    public void start(Context context) throws Throwable {
+
+    public void start() throws Throwable {
+
 
         this.context= context;
 
@@ -100,6 +101,7 @@ public class EditServersLocally extends Plugin {
         }));
 
          */
+
 
         patcher.patch(com.discord.models.guild.Guild.class.getDeclaredMethod("getName"),new PreHook((cf)->{
             com.discord.models.guild.Guild guild = (com.discord.models.guild.Guild) cf.thisObject;
@@ -294,6 +296,7 @@ public class EditServersLocally extends Plugin {
                     }
 
                 }));
+
     }
     public void updateChannelData(ChannelData data){
         channelData.put(data.channelID,data);
@@ -343,6 +346,12 @@ public class EditServersLocally extends Plugin {
 
     }
     public void setChannelData(){ settings.setObject("channelData",channelData); }
+
+    @Override
+    public void start(Context context) throws Throwable {
+
+    }
+
     @Override public void stop(Context context) {
         patcher.unpatchAll();
     }
