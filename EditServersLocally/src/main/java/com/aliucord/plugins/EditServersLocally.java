@@ -101,24 +101,23 @@ public class EditServersLocally extends Plugin {
 
          */
 
-
-
-
         patcher.patch(com.discord.models.guild.Guild.class.getDeclaredMethod("getName"),new PreHook((cf)->{
             com.discord.models.guild.Guild guild = (com.discord.models.guild.Guild) cf.thisObject;
             GuildData data = guildData.get(guild.getId());
             if(data.serverName!=null){
                 cf.setResult(data.serverName);
             }
-
         }));
+
+
+        /*
         for (Constructor<?> constructor : com.discord.models.guild.Guild.class.getConstructors()) {
             patcher.patch(constructor,new Hook((cf)->{
                 try {
                     com.discord.models.guild.Guild guild = (com.discord.models.guild.Guild) cf.thisObject;
 
                     GuildData data = getGuildData(guild.getId());
-                    if (data.orginalName==null){data.orginalName= (String) ReflectUtils.getField(cf.thisObject,"name");updateGuildData(data);}
+                   // if (data.orginalName==null){data.orginalName= (String) ReflectUtils.getField(cf.thisObject,"name");updateGuildData(data);}
                     if(data.serverName!=null){
                         ReflectUtils.setField(cf.thisObject,"name",data.serverName);
                     }
@@ -129,6 +128,7 @@ public class EditServersLocally extends Plugin {
 
             }));
         }
+         */
 
 
 
@@ -152,14 +152,11 @@ public class EditServersLocally extends Plugin {
                     ServerSettingsFragment page = new ServerSettingsFragment(guild,EditServersLocally.this);
                     Utils.openPageWithProxy(ctx, page);
                     v.removeView(tw);
-
                 });
                 v.addView(tw);
-
             } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
                 e.printStackTrace();
             }
-
         }));
 
         patcher.patch(WidgetChannelsListAdapter.ItemChannelText.class.getDeclaredMethod("onConfigure", int.class, ChannelListItem.class),new Hook(
@@ -171,9 +168,11 @@ public class EditServersLocally extends Plugin {
                 ChannelListItemTextChannel channelListItemTextChannel  = (ChannelListItemTextChannel) cf.args[1];
                 ChannelWrapper ch = new ChannelWrapper(channelListItemTextChannel.getChannel());
                 if (ch.getGuildId()!= currentGuild.get()){
+
                     currentGuild.set(ch.getGuildId());
                     channels.set(new HashMap<>());
                 }
+                //saving instances of textviews so we can change them when channel name changed
                 channels.get().put(ch.getId(),binding.d);
 
                 //getting saved names and changing channel name to it
@@ -184,15 +183,7 @@ public class EditServersLocally extends Plugin {
                     if(chdata.channelName!=null){
                         binding.d.setText(chdata.channelName);
                     }
-
-                    Channel cha =channelListItemTextChannel.component1();
-
-                    if (chdata.orginalName==null){chdata.orginalName=ChannelWrapper.getName(cha);}
-                    updateChannelData(chdata);
-                    ReflectUtils.setField(cha,"name",chdata.channelName);
-                    logger.info(channelData.toString());
                 }
-
             } catch (NoSuchFieldException | IllegalAccessException e) {
                 e.printStackTrace();
             }
@@ -228,20 +219,11 @@ public class EditServersLocally extends Plugin {
                     // Changing Server Icon to saved one if exists
                     GuildData data = getGuildData(guildID);
                     if (data.orginalURL==null){
-                        try {
-                            data.orginalURL = (XposedBridge.invokeOriginalMethod(cf.method, cf.thisObject, cf.args).toString());
-                        } catch (IllegalAccessException | InvocationTargetException e) {
-                            e.printStackTrace();
-                        }
-                        updateGuildData(data);
+                        try { data.orginalURL = (XposedBridge.invokeOriginalMethod(cf.method, cf.thisObject, cf.args).toString());updateGuildData(data);
+                        } catch (IllegalAccessException | InvocationTargetException e) { logger.error(e); }
                     }
+                    cf.setResult(data.imageURL!=null?data.imageURL:data.orginalURL);
 
-                    if(data.imageURL!=null){
-
-                        cf.setResult(data.imageURL);
-                    } else {
-                        cf.setResult(data.orginalURL);
-                    }
                 }));
 
 
@@ -330,7 +312,7 @@ public class EditServersLocally extends Plugin {
     public void setGuildData() { settings.setObject("guildData",guildData); }
     public void removeData(long channelID){
         ChannelData data = getChannelData(channelID);
-        data.channelName=null;
+        data.channelName="";
         updateChannel(data);
         updateTextChannel(data);
         channelData.remove(channelID);
@@ -341,6 +323,7 @@ public class EditServersLocally extends Plugin {
         try{
             logger.info(data.orginalName);
             if (data.channelName.isEmpty()) data.channelName=data.orginalName;
+
             TextView v = (TextView) channels.get().get(data.channelID);
             if (!data.channelName.isEmpty()){
                 v.setText(data.channelName);
@@ -348,12 +331,14 @@ public class EditServersLocally extends Plugin {
                 v.setText(ChannelWrapper.getName(StoreStream.getChannels().getChannel(data.channelID)));
             }
 
+
+
         }catch (Exception e){logger.error(e);}
 
         Channel ch = StoreStream.getChannels().getChannel(data.channelID);
 
 
-        try {ReflectUtils.setField(ch,"name",data.channelName); } catch (NoSuchFieldException | IllegalAccessException e) { e.printStackTrace(); }
+        try {ReflectUtils.setField(ch,"name",data.channelName); } catch (NoSuchFieldException | IllegalAccessException e) { logger.error(e); }
         StoreStream.getChannels().handleChannelOrThreadCreateOrUpdate(ch);
 
     }

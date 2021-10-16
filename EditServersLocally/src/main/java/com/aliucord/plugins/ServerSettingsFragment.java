@@ -1,7 +1,7 @@
 package com.aliucord.plugins;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
-import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -12,35 +12,25 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.aliucord.fragments.SettingsPage;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import com.aliucord.plugins.DataClasses.GuildData;
+import com.aliucord.utils.DimenUtils;
 import com.aliucord.utils.ReflectUtils;
 import com.aliucord.views.Divider;
-
-import com.discord.BuildConfig;
-import com.discord.api.voice.state.StageRequestToSpeakState;
-import com.discord.models.domain.ModelApplicationStream;
+import com.discord.app.AppFragment;
+import com.discord.models.guild.Guild;
 import com.discord.stores.StoreStream;
-import com.discord.utilities.extensions.SimpleDraweeViewExtensionsKt;
 import com.discord.utilities.guilds.GuildUtilsKt;
 import com.discord.utilities.icon.IconUtils;
 import com.discord.utilities.images.MGImages;
 import com.facebook.drawee.view.SimpleDraweeView;
-import com.facebook.imagepipeline.request.ImageRequest;
-import com.facebook.imagepipeline.request.ImageRequestBuilder;
 import com.lytefast.flexinput.R;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-
-import com.aliucord.api.SettingsAPI;
-import com.aliucord.utils.DimenUtils;
-import com.discord.app.AppFragment;
-import com.discord.models.guild.Guild;
 
 public class ServerSettingsFragment extends AppFragment {
 
@@ -65,6 +55,7 @@ public class ServerSettingsFragment extends AppFragment {
     }
 
     enum optionType{SERVERNAME, SERVERIMAGE}
+    @SuppressLint("SetTextI18n")
     public LinearLayout createLayout(){
 
         var lay = new LinearLayout(ctx);
@@ -106,6 +97,7 @@ public class ServerSettingsFragment extends AppFragment {
         //lay.setPadding(DimenUtils.dpToPx(30),DimenUtils.dpToPx(60),DimenUtils.dpToPx(10),DimenUtils.dpToPx(10));
         return lay;
     }
+    @SuppressLint("SetTextI18n")
     public View createOption(optionType optionName){
         LinearLayout lay = new LinearLayout(ctx);
 
