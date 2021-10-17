@@ -3,12 +3,14 @@ package com.aliucord.plugins;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
 import androidx.core.widget.NestedScrollView;
 
 import com.aliucord.Logger;
@@ -26,7 +28,9 @@ import com.discord.api.channel.Channel;
 import com.discord.databinding.WidgetChannelsListItemActionsBinding;
 import com.discord.databinding.WidgetChannelsListItemChannelBinding;
 import com.discord.databinding.WidgetGuildContextMenuBinding;
+import com.discord.databinding.WidgetGuildProfileSheetBinding;
 import com.discord.stores.StoreStream;
+import com.discord.utilities.color.ColorCompat;
 import com.discord.utilities.icon.IconUtils;
 import com.discord.widgets.channels.list.WidgetChannelsListAdapter;
 import com.discord.widgets.channels.list.WidgetChannelsListItemChannelActions;
@@ -34,6 +38,8 @@ import com.discord.widgets.channels.list.items.ChannelListItem;
 import com.discord.widgets.channels.list.items.ChannelListItemTextChannel;
 import com.discord.widgets.guilds.contextmenu.GuildContextMenuViewModel;
 import com.discord.widgets.guilds.contextmenu.WidgetGuildContextMenu;
+import com.discord.widgets.guilds.profile.WidgetGuildProfileSheet;
+import com.discord.widgets.guilds.profile.WidgetGuildProfileSheetViewModel;
 import com.google.gson.reflect.TypeToken;
 import com.lytefast.flexinput.R;
 
@@ -63,6 +69,7 @@ public class EditServersLocally extends Plugin {
 
 
     Context context;
+    Drawable editIcon ;
     @SuppressLint({"ResourceType", "SetTextI18n"})
     @Override
     public void start(Context context) throws Throwable {
@@ -70,7 +77,8 @@ public class EditServersLocally extends Plugin {
 
 
         this.context= context;
-
+        editIcon= ContextCompat.getDrawable(context, R.d.ic_edit_24dp);
+        editIcon=editIcon.mutate();
         settingsTab = new SettingsTab(BottomSheet.class, SettingsTab.Type.BOTTOM_SHEET).withArgs(settings);
 
         /*
@@ -132,9 +140,36 @@ public class EditServersLocally extends Plugin {
             }));
         }
          */
+        /*
+        patcher.patch(WidgetGuildProfileSheet.class.getDeclaredMethod("configureTabItems", long.class, WidgetGuildProfileSheetViewModel.TabItems.class, boolean.class)
+        ,new Hook((cf)->{
+                    try {
+                        var bindingMethod =ReflectUtils.getMethodByArgs(WidgetGuildProfileSheet.class,"getBinding");
+                        var binding = (WidgetGuildProfileSheetBinding) bindingMethod.invoke(cf.thisObject);
+                        var lay = (ViewGroup)binding.f.getRootView();
+                        NestedScrollView scrollView = (NestedScrollView) binding.getRoot();
+                        for (int i = 0; i < scrollView.getChildCount(); i++) {
+                            logger.info(scrollView.getChildAt(i).toString());
+                        }
+
+                        TextView tw = new TextView(lay.getContext(),null,0,R.h.UiKit_Settings_Item_Icon);
+
+                        Context ctx = binding.e.getContext();
+                        tw.setText("Local Server Settings");
+                        tw.setOnClickListener(v1 -> {
+                            ServerSettingsFragment page = new ServerSettingsFragment(StoreStream.getGuilds().getGuild((Long) cf.args[0]),EditServersLocally.this);
+                            Utils.openPageWithProxy(ctx, page);
+
+                        });
+                        tw.setLayoutParams(binding.t.getLayoutParams());
+                        lay.addView(tw);
+                    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                        e.printStackTrace();
+                    }
 
 
-
+                }));
+         */
         patcher.patch(WidgetGuildContextMenu.class.getDeclaredMethod("configureUI", GuildContextMenuViewModel.ViewState.class)
                 ,new Hook((cf)->{
             //adding set server name,photo to Guild Settings
@@ -147,8 +182,14 @@ public class EditServersLocally extends Plugin {
                 LinearLayout v = (LinearLayout) binding.e.getParent();
                 var guild =state.getGuild();
 
-                TextView tw = new TextView(v.getContext(),null,0,R.h.UiKit_Settings_Item_Icon);
+                TextView tw = new TextView(v.getContext(),null,0,R.h.ContextMenuTextOption);
                 tw.setLayoutParams(binding.e.getLayoutParams());
+
+
+
+                editIcon.setTint(ColorCompat.getThemedColor(v.getContext(), R.b.colorInteractiveNormal));
+                tw.setCompoundDrawablesRelativeWithIntrinsicBounds(editIcon,null,null,null);
+
                 Context ctx = binding.e.getContext();
                 tw.setText("Local Server Settings");
                 tw.setOnClickListener(v1 -> {
@@ -253,7 +294,12 @@ public class EditServersLocally extends Plugin {
 
 
                         TextView tw = new TextView(v.getContext(),null,0,R.h.UiKit_Settings_Item_Icon);
+
                         tw.setText("Set Channel Name");
+
+
+                        editIcon.setTint(ColorCompat.getThemedColor(v.getContext(), R.b.colorInteractiveNormal));
+                        tw.setCompoundDrawablesRelativeWithIntrinsicBounds(editIcon,null,null,null);
                         tw.setLayoutParams(v.getLayoutParams());
 
                         tw.setId(View.generateViewId());

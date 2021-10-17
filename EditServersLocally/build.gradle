@@ -1,6 +1,10 @@
-version = "1.0.2"
-description = "It causes Aliucord to freeze and crash! dont use it for now "+"Allows you to edit Servers locally\n" +
+version = "1.0.3"
+description = "Allows you to edit Servers locally\n" +
         "Its Still in WIP \n" +
         "Currently you can set Server Names,Server Icons and Channel Names \n" +
         "To set Channel Name long press on channel and press 'Set Channel Name',to change server settings long press to server image and click 'Local Server Settings'"
-aliucord.changelog.set("")
+aliucord.changelog.set("""
+#1.0.3
+*Added Icons to menu items
+
+""")
