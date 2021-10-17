@@ -1,81 +1,69 @@
 package com.aliucord.plugins;
-import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.res.ColorStateList;
-import android.content.res.Resources;
-import android.graphics.Color;
-import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.text.Editable;
 import android.view.View;
-import android.widget.ImageButton;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
-import androidx.annotation.ColorInt;
-import androidx.appcompat.widget.AppCompatImageView;
 import androidx.core.content.res.ResourcesCompat;
 
 import com.aliucord.Logger;
 import com.aliucord.Utils;
 import com.aliucord.annotations.AliucordPlugin;
 import com.aliucord.api.CommandsAPI;
+import com.aliucord.api.SettingsAPI;
 import com.aliucord.entities.Plugin;
 import com.aliucord.patcher.Hook;
 import com.aliucord.patcher.InsteadHook;
-import com.aliucord.patcher.PinePatchFn;
-import com.aliucord.plugins.R;
 import com.aliucord.utils.DimenUtils;
 import com.aliucord.utils.ReflectUtils;
-import com.discord.api.commands.ApplicationCommandOption;
-import com.discord.api.commands.ApplicationCommandType;
-import com.discord.stores.StoreStream;
-import com.discord.stores.StoreUser;
 import com.discord.stores.StoreUserTyping;
 import com.discord.widgets.chat.input.MessageDraftsRepo;
 import com.discord.widgets.chat.input.WidgetChatInputEditText;
 import com.discord.widgets.chat.input.WidgetChatInputEditText$setOnTextChangedListener$1;
 import com.lytefast.flexinput.widget.FlexEditText;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-
-import kotlin.jvm.internal.DefaultConstructorMarker;
-import top.canyie.pine.callback.MethodReplacement;
-
 @SuppressWarnings("unused")
 @AliucordPlugin
 public class BetterSilentTyping extends Plugin {
-    ImageButton button;
+    FrameLayout keyboardViewLayout;
     Logger logger = new Logger("SilentTyping");
     int keyboardDisabledid;
     int keyboardid ;
-    Drawable keyboard ;
+    public static Drawable keyboard ;
+    public static SettingsAPI Settings;
     Drawable keyboardDisabled;
+    ImageView keyboardView;
+    public static Drawable disableImage;
     Boolean hideKeyboard = settings.getBool("hideKeyboard",false) ;
     public BetterSilentTyping(){
         needsResources=true;
     }
     @Override
     public void start(Context context) {
-
+        Settings  = settings;
         settingsTab=new SettingsTab(Settings.class, SettingsTab.Type.BOTTOM_SHEET).withArgs(settings,this);
 
         commands.registerCommand("togglekeyboard","Hides/Shows BetterSilentTyping Keyboard Icon",commandContext -> {
             Boolean bool = settings.getBool("hideKeyboard",false);
-            setSettings(!bool);
+            setHideKeyboard(!bool);
             return new CommandsAPI.CommandResult();
         });
         registerCommand();
 
 
-        keyboardDisabledid= resources.getIdentifier("keyboarddisabled","drawable","com.aliucord.plugins");
-        keyboardid = resources.getIdentifier("keyboard","drawable","com.aliucord.plugins");
-        keyboard= ResourcesCompat.getDrawable(resources,keyboardid,null);
-        keyboardDisabled=ResourcesCompat.getDrawable(resources,keyboardDisabledid,null);
+        keyboard= ResourcesCompat.getDrawable(resources,resources.getIdentifier("keyboard","drawable","com.aliucord.plugins"),null);
+        disableImage =ResourcesCompat.getDrawable(resources,resources.getIdentifier("disableimage","drawable","com.aliucord.plugins"),null);
+
+        int keyboardColor = settings.getInt("0colorInt",-4538437);
+        int disabledColor = settings.getInt("1colorInt",-65536);
+
+        disableImage.setTint(disabledColor);
+        keyboard.setTint(keyboardColor);
+
         try {
 
             patcher.patch(WidgetChatInputEditText.class.getConstructor(FlexEditText.class, MessageDraftsRepo.class),new Hook(callFrame -> {
@@ -83,23 +71,39 @@ public class BetterSilentTyping extends Plugin {
                 try {
                     FlexEditText et = (FlexEditText) ReflectUtils.getField (thisobj,"editText");
                     LinearLayout group = (LinearLayout) et.getParent(); //getting edit Texts parent
-                    button = new ImageButton(group.getContext());
+
+                    keyboardViewLayout = new FrameLayout(context);
+                    keyboardView = new ImageView(context);
+                    ImageView imageView1 = new ImageView(context);
+                    keyboardView.setImageDrawable(keyboard);
+
+                    imageView1.setImageDrawable(disableImage);
+                    keyboardViewLayout.addView(keyboardView);
+                    keyboardViewLayout.addView(imageView1);
+
+                    FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) keyboardView.getLayoutParams();
+                    params.width=DimenUtils.dpToPx(25);
+                    params.height=DimenUtils.dpToPx(25);
+
+                    keyboardView.setLayoutParams(params);
+                    imageView1.setLayoutParams(params);
+
                     if(hideKeyboard){
-                        button.setVisibility(View.GONE);
+                        keyboardViewLayout.setVisibility(View.GONE);
                     }
 
-                    button.setOnClickListener(v -> { setSetting(!settings.getBool("isEnabled",false)); });
+                    keyboardViewLayout.setOnClickListener(v -> { setEnabled(!settings.getBool("isEnabled",false)); });
 
-                    button.setAdjustViewBounds(true);
-                    button.setMaxWidth(DimenUtils.dpToPx(40));
-
-                    button.setBackgroundColor(0);
                     View v= group.getChildAt(1);
-                    button.setMaxHeight(DimenUtils.dpToPx(45));
-                    button.setLayoutParams(v.getLayoutParams());
+
+
+
                     group.removeView(v); //remove emoji button and add if after ImageButton so emojibutton will be at the end of layout
-                    group.addView(button);
+
+                    group.addView(keyboardViewLayout);
+                    keyboardViewLayout.setLayoutParams(v.getLayoutParams());
                     group.addView(v);
+
                     updateButton();
                 } catch (NoSuchFieldException | IllegalAccessException e) {
                     logger.error(e);
@@ -110,10 +114,8 @@ public class BetterSilentTyping extends Plugin {
         }
 
         if(settings.getBool("hideOnText",false)){
-
             patchHideKeybordOnText();
         }
-
     }
     Runnable hideKeyboardOnTextPatch;
     public void patchHideKeybordOnText() {
@@ -131,29 +133,25 @@ public class BetterSilentTyping extends Plugin {
     public void unpatchHideKeybordOnText(){
         if (hideKeyboardOnTextPatch!=null)hideKeyboardOnTextPatch.run();
     }
-
     public void registerCommand(){
         var isEnabled = settings.getBool("isEnabled",false);
         var val  = isEnabled ? "Enabled" : "Disabled";
         commands.registerCommand("silentTyping","Toggles Silent Typing, Its Currently "+ val,commandContext -> {
 
-            setSetting(!isEnabled);
+            setEnabled(!isEnabled);
             return new CommandsAPI.CommandResult();
         });
     }
-
-
     Runnable patch = null;
     public void updateButton(){
-        if (button!=null){
+        if (keyboardViewLayout !=null){
             if (settings.getBool("isEnabled",false)){
-                button.setImageDrawable(keyboardDisabled);
+                keyboardViewLayout.getChildAt(1).setVisibility(View.VISIBLE);
 
-            } else {button.setImageDrawable(keyboard);}
+            } else { keyboardViewLayout.getChildAt(1).setVisibility(View.GONE);}
         }
         patchUserTyping();
     }
-
     public void hideButton(Boolean bool){
         int status ;
         if(bool){
@@ -161,20 +159,15 @@ public class BetterSilentTyping extends Plugin {
         } else {status=View.VISIBLE;}
         Utils.mainThread.post(()->{
             try {
-                button.setVisibility(status);
+                keyboardViewLayout.setVisibility(status);
             } catch (Exception e){logger.error(e);}
         });
-
-
-
     }
-
-    public  void setSettings(Boolean bool) {
+    public void setHideKeyboard(Boolean bool) {
         hideButton(bool);
         hideKeyboard= bool;
         settings.setBool("hideKeyboard", bool);
     }
-
     public void patchUserTyping(){
         if (settings.getBool("isEnabled", false)) {
             try {
@@ -190,8 +183,7 @@ public class BetterSilentTyping extends Plugin {
                 }
             }
         }
-
-    public void setSetting(boolean val){
+    public void setEnabled(boolean val){
         settings.setBool("isEnabled",val);
         patchUserTyping();
         updateButton();
@@ -203,7 +195,7 @@ public class BetterSilentTyping extends Plugin {
             var status = ((val) ? "Invisible" :"Visible");
             Utils.mainThread.post(() -> {
                 try {
-                    Toast.makeText(button.getContext(),  value + " Silent Typing " + "You are Now " + status, Toast.LENGTH_SHORT).show();
+                    Toast.makeText(keyboardViewLayout.getContext(),  value + " Silent Typing " + "You are Now " + status, Toast.LENGTH_SHORT).show();
 
                 }catch (Exception e){
                     logger.error(e);

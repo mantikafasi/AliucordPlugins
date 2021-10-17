@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.LinearLayout;
 
 import com.aliucord.Utils;
@@ -38,16 +39,23 @@ public class Settings extends AppBottomSheet {
         b.setChecked(settings.getBool("hideKeyboard",false));
         b.setOnCheckedListener(aBoolean -> {
             settings.setBool("hideKeyboard",aBoolean);
-            plugin.setSettings(aBoolean);
+            plugin.setHideKeyboard(aBoolean);
         });
         CheckedSetting c= Utils.createCheckedSetting(context,CheckedSetting.ViewType.SWITCH,"Hide Keyboard When Text Gets Entered" ,"");
         c.setChecked(settings.getBool("hideOnText",false));
 
         c.setOnCheckedListener(aBoolean -> { settings.setBool("hideOnText",aBoolean);if(aBoolean){ plugin.patchHideKeybordOnText();} else{ plugin.unpatchHideKeybordOnText(); }});
 
+        Button button = new Button(context);
+        button.setText("Open Color Picker");
+        button.setOnClickListener(v -> {
+            ColorPicker picker = new ColorPicker();
+            Utils.openPageWithProxy(context,picker);
+        });
         lay.addView(a);
         lay.addView(b);
         lay.addView(c);
+        lay.addView(button);
         return lay;
     }
 }
