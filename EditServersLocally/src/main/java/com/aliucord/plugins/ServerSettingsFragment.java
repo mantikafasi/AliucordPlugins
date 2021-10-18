@@ -44,7 +44,13 @@ public class ServerSettingsFragment extends AppFragment {
     public ServerSettingsFragment(Guild guild, EditServersLocally plugin){
         this.guild=guild;
         this.plugin=plugin;
-        data=plugin.getGuildData(guild.getId());
+
+        data=plugin.getGuildData(guild);
+        if (data.orginalName==null && data.serverName==null){
+            data.orginalName = guild.getName();
+        }
+
+
     }
 
     @Nullable
@@ -114,6 +120,7 @@ public class ServerSettingsFragment extends AppFragment {
         FrameLayout imageLayout=new FrameLayout(ctx);
         switch (optionName){
             case SERVERNAME:
+
                 et.setHint(data.orginalName==null?guild.getName():data.orginalName);
                 tw.setText("Server Name (If changes are not shown after saving,try restarting discord)");
                 if (data.serverName!=null){
@@ -142,7 +149,7 @@ public class ServerSettingsFragment extends AppFragment {
                // SimpleDraweeViewExtensionsKt.setGuildIcon(view,true,guild,(float) 500f,20,0,0,360f,true,imageRequestBuilder -> { return null; });
                 //MGImages.setRoundingParams(view,100,false,0,0,100f);
 
-                var iconURL = data.orginalURL==null?"https://cdn.discordapp.com/icons/"+guild.getId() +"/"+guild.getIcon() +".*":data.orginalURL;
+                var iconURL = data.orginalURL==null?IconUtils.getForGuild(guild):data.orginalURL;
 
                 tw.setText("Server Image (switch servers or restart discord for changes to take effect)");
                 et.setText(data.imageURL!=null?data.imageURL:"");
@@ -173,15 +180,20 @@ public class ServerSettingsFragment extends AppFragment {
     }
 
     public void setSettings(){
+
         plugin.updateGuildData(data);
         Toast.makeText(ctx, "Settings Saved", Toast.LENGTH_SHORT).show();
         var guild2 = GuildUtilsKt.createApiGuild(StoreStream.getGuilds().getGuild(guild.getId()));
         try {
-            if(data.imageURL!=null){
-                ReflectUtils.setField(guild2,"icon",data.imageURL);
-            }
+
+            ReflectUtils.setField(guild2,"icon",data.imageURL==null?data.orginalURL:data.imageURL);
+
             ReflectUtils.setField(guild2,"name",data.serverName==null?data.orginalName:data.serverName); } catch (NoSuchFieldException | IllegalAccessException e) { e.printStackTrace(); }
-        StoreStream.access$handleGuildUpdate(StoreStream.getPresences().getStream(), guild2);
+        if (data.serverName!=null || data.orginalName!=null){
+            StoreStream.access$handleGuildUpdate(StoreStream.getPresences().getStream(), guild2);
+        } else {
+            plugin.removeGuildData(data.guildID);
+        }
         getActivity().onBackPressed();
     }
 

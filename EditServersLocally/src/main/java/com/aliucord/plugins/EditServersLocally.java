@@ -10,6 +10,7 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
 import androidx.core.widget.NestedScrollView;
 
@@ -24,13 +25,16 @@ import com.aliucord.plugins.DataClasses.GuildData;
 import com.aliucord.utils.DimenUtils;
 import com.aliucord.utils.ReflectUtils;
 import com.aliucord.wrappers.ChannelWrapper;
+import com.aliucord.wrappers.GuildWrapper;
 import com.discord.api.channel.Channel;
 import com.discord.databinding.WidgetChannelsListItemActionsBinding;
 import com.discord.databinding.WidgetChannelsListItemChannelBinding;
 import com.discord.databinding.WidgetGuildContextMenuBinding;
 import com.discord.databinding.WidgetGuildProfileSheetBinding;
+import com.discord.models.guild.Guild;
 import com.discord.stores.StoreStream;
 import com.discord.utilities.color.ColorCompat;
+import com.discord.utilities.guilds.GuildUtilsKt;
 import com.discord.utilities.icon.IconUtils;
 import com.discord.widgets.channels.list.WidgetChannelsListAdapter;
 import com.discord.widgets.channels.list.WidgetChannelsListItemChannelActions;
@@ -70,6 +74,7 @@ public class EditServersLocally extends Plugin {
 
     Context context;
     Drawable editIcon ;
+    int serverSettingsID=View.generateViewId();;
     @SuppressLint({"ResourceType", "SetTextI18n"})
     @Override
     public void start(Context context) throws Throwable {
@@ -81,15 +86,20 @@ public class EditServersLocally extends Plugin {
         editIcon=editIcon.mutate();
         settingsTab = new SettingsTab(BottomSheet.class, SettingsTab.Type.BOTTOM_SHEET).withArgs(settings);
 
-        /*
+
         patcher.patch(Channel.class.getDeclaredMethod("m"),new Hook((cf)->{
             //patching 'getChannelName' method so I can change channels name
-            Channel ch = (Channel) cf.thisObject;
-            ChannelData data =getChannelData(ChannelWrapper.getId(ch));
-            if(data.channelName!=null){cf.setResult(data.channelName);}
+            try {
+                Channel ch = (Channel) cf.thisObject;
+                ChannelData data =getChannelData(ChannelWrapper.getId(ch));
+                if(data.channelName!=null){cf.setResult(data.channelName);}
+            } catch (Exception e){
+                //error handling
+            }
+
         }));
 
-         */
+
 
 
         /*
@@ -117,6 +127,14 @@ public class EditServersLocally extends Plugin {
             GuildData data = getGuildData(guild.getId());
             if(data.serverName!=null){
                 cf.setResult(data.serverName);
+            } else if (data.orginalName!=null){
+                cf.setResult(data.orginalName);
+            } else {
+                try {
+                    cf.setResult(XposedBridge.invokeOriginalMethod(cf.method, cf.thisObject, cf.args).toString());
+                } catch (IllegalAccessException | InvocationTargetException e) {
+                    e.printStackTrace();
+                }
             }
         }));
 
@@ -140,19 +158,22 @@ public class EditServersLocally extends Plugin {
             }));
         }
          */
-        /*
+
         patcher.patch(WidgetGuildProfileSheet.class.getDeclaredMethod("configureTabItems", long.class, WidgetGuildProfileSheetViewModel.TabItems.class, boolean.class)
         ,new Hook((cf)->{
                     try {
                         var bindingMethod =ReflectUtils.getMethodByArgs(WidgetGuildProfileSheet.class,"getBinding");
                         var binding = (WidgetGuildProfileSheetBinding) bindingMethod.invoke(cf.thisObject);
+
                         var lay = (ViewGroup)binding.f.getRootView();
-                        NestedScrollView scrollView = (NestedScrollView) binding.getRoot();
-                        for (int i = 0; i < scrollView.getChildCount(); i++) {
-                            logger.info(scrollView.getChildAt(i).toString());
+                        var primaryActions =(CardView) lay.findViewById(Utils.getResId("guild_profile_sheet_secondary_actions","id"));
+                        var linearLayout = (LinearLayout)primaryActions.getChildAt(0);
+                        if (linearLayout.findViewById(serverSettingsID)!=null){
+                            return;
                         }
 
                         TextView tw = new TextView(lay.getContext(),null,0,R.h.UiKit_Settings_Item_Icon);
+                        tw.setId(serverSettingsID);
 
                         Context ctx = binding.e.getContext();
                         tw.setText("Local Server Settings");
@@ -161,15 +182,16 @@ public class EditServersLocally extends Plugin {
                             Utils.openPageWithProxy(ctx, page);
 
                         });
-                        tw.setLayoutParams(binding.t.getLayoutParams());
-                        lay.addView(tw);
+
+                        tw.setLayoutParams(linearLayout.getChildAt(0).getLayoutParams());
+                        linearLayout.addView(tw);
                     } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
                         e.printStackTrace();
                     }
 
 
                 }));
-         */
+
         patcher.patch(WidgetGuildContextMenu.class.getDeclaredMethod("configureUI", GuildContextMenuViewModel.ViewState.class)
                 ,new Hook((cf)->{
             //adding set server name,photo to Guild Settings
@@ -182,9 +204,12 @@ public class EditServersLocally extends Plugin {
                 LinearLayout v = (LinearLayout) binding.e.getParent();
                 var guild =state.getGuild();
 
+                if (v.findViewById(serverSettingsID)!=null){
+                    return;
+                }
                 TextView tw = new TextView(v.getContext(),null,0,R.h.ContextMenuTextOption);
                 tw.setLayoutParams(binding.e.getLayoutParams());
-
+                tw.setId(serverSettingsID);
 
 
                 editIcon.setTint(ColorCompat.getThemedColor(v.getContext(), R.b.colorInteractiveNormal));
@@ -193,9 +218,10 @@ public class EditServersLocally extends Plugin {
                 Context ctx = binding.e.getContext();
                 tw.setText("Local Server Settings");
                 tw.setOnClickListener(v1 -> {
+
                     ServerSettingsFragment page = new ServerSettingsFragment(guild,EditServersLocally.this);
                     Utils.openPageWithProxy(ctx, page);
-                    v.removeView(tw);
+
                 });
                 v.addView(tw);
             } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
@@ -262,10 +288,10 @@ public class EditServersLocally extends Plugin {
                     long guildID = (long) cf.args[0];
                     // Changing Server Icon to saved one if exists
                     GuildData data = getGuildData(guildID);
-
                     if (data.orginalURL==null){
 
                         try { data.orginalURL = (XposedBridge.invokeOriginalMethod(cf.method, cf.thisObject, cf.args).toString());updateGuildData(data);
+
                         } catch (IllegalAccessException | InvocationTargetException e) { logger.error(e); }
                     }
                     cf.setResult(data.imageURL!=null?data.imageURL:data.orginalURL);
@@ -362,6 +388,7 @@ public class EditServersLocally extends Plugin {
     }
     public ChannelData getChannelData(long id){ return channelData.get(id)!=null?channelData.get(id):new ChannelData(id); }
     public GuildData getGuildData(long id){ return guildData.get(id)!=null?guildData.get(id):new GuildData(id); }
+    public GuildData getGuildData(Guild guild){return guildData.get(guild.getId())!=null?guildData.get(guild.getId()):new GuildData(guild);}
     public void setGuildData() { settings.setObject("guildData",guildData); }
     public void removeData(long channelID){
         ChannelData data = getChannelData(channelID);
@@ -390,10 +417,16 @@ public class EditServersLocally extends Plugin {
 
         Channel ch = StoreStream.getChannels().getChannel(data.channelID);
 
+        if(ch!=null){
+            try {ReflectUtils.setField(ch,"name",data.channelName); } catch (NoSuchFieldException | IllegalAccessException e) { logger.error(e); }
+            StoreStream.getChannels().handleChannelOrThreadCreateOrUpdate(ch);
 
-        try {ReflectUtils.setField(ch,"name",data.channelName); } catch (NoSuchFieldException | IllegalAccessException e) { logger.error(e); }
-        StoreStream.getChannels().handleChannelOrThreadCreateOrUpdate(ch);
+        }
 
+    }
+    public void removeGuildData(long id){
+        guildData.remove(id);
+        setGuildData();
     }
     public void setChannelData(){ settings.setObject("channelData",channelData); }
 
