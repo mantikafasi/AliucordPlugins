@@ -47,6 +47,7 @@ import com.discord.widgets.guilds.profile.WidgetGuildProfileSheetViewModel;
 import com.google.gson.reflect.TypeToken;
 import com.lytefast.flexinput.R;
 
+import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -162,6 +163,7 @@ public class EditServersLocally extends Plugin {
         patcher.patch(WidgetGuildProfileSheet.class.getDeclaredMethod("configureTabItems", long.class, WidgetGuildProfileSheetViewModel.TabItems.class, boolean.class)
         ,new Hook((cf)->{
                     try {
+
                         var bindingMethod =ReflectUtils.getMethodByArgs(WidgetGuildProfileSheet.class,"getBinding");
                         var binding = (WidgetGuildProfileSheetBinding) bindingMethod.invoke(cf.thisObject);
 

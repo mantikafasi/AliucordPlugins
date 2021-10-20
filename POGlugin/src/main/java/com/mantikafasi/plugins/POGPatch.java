@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Method;
+import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -29,20 +30,25 @@ public class POGPatch extends Plugin {
     public static final Logger logger = new Logger("POGPatch");
     @Override
     public void start(Context context) {
+        Random random = new Random();
 
         patcher.patch("com.discord.models.message.Message","getContent",null,new Hook(cf -> {
             Message _this =(Message) cf.thisObject;
 
             String cont = null;
-            try {
-                cont = (String) ReflectUtils.getField(_this,"content");
-            } catch (Exception e) {}
 
-            if (cont.endsWith(" POG")){
-                cf.setResult(cont);
-            } else {
-                cf.setResult(cont + " POG");
+            if (random.nextInt(3)==2){
+                try {
+                    cont = (String) ReflectUtils.getField(_this,"content");
+                } catch (Exception e) {}
+
+                if (cont.endsWith(" POG")){
+                    cf.setResult(cont);
+                } else {
+                    cf.setResult(cont + " POG");
+                }
             }
+
         }));
 
     }

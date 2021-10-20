@@ -23,5 +23,10 @@ project(":HighlightReplies").projectDir = File("./HighlightReplies")
 
 include(":EditServersLocally")
 project(":EditServersLocally").projectDir = File("./EditServersLocally")
+
+include(":SusCord")
+project(":SusCord").projectDir = File("./SusCord")
+
+
 rootProject.name = "AliucordPlugins"
 
