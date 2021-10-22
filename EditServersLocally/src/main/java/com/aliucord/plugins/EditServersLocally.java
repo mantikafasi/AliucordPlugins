@@ -247,7 +247,10 @@ public class EditServersLocally extends Plugin {
 
                 WidgetChannelsListItemChannelBinding binding = (WidgetChannelsListItemChannelBinding) ReflectUtils.getField(thisobj,"binding");
                 ChannelListItemTextChannel channelListItemTextChannel  = (ChannelListItemTextChannel) cf.args[1];
+                long i =ChannelWrapper.getId(channelListItemTextChannel.component1());
                 ChannelWrapper ch = new ChannelWrapper(channelListItemTextChannel.getChannel());
+                var channel = channelListItemTextChannel.getChannel();
+                var chdata =getChannelData(i);
                 if (ch.getGuildId()!= currentGuild.get()){
 
                     currentGuild.set(ch.getGuildId());
@@ -257,14 +260,23 @@ public class EditServersLocally extends Plugin {
                 channels.get().put(ch.getId(),binding.d);
 
                 //getting saved names and changing channel name to it
-                long i =ChannelWrapper.getId(channelListItemTextChannel.component1());
 
-                if (channelData.containsKey(i)){
-                    var chdata =getChannelData(i);
-                    if(chdata.channelName!=null){
-                        binding.d.setText(chdata.channelName);
+
+
+
+
+
+                if(chdata.channelName!=null){
+                    try {
+                        ReflectUtils.setField(channel,"name",chdata.channelName);
+                        ReflectUtils.setField(cf.thisObject,"channel",channel);
+                    } catch (NoSuchFieldException | IllegalAccessException e) {
+                        logger.error(e);
                     }
+
+                    binding.d.setText(chdata.channelName);
                 }
+
             } catch (NoSuchFieldException | IllegalAccessException e) {
                 e.printStackTrace();
             }
@@ -345,42 +357,7 @@ public class EditServersLocally extends Plugin {
 
                         tw.setId(View.generateViewId());
                         tw.setOnClickListener(v1 -> {
-
-
                             createDialog("Set Text Channel Name",data,v.getContext());
-
-                            /*
-                            EditText et =new EditText(v.getContext());
-                            et.setSelectAllOnFocus(true);
-
-                            LinearLayout lay = new LinearLayout(v.getContext());
-
-                            lay.addView(et);
-                            et.setLayoutParams(params);
-
-                            long chid = ChannelWrapper.getId(model.getChannel());
-                            if (channelData.containsKey(chid)){
-                                ChannelData chData = getChannelData(chid);
-                                et.setHint(chData.orginalName);
-                                et.setText(chData.channelName);
-                            } else et.setHint(ChannelWrapper.getName(model.getChannel()));
-
-                            AlertDialog.Builder builder = new AlertDialog.Builder(v.getContext());
-                            builder.setMessage("Set Channel Name")
-                                    .setPositiveButton("Set", (dialog, id) -> {
-                                        if (data.orginalName==null){
-                                            data.orginalName=ChannelWrapper.getName(model.getChannel());
-                                        }
-                                        data.channelName=et.getText().toString();
-                                        updateChannelData(data);
-                                        updateChannel(data);
-
-
-                                    })
-                                    .setNegativeButton("Cancel", (dialog, id) -> {}).setView(lay).setNeutralButton("Remove",(dialog, which) -> removeData(ChannelWrapper.getId(model.getChannel())));
-                            builder.create().show();
-
-                             */
 
                         });
                         layout.addView(tw);
@@ -397,11 +374,15 @@ public class EditServersLocally extends Plugin {
             var itemClass = WidgetChannelsListAdapter.ItemChannelVoice.class.getDeclaredField("binding");
             itemClass.setAccessible(true);
             patcher.patch(WidgetChannelsListAdapter.ItemChannelVoice.class.getDeclaredMethod("onConfigure", int.class, ChannelListItem.class), new Hook(callFrame -> {
+                var a = (ChannelListItemVoiceChannel)callFrame.args[1];
+                if (PermissionUtils.can(16,a.component3() )) return; //took this from halal
                 var channel = ((ChannelListItemVoiceChannel) callFrame.args[1]).getChannel();
+
                 var chWrapped = new ChannelWrapper(channel);
                 var chdata=getChannelData(chWrapped.getId());
                 logger.info(chdata.toString());
                 try {
+
                     var binding = (WidgetChannelsListItemChannelVoiceBinding) itemClass.get(callFrame.thisObject);
 
                     if (chdata.orginalName==null){
@@ -448,24 +429,7 @@ public class EditServersLocally extends Plugin {
     }
     public void createDialog(String message,ChannelData data,Context ctx){
 
-        /*
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1,-1);
-        params.leftMargin = DimenUtils.dpToPx(20);
-
-
-        EditText et =new EditText(ctx);
-        et.setSelectAllOnFocus(true);
-
-        LinearLayout lay = new LinearLayout(ctx);
-        lay.addView(et);
-        et.setLayoutParams(params);
-
-        et.setHint(data.orginalName!=null?data.orginalName:"");
-
-
-        if (data.channelName!=null)et.setText(data.channelName);
-*/
-        InputDialog dialog = new InputDialog().setTitle(message).setPlaceholderText(data.channelName!=null?data.channelName:data.orginalName);
+        InputDialog dialog = new InputDialog().setTitle(message).setPlaceholderText(data.channelName!=null?data.channelName:data.orginalName).setDescription("To reset channel name empty Text box and click confirm");
 
         dialog.setOnOkListener(v -> {
             var inStr = dialog.getInput();
@@ -546,8 +510,8 @@ public class EditServersLocally extends Plugin {
     public void updateChannel(ChannelData data)  {
 
         try{
-            logger.info(data.orginalName);
-            if (data.channelName.isEmpty()) data.channelName=data.orginalName;
+
+            if (data.channelName!=null && data.channelName.isEmpty()) data.channelName=data.orginalName;
 
             TextView v = (TextView) channels.get().get(data.channelID);
             if (!data.channelName.isEmpty()){

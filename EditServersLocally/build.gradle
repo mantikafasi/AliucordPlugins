@@ -1,9 +1,13 @@
-version = "1.0.4"
+version = "1.0.5"
 description = "Allows you to edit Servers locally\n" +
         "Its Still in WIP \n" +
         "Currently you can set Server Names,Server Icons and Channel Names \n" +
         "To set Channel Name long press on channel and press 'Set Channel Name',to change server settings long press to server image and click 'Local Server Settings'"
 aliucord.changelog.set("""
+#1.0.5
+*Changed few things (I hope nothing will get broken)
+*Added opinion to edit voice channels (Long click to voice channel name,if it opens channel settings you cant edit it currently)
+
 #1.0.4
 *Some Fixes (hopefully)
 *Added "Local Server Settings" button to Server Action Menu
