@@ -3,6 +3,7 @@ package com.aliucord.plugins;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +19,8 @@ import com.aliucord.Logger;
 import com.aliucord.Utils;
 import com.aliucord.annotations.AliucordPlugin;
 import com.aliucord.entities.Plugin;
+import com.aliucord.fragments.ConfirmDialog;
+import com.aliucord.fragments.InputDialog;
 import com.aliucord.patcher.Hook;
 import com.aliucord.patcher.PreHook;
 import com.aliucord.plugins.DataClasses.ChannelData;
@@ -29,6 +32,7 @@ import com.aliucord.wrappers.GuildWrapper;
 import com.discord.api.channel.Channel;
 import com.discord.databinding.WidgetChannelsListItemActionsBinding;
 import com.discord.databinding.WidgetChannelsListItemChannelBinding;
+import com.discord.databinding.WidgetChannelsListItemChannelVoiceBinding;
 import com.discord.databinding.WidgetGuildContextMenuBinding;
 import com.discord.databinding.WidgetGuildProfileSheetBinding;
 import com.discord.models.guild.Guild;
@@ -36,10 +40,12 @@ import com.discord.stores.StoreStream;
 import com.discord.utilities.color.ColorCompat;
 import com.discord.utilities.guilds.GuildUtilsKt;
 import com.discord.utilities.icon.IconUtils;
+import com.discord.utilities.permissions.PermissionUtils;
 import com.discord.widgets.channels.list.WidgetChannelsListAdapter;
 import com.discord.widgets.channels.list.WidgetChannelsListItemChannelActions;
 import com.discord.widgets.channels.list.items.ChannelListItem;
 import com.discord.widgets.channels.list.items.ChannelListItemTextChannel;
+import com.discord.widgets.channels.list.items.ChannelListItemVoiceChannel;
 import com.discord.widgets.guilds.contextmenu.GuildContextMenuViewModel;
 import com.discord.widgets.guilds.contextmenu.WidgetGuildContextMenu;
 import com.discord.widgets.guilds.profile.WidgetGuildProfileSheet;
@@ -51,11 +57,14 @@ import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.sql.Ref;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import de.robv.android.xposed.XposedBridge;
+import kotlin.Function;
 
 @AliucordPlugin
 public class EditServersLocally extends Plugin {
@@ -67,7 +76,7 @@ public class EditServersLocally extends Plugin {
     AtomicReference<HashMap<Long, View>> channels = new AtomicReference<>(new HashMap<>());
     AtomicLong currentGuild= new AtomicLong();
     Logger logger = new Logger("EditServersLocally");
-    public HashMap<Long, ChannelData> channelData = settings.getObject("channelData", new HashMap<>(),TypeToken.getParameterized(HashMap.class, Long.class,ChannelData.class).getType());
+    public HashMap<Long, ChannelData> channelData = settings.getObject("channelData", new HashMap<>(), TypeToken.getParameterized(HashMap.class, Long.class,ChannelData.class).getType() );
     public HashMap<Long,GuildData> guildData = settings.getObject("guildData", new HashMap<>(),TypeToken.getParameterized(HashMap.class, Long.class,GuildData.class).getType());
 
 
@@ -325,6 +334,10 @@ public class EditServersLocally extends Plugin {
 
                         tw.setText("Set Channel Name");
 
+                        ChannelData data = getChannelData(ChannelWrapper.getId(model.getChannel()));
+                        if (data.orginalName==null){
+                            data.orginalName=ChannelWrapper.getName(model.getChannel());
+                        }
 
                         editIcon.setTint(ColorCompat.getThemedColor(v.getContext(), R.b.colorInteractiveNormal));
                         tw.setCompoundDrawablesRelativeWithIntrinsicBounds(editIcon,null,null,null);
@@ -333,10 +346,15 @@ public class EditServersLocally extends Plugin {
                         tw.setId(View.generateViewId());
                         tw.setOnClickListener(v1 -> {
 
+
+                            createDialog("Set Text Channel Name",data,v.getContext());
+
+                            /*
                             EditText et =new EditText(v.getContext());
                             et.setSelectAllOnFocus(true);
 
                             LinearLayout lay = new LinearLayout(v.getContext());
+
                             lay.addView(et);
                             et.setLayoutParams(params);
 
@@ -350,9 +368,6 @@ public class EditServersLocally extends Plugin {
                             AlertDialog.Builder builder = new AlertDialog.Builder(v.getContext());
                             builder.setMessage("Set Channel Name")
                                     .setPositiveButton("Set", (dialog, id) -> {
-
-
-                                        ChannelData data = getChannelData(ChannelWrapper.getId(model.getChannel()));
                                         if (data.orginalName==null){
                                             data.orginalName=ChannelWrapper.getName(model.getChannel());
                                         }
@@ -363,8 +378,9 @@ public class EditServersLocally extends Plugin {
 
                                     })
                                     .setNegativeButton("Cancel", (dialog, id) -> {}).setView(lay).setNeutralButton("Remove",(dialog, which) -> removeData(ChannelWrapper.getId(model.getChannel())));
-
                             builder.create().show();
+
+                             */
 
                         });
                         layout.addView(tw);
@@ -374,6 +390,133 @@ public class EditServersLocally extends Plugin {
                     }
 
                 }));
+        patchVoiceChannels();
+    }
+    public void patchVoiceChannels(){
+        try {
+            var itemClass = WidgetChannelsListAdapter.ItemChannelVoice.class.getDeclaredField("binding");
+            itemClass.setAccessible(true);
+            patcher.patch(WidgetChannelsListAdapter.ItemChannelVoice.class.getDeclaredMethod("onConfigure", int.class, ChannelListItem.class), new Hook(callFrame -> {
+                var channel = ((ChannelListItemVoiceChannel) callFrame.args[1]).getChannel();
+                var chWrapped = new ChannelWrapper(channel);
+                var chdata=getChannelData(chWrapped.getId());
+                logger.info(chdata.toString());
+                try {
+                    var binding = (WidgetChannelsListItemChannelVoiceBinding) itemClass.get(callFrame.thisObject);
+
+                    if (chdata.orginalName==null){
+                        chdata.orginalName = chWrapped.getName();
+                    }
+
+                    if (chdata.channelName!=null){
+                        binding.c.setText(chdata.channelName);
+
+                        try {
+                            ReflectUtils.setField(channel,"name",chdata.channelName);
+                            ReflectUtils.setField(callFrame.thisObject,"channel",channel);
+                        } catch (NoSuchFieldException | IllegalAccessException e) {
+                            logger.error(e);
+                        }
+
+                    }
+
+                    binding.a.setOnLongClickListener(view -> {
+
+                        if (currentGuild.get()!=chWrapped.getGuildId()) {
+                            currentGuild.set(chWrapped.getGuildId());
+                            channels.set(new HashMap<>());
+                        }
+
+                        channels.get().put(chWrapped.getId(),binding.c);
+
+                         createDialog("Set Voice Channel Name",chdata,binding.a.getContext());
+                        return true;
+                    });
+
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+
+            }));
+
+
+        } catch (NoSuchMethodException | NoSuchFieldException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+    public void createDialog(String message,ChannelData data,Context ctx){
+
+        /*
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1,-1);
+        params.leftMargin = DimenUtils.dpToPx(20);
+
+
+        EditText et =new EditText(ctx);
+        et.setSelectAllOnFocus(true);
+
+        LinearLayout lay = new LinearLayout(ctx);
+        lay.addView(et);
+        et.setLayoutParams(params);
+
+        et.setHint(data.orginalName!=null?data.orginalName:"");
+
+
+        if (data.channelName!=null)et.setText(data.channelName);
+*/
+        InputDialog dialog = new InputDialog().setTitle(message).setPlaceholderText(data.channelName!=null?data.channelName:data.orginalName);
+
+        dialog.setOnOkListener(v -> {
+            var inStr = dialog.getInput();
+            if (inStr.isEmpty()) removeData(data.channelID);
+            data.channelName = !inStr.isEmpty()?inStr:null;
+
+
+            updateChannel(data);
+            Channel ch = StoreStream.getChannels().getChannel(data.channelID);
+            try {
+
+                ReflectUtils.setField(ch,"name",!inStr.isEmpty()?inStr:data.orginalName);
+                updateTextChannel(data);
+
+
+            } catch (NoSuchFieldException | IllegalAccessException e) { e.printStackTrace(); }
+            StoreStream.getChannels().handleChannelOrThreadCreateOrUpdate(ch);
+            updateChannelData(data);
+            setChannelData();
+            dialog.dismiss();
+        });
+        dialog.show(Utils.getAppActivity().getSupportFragmentManager(),"a");
+
+
+
+
+        /*
+        AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
+        builder.setMessage(message)
+                .setPositiveButton("Set",(dialog, which) -> {
+                    data.channelName = et.getText().toString()!=""?et.getText().toString():null;
+                    logger.info(data.toString());
+
+                    updateChannel(data);
+                    Channel ch = StoreStream.getChannels().getChannel(data.channelID);
+                    try {
+                        if (et.getText().toString()!=""){
+                            ReflectUtils.setField(ch,"name",et.getText().toString());
+                            updateTextChannel(data);
+                        }
+
+                    } catch (NoSuchFieldException | IllegalAccessException e) { e.printStackTrace(); }
+                    StoreStream.getChannels().handleChannelOrThreadCreateOrUpdate(ch);
+                    updateChannelData(data);
+                    setChannelData();
+                })
+                .setNegativeButton("Cancel", (dialog, id) -> {}).setView(lay).setNeutralButton("Remove",(dialog, which) -> removeData(data.channelID));
+
+        builder.create().show();
+
+         */
 
     }
     public void updateChannelData(ChannelData data){

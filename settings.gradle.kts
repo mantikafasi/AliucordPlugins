@@ -28,5 +28,6 @@ include(":SusCord")
 project(":SusCord").projectDir = File("./SusCord")
 
 
+
 rootProject.name = "AliucordPlugins"
 

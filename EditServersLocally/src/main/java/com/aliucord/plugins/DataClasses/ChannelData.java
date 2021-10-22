@@ -28,7 +28,9 @@ public class ChannelData {
                 '}';
     }
 
+
     public long guildID;
+
     public long channelID;
     public String channelName;
     public String orginalName;

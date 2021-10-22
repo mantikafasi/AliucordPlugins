@@ -12,9 +12,12 @@ import com.aliucord.patcher.Hook;
 import com.aliucord.patcher.PreHook;
 import com.aliucord.utils.ReflectUtils;
 import com.discord.models.message.Message;
+import com.discord.widgets.channels.memberlist.adapter.ChannelMembersListAdapter;
+import com.discord.widgets.chat.list.entries.MessageEntry;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.sql.Ref;
 import java.util.Collections;
 
 import de.robv.android.xposed.XposedBridge;
@@ -45,9 +48,25 @@ public class SusCord extends Plugin {
 
 
             }));
+            patcher.patch(ChannelMembersListAdapter.Item.Member.class.getDeclaredMethod("getName"),
+                    new PreHook((cf)->{cf.setResult("Sus");}));/*
+            for (Constructor<?> constructor : MessageEntry.class.getConstructors()) {
+                patcher.patch(constructor,new Hook((cf)->{
+
+                    try {
+                        ReflectUtils.setField(cf.thisObject,"message","Sus");
+                    } catch (NoSuchFieldException | IllegalAccessException e) {
+                        e.printStackTrace();
+                    }
+                }));
+            }
+            */
+
+
         } catch (NoSuchMethodException e) {
             e.printStackTrace();
         }
+
 
     }
 
