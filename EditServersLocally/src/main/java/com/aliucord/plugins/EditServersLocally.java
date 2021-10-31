@@ -76,7 +76,7 @@ public class EditServersLocally extends Plugin {
     Context context;
     Drawable editIcon;
     int serverSettingsID = View.generateViewId();
-    ;
+
 
     @SuppressLint({"ResourceType", "SetTextI18n"})
     @Override
