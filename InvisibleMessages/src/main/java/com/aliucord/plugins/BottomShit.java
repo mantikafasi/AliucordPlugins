@@ -37,14 +37,14 @@ public class BottomShit extends AppBottomSheet {
         Context context = layoutInflater.getContext();
         LinearLayout lay = new LinearLayout(context);
         lay.setOrientation(LinearLayout.VERTICAL);
-
+        int px = DimenUtils.dpToPx(20);
         tw = new TextView(context);
         tw.setText("Set Encryption Password");
 
         et  = new EditText(context);
 
         et.setText(settings.getString("encryptionPassword","Password"));
-        int px = DimenUtils.dpToPx(20);
+        tw.setPadding(px,px,px,0);
         et.setPadding(px,px,px,px);
 
         lay.addView(tw);

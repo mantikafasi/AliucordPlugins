@@ -51,9 +51,9 @@ public class InvChatAPI {
         var request = new Http.Request(URL, "POST");
         request.setHeader("Content-Type", "application/json");
         var res = request.executeWithBody(json.toString());
-        String text = res.text().replaceAll("\\\\", "");
-        if (text.startsWith("\""))text = text.substring(1, text.length() - 1);
-        return new JSONObject(text).getString("response"); // I know this is dumb but it doesnt work otherwise
+        String text = res.text();
+        //if (text.startsWith("\""))text = text.substring(1, text.length() - 1);
+        return new JSONObject(text).getString("response");
 
     }
 

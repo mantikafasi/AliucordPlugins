@@ -83,9 +83,6 @@ public class InvisibleMessages extends Plugin {
         hideIcon = ContextCompat.getDrawable(context,R.d.avd_show_password).mutate();
         hideIcon.setTint(ColorCompat.getColor(context,R.c.primary_dark_400));
 
-        //Bitmap bitmap = ((BitmapDrawable) hideIcon).getBitmap();
-        //hideIcon = new BitmapDrawable(Utils.getAppContext().getResources(), Bitmap.createScaledBitmap(bitmap, 50, 50, true));
-        //hideIcon.setBounds(0,0,20,20); DOESN'T WORK
 
 
 
@@ -167,24 +164,19 @@ public class InvisibleMessages extends Plugin {
                                 if (input.isEmpty()){
                                     Toast.makeText(context, "Write Something And Try Again", Toast.LENGTH_SHORT).show();
                                 } else {
+                                    a.q.setText("");
                                     new Thread(()->{
                                         try{
                                             String encryptedMessage = InvChatAPI.encrypt(settings.getString("encryptionPassword","Password"),input,text);
                                             var message = createMessage(encryptedMessage);
                                             var obs =RestAPI.getApi().sendMessage(StoreStream.getChannelsSelected().getId(), message);
-                                            RxUtils.subscribe(obs,message1 -> {
-                                                Utils.mainThread.post(()->{Toast.makeText(context, "Send Success", Toast.LENGTH_SHORT).show();
-                                                a.q.setText("");
-                                                });
-                                                return null;
-                                            });  
+                                            RxUtils.subscribe(obs,message1 -> null);
 
                                         } catch (Exception e){
                                             Utils.mainThread.post(()->Toast.makeText(context, "An Error Occured,Message Couldn't send", Toast.LENGTH_SHORT).show());
                                             logger.error(e);
                                         }
                                         }).start();
-
                                     dialog.dismiss();
                                 }
                             }));
@@ -203,23 +195,26 @@ public class InvisibleMessages extends Plugin {
                     var itemTimestampField =(TextView) ReflectUtils.getField(cf.thisObject,"itemTimestamp");
 
                     //var tw = (SimpleDraweeSpanTextView)ReflectUtils.getField(thisobj,"itemText");
-                        if (InvChatAPI.containsInvisibleMessage(msg.getContent())){
-                            itemTimestampField.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                                    hideIcon,
-                                    null,
-                                    null,
-                                    null
-                            );
+                        if (itemTimestampField!=null){
+                            if (InvChatAPI.containsInvisibleMessage(msg.getContent())){
+                                itemTimestampField.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                                        hideIcon,
+                                        null,
+                                        null,
+                                        null
+                                );
 
-                            itemTimestampField.setCompoundDrawablePadding(DimenUtils.dpToPx(10));
-                    } else {
-                        itemTimestampField.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                                null,
-                                null,
-                                null,
-                                null
-                        );
-                    }
+                                itemTimestampField.setCompoundDrawablePadding(DimenUtils.dpToPx(10));
+                            } else {
+                                itemTimestampField.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                                        null,
+                                        null,
+                                        null,
+                                        null
+                                );
+                            }
+                        }
+
                     }catch (IllegalAccessException  | NoSuchFieldException e) { e.printStackTrace();logger.error(e); } //I hate you reflectutils
                 }));
     }
