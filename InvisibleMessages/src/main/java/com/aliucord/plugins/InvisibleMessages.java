@@ -3,22 +3,16 @@ package com.aliucord.plugins;
 import static java.util.Collections.emptyList;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.ScaleDrawable;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.core.widget.NestedScrollView;
-import androidx.vectordrawable.graphics.drawable.VectorDrawableCompat;
 
-import com.aliucord.Http;
 import com.aliucord.Logger;
 import com.aliucord.Utils;
 import com.aliucord.annotations.AliucordPlugin;
@@ -30,33 +24,22 @@ import com.aliucord.patcher.Hook;
 import com.aliucord.utils.DimenUtils;
 import com.aliucord.utils.ReflectUtils;
 import com.aliucord.utils.RxUtils;
-import com.discord.api.message.embed.EmbedField;
-import com.discord.api.message.embed.MessageEmbed;
-import com.discord.databinding.WidgetChatInputBinding;
+import com.discord.api.commands.ApplicationCommandType;
 import com.discord.models.domain.NonceGenerator;
 import com.discord.models.message.Message;
 import com.discord.restapi.RestAPIParams;
 import com.discord.stores.StoreStream;
 import com.discord.utilities.color.ColorCompat;
-import com.discord.utilities.message.MessageUtils;
 import com.discord.utilities.rest.RestAPI;
 import com.discord.utilities.time.ClockFactory;
-import com.discord.utilities.view.text.SimpleDraweeSpanTextView;
-import com.discord.widgets.chat.input.ChatInputViewModel;
-import com.discord.widgets.chat.input.MessageDraftsRepo;
-import com.discord.widgets.chat.input.WidgetChatInput;
-import com.discord.widgets.chat.input.WidgetChatInputEditText;
 import com.discord.widgets.chat.list.actions.WidgetChatListActions;
 import com.discord.widgets.chat.list.adapter.WidgetChatListAdapterItemMessage;
-import com.discord.widgets.chat.list.entries.ChatListEntry;
-import com.discord.widgets.chat.list.entries.MessageEntry;
 
-import java.io.IOException;
-import java.sql.Ref;
-import java.util.Collections;
 import com.lytefast.flexinput.R;
 import com.lytefast.flexinput.fragment.FlexInputFragment;
-import com.lytefast.flexinput.widget.FlexEditText;
+
+import java.io.IOException;
+import java.util.Arrays;
 
 import c.b.a.e.a;
 
@@ -68,84 +51,149 @@ public class InvisibleMessages extends Plugin {
     int viewID= View.generateViewId();
     Drawable lockIcon;
     Drawable hideIcon;
+    Context context;
 
     @Override
     public void start(Context context) throws NoSuchMethodException {
-
-
-
+        this.context = context;
         settingsTab = new SettingsTab(BottomShit.class,SettingsTab.Type.BOTTOM_SHEET).withArgs(settings);
 
-
-
         lockIcon = ContextCompat.getDrawable(context, R.d.ic_channel_text_locked).mutate();
-
         hideIcon = ContextCompat.getDrawable(context,R.d.avd_show_password).mutate();
         hideIcon.setTint(ColorCompat.getColor(context,R.c.primary_dark_400));
 
+        patchSendButton();
+        patchActions();
+        patchItemMessage();
+        registerCommand();
+
+
+    }
+    private void registerCommand(){
+        var options = Arrays.asList(
+                Utils.createCommandOption(ApplicationCommandType.STRING,"message","This is what normal people see ()",
+                        0,true),Utils.createCommandOption(ApplicationCommandType.STRING,"hiddenMessage","Hidden message,only people that has the password can see this",0,true),
+                Utils.createCommandOption(ApplicationCommandType.STRING,"password","Password to encrypt the message,if nothing gets entered default password will be used")
+        );
+
+
+        commands.registerCommand("invis","Send A Invisible Message",options,ctx -> {
+            String message = ctx.getString("message");
+            var hiddenMessage = ctx.getString("hiddenMessage");
+            var password = ctx.getString("password")==null?settings.getString("encryptionPassword","Password"):ctx.getString("password");
+
+            if (message.split(" ").length<2){
+                return new CommandsAPI.CommandResult("Message must contain more than 1 word",null,false);
+            }
 
 
 
+            try {
+                String encryptedMessage = InvChatAPI.encrypt(password,hiddenMessage,message);
+                return new CommandsAPI.CommandResult(encryptedMessage,null,true);
+            } catch (IOException e) {
+                logger.error(e);
+                return new CommandsAPI.CommandResult("An Error Occured, Check Debug log for more info",null,false);
+            }
 
+
+        });
+    }
+    private void patchItemMessage() throws NoSuchMethodException {
+        patcher.patch(WidgetChatListAdapterItemMessage.class.getDeclaredMethod("configureItemTag", Message.class),
+                new Hook((cf)->{
+                    var msg =( Message) cf.args[0] ;
+                    var thisobj = (WidgetChatListAdapterItemMessage)cf.thisObject;
+                    try {
+                        var itemTimestampField =(TextView) ReflectUtils.getField(cf.thisObject,"itemTimestamp");
+
+                        //var tw = (SimpleDraweeSpanTextView)ReflectUtils.getField(thisobj,"itemText");
+                        if (itemTimestampField!=null){
+                            if (InvChatAPI.containsInvisibleMessage(msg.getContent())){
+                                itemTimestampField.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                                        hideIcon,
+                                        null,
+                                        null,
+                                        null
+                                );
+
+                                itemTimestampField.setCompoundDrawablePadding(DimenUtils.dpToPx(10));
+                            } else {
+                                itemTimestampField.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                                        null,
+                                        null,
+                                        null,
+                                        null
+                                );
+                            }
+                        }
+
+                    }catch (IllegalAccessException  | NoSuchFieldException e) { e.printStackTrace();logger.error(e); } //I hate you reflectutils
+                }));
+    }
+    private void patchActions() throws NoSuchMethodException {
 
         patcher.patch(WidgetChatListActions.class.getDeclaredMethod("configureUI", WidgetChatListActions.Model.class),
                 new Hook((cf)->{
-                        var modal = (WidgetChatListActions.Model)cf.args[0];
-                        var message = modal.getMessage();
-                        var actions = (WidgetChatListActions)cf.thisObject;
-                        var scrollView = (NestedScrollView)actions.getView();
-                        var lay = (LinearLayout)scrollView.getChildAt(0);
+                    var modal = (WidgetChatListActions.Model)cf.args[0];
+                    var message = modal.getMessage();
+                    var actions = (WidgetChatListActions)cf.thisObject;
+                    var scrollView = (NestedScrollView)actions.getView();
+                    var lay = (LinearLayout)scrollView.getChildAt(0);
 
 
 
 
-                        if (lay.findViewById(viewID)==null && InvChatAPI.containsInvisibleMessage(message.getContent())  ){
-                            TextView tw = new TextView(lay.getContext(),null,0, R.h.UiKit_Settings_Item_Icon);
-                            tw.setId(viewID);
-                            tw.setText("Decrypt Message");
+                    if (lay.findViewById(viewID)==null && InvChatAPI.containsInvisibleMessage(message.getContent())  ){
+                        TextView tw = new TextView(lay.getContext(),null,0, R.h.UiKit_Settings_Item_Icon);
+                        tw.setId(viewID);
+                        tw.setText("Decrypt Message");
 
-                            tw.setCompoundDrawablesRelativeWithIntrinsicBounds(lockIcon,null,null,null);
-                            lay.addView(tw,5);
-                            //tw.setLayoutParams(lay.getChildAt(3).getLayoutParams());
-                            tw.setOnClickListener((v)->{
-                                InputDialog dialog = new InputDialog().setTitle("Enter Password");
-                                dialog.setPlaceholderText(settings.getString("password","Password"));
+                        tw.setCompoundDrawablesRelativeWithIntrinsicBounds(lockIcon,null,null,null);
+                        lay.addView(tw,5);
+                        //tw.setLayoutParams(lay.getChildAt(3).getLayoutParams());
+                        tw.setOnClickListener((v)->{
 
-                                dialog.setOnOkListener(v1 -> {
+                            InputDialog dialog = new InputDialog().setTitle("Enter Password");
+                            dialog.setPlaceholderText(settings.getString("password","Password"));
 
-                                    new Thread(()->{
-                                        if (!dialog.getInput().isEmpty())settings.setString("password", dialog.getInput());
-                                        String input = dialog.getInput().isEmpty()?settings.getString("password","Password"):dialog.getInput();
+                            dialog.setOnOkListener(v1 -> {
 
-                                        String decrypedMessage = null;
-                                        try {
-                                            decrypedMessage = InvChatAPI.decrypt(message.getContent(), input);
-                                        } catch (Exception e) {
-                                            e.printStackTrace();
-                                            decrypedMessage = "Message Couldnt decrypted";
-                                        }
+                                new Thread(()->{
+                                    if (!dialog.getInput().isEmpty())settings.setString("password", dialog.getInput());
+                                    String input = dialog.getInput().isEmpty()?settings.getString("password","Password"):dialog.getInput();
 
-
-                                        var embed = new MessageEmbedBuilder().setTitle("Decrypted Message").setDescription(decrypedMessage).build();
-                                        message.getEmbeds().add(embed);
-
-                                        StoreStream.getMessages().handleMessageUpdate(message.synthesizeApiMessage());
+                                    String decrypedMessage = null;
+                                    try {
+                                        decrypedMessage = InvChatAPI.decrypt(message.getContent(), input);
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                        decrypedMessage = "Message Couldnt decrypted";
+                                    }
 
 
-                                    }).start();
-                                    dialog.dismiss();
-                                });
-                                dialog.show(actions.getChildFragmentManager(),"a");
+                                    var embed = new MessageEmbedBuilder().setTitle("Decrypted Message").setDescription(decrypedMessage).build();
+                                    message.getEmbeds().add(embed);
+
+                                    StoreStream.getMessages().handleMessageUpdate(message.synthesizeApiMessage());
+
+
+                                }).start();
+                                dialog.dismiss();
+                                actions.dismiss();
                             });
-                        }
+                            dialog.show(actions.getChildFragmentManager(),"a");
+
+                        });
+                    }
 
 
 
 
-                    }));
+                }));
 
-
-
+    }
+    private void patchSendButton() throws NoSuchMethodException {
         patcher.patch(FlexInputFragment.class.getDeclaredMethod("onViewCreated", View.class, Bundle.class),
                 new Hook((cf)->{
 
@@ -186,39 +234,7 @@ public class InvisibleMessages extends Plugin {
                     });
 
                 }));
-
-        patcher.patch(WidgetChatListAdapterItemMessage.class.getDeclaredMethod("configureItemTag", Message.class),
-                new Hook((cf)->{
-                    var msg =( Message) cf.args[0] ;
-                    var thisobj = (WidgetChatListAdapterItemMessage)cf.thisObject;
-                    try {
-                    var itemTimestampField =(TextView) ReflectUtils.getField(cf.thisObject,"itemTimestamp");
-
-                    //var tw = (SimpleDraweeSpanTextView)ReflectUtils.getField(thisobj,"itemText");
-                        if (itemTimestampField!=null){
-                            if (InvChatAPI.containsInvisibleMessage(msg.getContent())){
-                                itemTimestampField.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                                        hideIcon,
-                                        null,
-                                        null,
-                                        null
-                                );
-
-                                itemTimestampField.setCompoundDrawablePadding(DimenUtils.dpToPx(10));
-                            } else {
-                                itemTimestampField.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                                        null,
-                                        null,
-                                        null,
-                                        null
-                                );
-                            }
-                        }
-
-                    }catch (IllegalAccessException  | NoSuchFieldException e) { e.printStackTrace();logger.error(e); } //I hate you reflectutils
-                }));
     }
-
     public RestAPIParams.Message createMessage(String message){
         return new RestAPIParams.Message(
                 message, // Content
