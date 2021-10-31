@@ -27,9 +27,6 @@ project(":EditServersLocally").projectDir = File("./EditServersLocally")
 include(":SusCord")
 project(":SusCord").projectDir = File("./SusCord")
 
-include(":EncryptDMs")
-project(":EncryptDMs").projectDir = File("./EncryptDMs")
-
 include(":InvisibleMessages")
 project(":InvisibleMessages").projectDir = File("./InvisibleMessages")
 
