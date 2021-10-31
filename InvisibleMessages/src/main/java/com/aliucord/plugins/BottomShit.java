@@ -11,6 +11,7 @@ import android.widget.TextView;
 
 import com.aliucord.Utils;
 import com.aliucord.api.SettingsAPI;
+import com.aliucord.utils.DimenUtils;
 import com.aliucord.widgets.BottomSheet;
 import com.discord.app.AppBottomSheet;
 import com.discord.views.CheckedSetting;
@@ -42,6 +43,9 @@ public class BottomShit extends AppBottomSheet {
 
         et  = new EditText(context);
 
+        et.setText(settings.getString("encryptionPassword","Password"));
+        int px = DimenUtils.dpToPx(20);
+        et.setPadding(px,px,px,px);
 
         lay.addView(tw);
         lay.addView(et);
@@ -50,7 +54,8 @@ public class BottomShit extends AppBottomSheet {
 
     @Override
     public void onDestroy() {
-        if (!et.getText().toString().trim().isEmpty())settings.setString("encryptionPassword",et.getText().toString());
+        settings.setString("encryptionPassword",et.getText().toString().trim().isEmpty()?"Password":et.getText().toString());
+
         super.onDestroy();
     }
 }

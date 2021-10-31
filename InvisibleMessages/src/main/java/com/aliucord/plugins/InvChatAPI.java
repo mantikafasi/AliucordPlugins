@@ -53,7 +53,6 @@ public class InvChatAPI {
         var res = request.executeWithBody(json.toString());
         String text = res.text().replaceAll("\\\\", "");
         if (text.startsWith("\""))text = text.substring(1, text.length() - 1);
-        logger.info(text);
         return new JSONObject(text).getString("response"); // I know this is dumb but it doesnt work otherwise
 
     }

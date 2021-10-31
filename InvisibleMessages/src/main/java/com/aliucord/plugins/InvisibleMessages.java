@@ -3,7 +3,10 @@ package com.aliucord.plugins;
 import static java.util.Collections.emptyList;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.ScaleDrawable;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -13,6 +16,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.core.widget.NestedScrollView;
+import androidx.vectordrawable.graphics.drawable.VectorDrawableCompat;
 
 import com.aliucord.Http;
 import com.aliucord.Logger;
@@ -23,18 +27,21 @@ import com.aliucord.entities.MessageEmbedBuilder;
 import com.aliucord.entities.Plugin;
 import com.aliucord.fragments.InputDialog;
 import com.aliucord.patcher.Hook;
+import com.aliucord.utils.DimenUtils;
 import com.aliucord.utils.ReflectUtils;
 import com.aliucord.utils.RxUtils;
-import com.discord.api.message.Message;
 import com.discord.api.message.embed.EmbedField;
 import com.discord.api.message.embed.MessageEmbed;
 import com.discord.databinding.WidgetChatInputBinding;
 import com.discord.models.domain.NonceGenerator;
+import com.discord.models.message.Message;
 import com.discord.restapi.RestAPIParams;
 import com.discord.stores.StoreStream;
+import com.discord.utilities.color.ColorCompat;
 import com.discord.utilities.message.MessageUtils;
 import com.discord.utilities.rest.RestAPI;
 import com.discord.utilities.time.ClockFactory;
+import com.discord.utilities.view.text.SimpleDraweeSpanTextView;
 import com.discord.widgets.chat.input.ChatInputViewModel;
 import com.discord.widgets.chat.input.MessageDraftsRepo;
 import com.discord.widgets.chat.input.WidgetChatInput;
@@ -45,6 +52,7 @@ import com.discord.widgets.chat.list.entries.ChatListEntry;
 import com.discord.widgets.chat.list.entries.MessageEntry;
 
 import java.io.IOException;
+import java.sql.Ref;
 import java.util.Collections;
 import com.lytefast.flexinput.R;
 import com.lytefast.flexinput.fragment.FlexInputFragment;
@@ -59,18 +67,27 @@ public class InvisibleMessages extends Plugin {
     Logger logger = new Logger("InvisibleMessage");
     int viewID= View.generateViewId();
     Drawable lockIcon;
+    Drawable hideIcon;
 
     @Override
     public void start(Context context) throws NoSuchMethodException {
 
 
 
-        settingsTab = new SettingsTab(BottomShit.class,SettingsTab.Type.BOTTOM_SHEET);
+        settingsTab = new SettingsTab(BottomShit.class,SettingsTab.Type.BOTTOM_SHEET).withArgs(settings);
 
 
 
-        lockIcon = ContextCompat.getDrawable(context, R.d.ic_channel_text_locked);
-        lockIcon = lockIcon.mutate();
+        lockIcon = ContextCompat.getDrawable(context, R.d.ic_channel_text_locked).mutate();
+
+        hideIcon = ContextCompat.getDrawable(context,R.d.avd_show_password).mutate();
+        hideIcon.setTint(ColorCompat.getColor(context,R.c.primary_dark_400));
+
+        //Bitmap bitmap = ((BitmapDrawable) hideIcon).getBitmap();
+        //hideIcon = new BitmapDrawable(Utils.getAppContext().getResources(), Bitmap.createScaledBitmap(bitmap, 50, 50, true));
+        //hideIcon.setBounds(0,0,20,20); DOESN'T WORK
+
+
 
 
 
@@ -79,9 +96,10 @@ public class InvisibleMessages extends Plugin {
                         var modal = (WidgetChatListActions.Model)cf.args[0];
                         var message = modal.getMessage();
                         var actions = (WidgetChatListActions)cf.thisObject;
-                        logger.info(actions.getView().getClass().getName());
                         var scrollView = (NestedScrollView)actions.getView();
                         var lay = (LinearLayout)scrollView.getChildAt(0);
+
+
 
 
                         if (lay.findViewById(viewID)==null && InvChatAPI.containsInvisibleMessage(message.getContent())  ){
@@ -105,7 +123,7 @@ public class InvisibleMessages extends Plugin {
                                         String decrypedMessage = null;
                                         try {
                                             decrypedMessage = InvChatAPI.decrypt(message.getContent(), input);
-                                        } catch (IOException e) {
+                                        } catch (Exception e) {
                                             e.printStackTrace();
                                             decrypedMessage = "Message Couldnt decrypted";
                                         }
@@ -120,7 +138,7 @@ public class InvisibleMessages extends Plugin {
                                     }).start();
                                     dialog.dismiss();
                                 });
-                                dialog.show(Utils.getAppActivity().getSupportFragmentManager(),"a");
+                                dialog.show(actions.getChildFragmentManager(),"a");
                             });
                         }
 
@@ -136,6 +154,7 @@ public class InvisibleMessages extends Plugin {
 
                     var thisObject = (FlexInputFragment)cf.thisObject;
                     a a = thisObject.j();
+
 
                     a.o.setOnLongClickListener((v)->{
                         String text =a.q.getText().toString();
@@ -160,8 +179,8 @@ public class InvisibleMessages extends Plugin {
                                                 return null;
                                             });  
 
-                                        } catch (IOException e){
-                                            Toast.makeText(context, "An Error Occured,Message Couldnt send", Toast.LENGTH_SHORT).show();
+                                        } catch (Exception e){
+                                            Utils.mainThread.post(()->Toast.makeText(context, "An Error Occured,Message Couldn't send", Toast.LENGTH_SHORT).show());
                                             logger.error(e);
                                         }
                                         }).start();
@@ -169,11 +188,39 @@ public class InvisibleMessages extends Plugin {
                                     dialog.dismiss();
                                 }
                             }));
-                            dialog.show(Utils.getAppActivity().getSupportFragmentManager(),"b");
+                            dialog.show(thisObject.getChildFragmentManager(),"b");
                         }
                         return "pogchamp".equals("pogchamp");
                     });
 
+                }));
+
+        patcher.patch(WidgetChatListAdapterItemMessage.class.getDeclaredMethod("configureItemTag", Message.class),
+                new Hook((cf)->{
+                    var msg =( Message) cf.args[0] ;
+                    var thisobj = (WidgetChatListAdapterItemMessage)cf.thisObject;
+                    try {
+                    var itemTimestampField =(TextView) ReflectUtils.getField(cf.thisObject,"itemTimestamp");
+
+                    //var tw = (SimpleDraweeSpanTextView)ReflectUtils.getField(thisobj,"itemText");
+                        if (InvChatAPI.containsInvisibleMessage(msg.getContent())){
+                            itemTimestampField.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                                    hideIcon,
+                                    null,
+                                    null,
+                                    null
+                            );
+
+                            itemTimestampField.setCompoundDrawablePadding(DimenUtils.dpToPx(10));
+                    } else {
+                        itemTimestampField.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                                null,
+                                null,
+                                null,
+                                null
+                        );
+                    }
+                    }catch (IllegalAccessException  | NoSuchFieldException e) { e.printStackTrace();logger.error(e); } //I hate you reflectutils
                 }));
     }
 
