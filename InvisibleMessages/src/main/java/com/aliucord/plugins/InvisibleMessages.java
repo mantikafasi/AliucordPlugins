@@ -6,6 +6,7 @@ import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -24,7 +25,9 @@ import com.aliucord.patcher.Hook;
 import com.aliucord.utils.DimenUtils;
 import com.aliucord.utils.ReflectUtils;
 import com.aliucord.utils.RxUtils;
+import com.aliucord.wrappers.ChannelWrapper;
 import com.discord.api.commands.ApplicationCommandType;
+import com.discord.databinding.WidgetChannelsListItemActionsBinding;
 import com.discord.models.domain.NonceGenerator;
 import com.discord.models.message.Message;
 import com.discord.restapi.RestAPIParams;
@@ -32,14 +35,19 @@ import com.discord.stores.StoreStream;
 import com.discord.utilities.color.ColorCompat;
 import com.discord.utilities.rest.RestAPI;
 import com.discord.utilities.time.ClockFactory;
+import com.discord.widgets.channels.list.WidgetChannelsListItemChannelActions;
 import com.discord.widgets.chat.list.actions.WidgetChatListActions;
 import com.discord.widgets.chat.list.adapter.WidgetChatListAdapterItemMessage;
 
+import com.google.gson.reflect.TypeToken;
 import com.lytefast.flexinput.R;
 import com.lytefast.flexinput.fragment.FlexInputFragment;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.HashMap;
 
 import c.b.a.e.a;
 
@@ -52,6 +60,7 @@ public class InvisibleMessages extends Plugin {
     Drawable lockIcon;
     Drawable hideIcon;
     Context context;
+    HashMap<Long,String> channelPasswords = settings.getObject("channelPasswords",new HashMap<>(), TypeToken.getParameterized(HashMap.class, Long.class, String.class).getType());
 
     @Override
     public void start(Context context) throws NoSuchMethodException {
@@ -65,9 +74,71 @@ public class InvisibleMessages extends Plugin {
         patchSendButton();
         patchActions();
         patchItemMessage();
+        patchChannelActions();
         registerCommand();
 
 
+    }
+    private void patchChannelActions() throws NoSuchMethodException {
+        patcher.patch(WidgetChannelsListItemChannelActions.class.getDeclaredMethod("configureUI", WidgetChannelsListItemChannelActions.Model.class)
+        ,new Hook((cf)->{
+                    var model = (WidgetChannelsListItemChannelActions.Model) cf.args[0];
+                    var actions = (WidgetChannelsListItemChannelActions) cf.thisObject;
+                    var nestedScrollView = (NestedScrollView) actions.requireView();
+                    var layout = (LinearLayout) nestedScrollView.getChildAt(0);
+                    var channelId =ChannelWrapper.getId(model.getChannel());
+                    Method method;
+                    try {
+                        method = ReflectUtils.getMethodByArgs(cf.thisObject.getClass(), "getBinding");
+
+                        var binding = (WidgetChannelsListItemActionsBinding) method.invoke(cf.thisObject);
+                        View v = binding.j;
+
+                        ViewGroup.LayoutParams param = v.getLayoutParams();
+                        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(param.width, param.height);
+                        params.leftMargin = DimenUtils.dpToPx(20);
+
+
+                        TextView tw = new TextView(v.getContext(), null, 0, R.h.UiKit_Settings_Item_Icon);
+
+                        tw.setText("Set Channel Password (InvisibleMessages)");
+
+
+                        tw.setCompoundDrawablesRelativeWithIntrinsicBounds(hideIcon, null, null, null);
+                        tw.setLayoutParams(v.getLayoutParams());
+
+                        tw.setId(View.generateViewId());
+                        tw.setOnClickListener(v1 -> {
+                            var dialog = new InputDialog().setTitle("Set Password").setDescription("This password will be used for messages sent on this channel").setPlaceholderText(getPassword(channelId));
+                            dialog.show(actions.getChildFragmentManager(),"c");
+
+                            dialog.setOnOkListener(v2 -> {
+                                String in = dialog.getInput();
+                                if (in.isEmpty() || in.equals("Password"))removePassword(channelId); else addPassword(channelId,in);
+                                actions.dismiss();
+                            });
+
+
+                        });
+                        layout.addView(tw);
+                    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) { e.printStackTrace();logger .error(e);}
+                }));
+    }
+    private void addPassword(long channelID,String password){
+        channelPasswords.put(channelID,password);
+        saveSettings();
+    }
+    private void removePassword(long channelID){
+        channelPasswords.remove(channelID);
+        Toast.makeText(context, "Removed Password From Channel", Toast.LENGTH_SHORT).show();
+        saveSettings();
+    }
+    private  void saveSettings(){
+        settings.setObject("channelPasswords",channelPasswords);
+    }
+    private String getPassword(long channelID){
+        if (channelPasswords.containsKey(channelID))return channelPasswords.get(channelID);
+        return settings.getString("encryptionPassword","Password");
     }
     private void registerCommand(){
         var options = Arrays.asList(
@@ -80,7 +151,7 @@ public class InvisibleMessages extends Plugin {
         commands.registerCommand("invis","Send A Invisible Message",options,ctx -> {
             String message = ctx.getString("message");
             var hiddenMessage = ctx.getString("hiddenMessage");
-            var password = ctx.getString("password")==null?settings.getString("encryptionPassword","Password"):ctx.getString("password");
+            var password = ctx.getString("password")==null?getPassword(ctx.getChannelId()):ctx.getString("password");
 
             if (message.split(" ").length<2){
                 return new CommandsAPI.CommandResult("Message must contain more than 1 word",null,false);
@@ -167,8 +238,8 @@ public class InvisibleMessages extends Plugin {
                                     try {
                                         decrypedMessage = InvChatAPI.decrypt(message.getContent(), input);
                                     } catch (Exception e) {
-                                        e.printStackTrace();
-                                        decrypedMessage = "Message Couldnt decrypted";
+                                        logger.error(e);
+                                        decrypedMessage = "Message Couldnt decrypted,You can check Debug Log for more info";
                                     }
 
 
@@ -215,9 +286,10 @@ public class InvisibleMessages extends Plugin {
                                     a.q.setText("");
                                     new Thread(()->{
                                         try{
-                                            String encryptedMessage = InvChatAPI.encrypt(settings.getString("encryptionPassword","Password"),input,text);
+                                            long chid = StoreStream.getChannelsSelected().getId();
+                                            String encryptedMessage = InvChatAPI.encrypt(getPassword(chid),input,text);
                                             var message = createMessage(encryptedMessage);
-                                            var obs =RestAPI.getApi().sendMessage(StoreStream.getChannelsSelected().getId(), message);
+                                            var obs =RestAPI.getApi().sendMessage(chid, message);
                                             RxUtils.subscribe(obs,message1 -> null);
 
                                         } catch (Exception e){
@@ -252,9 +324,7 @@ public class InvisibleMessages extends Plugin {
         );
 
     }
-
-    @Override
-    public void stop(Context context) {
+    @Override public void stop(Context context) {
         patcher.unpatchAll();
         commands.unregisterAll();
     }
