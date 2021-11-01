@@ -225,7 +225,7 @@ public class InvisibleMessages extends Plugin {
                         //tw.setLayoutParams(lay.getChildAt(3).getLayoutParams());
                         tw.setOnClickListener((v)->{
 
-                            InputDialog dialog = new InputDialog().setTitle("Enter Password");
+                            InputDialog dialog = new InputDialog().setTitle("Enter Password").setDescription("If you leave it empty it'll use last used password");
                             dialog.setPlaceholderText(settings.getString("password","Password"));
 
                             dialog.setOnOkListener(v1 -> {
