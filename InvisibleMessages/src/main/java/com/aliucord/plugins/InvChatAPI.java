@@ -17,7 +17,7 @@ public class InvChatAPI {
     static String regex = "[\u200c\u200d\u2062\u2063\u2063]"; //husk
     public static String URL = "https://InvisibleChatAPI.hubertmoszkarel.repl.co";
     public static boolean containsInvisibleMessage(String message){
-        return StringUtils.containsAny(message,"\u200c\u200d\u2062\u2063\u2063");
+        return StringUtils.containsAny(message,"\u200c\u2062\u2063\u2063");
     }
 
     public static String encrypt(String password,String secret,String cover) throws IOException {

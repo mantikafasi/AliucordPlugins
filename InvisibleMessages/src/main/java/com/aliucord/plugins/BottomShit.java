@@ -54,7 +54,7 @@ public class BottomShit extends AppBottomSheet {
 
     @Override
     public void onDestroy() {
-        settings.setString("encryptionPassword",et.getText().toString().trim().isEmpty()?"Password":et.getText().toString());
+        settings.setString("encryptionPassword",et.getText().toString().trim().isEmpty()?"Password":et.getText().toString().trim());
 
         super.onDestroy();
     }

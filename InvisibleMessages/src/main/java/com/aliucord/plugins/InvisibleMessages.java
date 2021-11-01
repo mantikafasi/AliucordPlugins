@@ -113,7 +113,7 @@ public class InvisibleMessages extends Plugin {
                             dialog.show(actions.getChildFragmentManager(),"c");
 
                             dialog.setOnOkListener(v2 -> {
-                                String in = dialog.getInput();
+                                String in = dialog.getInput().trim();
                                 if (in.isEmpty() || in.equals("Password"))removePassword(channelId); else addPassword(channelId,in);
                                 actions.dismiss();
                             });
@@ -142,8 +142,8 @@ public class InvisibleMessages extends Plugin {
     }
     private void registerCommand(){
         var options = Arrays.asList(
-                Utils.createCommandOption(ApplicationCommandType.STRING,"message","This is what normal people see ()",
-                        0,true),Utils.createCommandOption(ApplicationCommandType.STRING,"hiddenMessage","Hidden message,only people that has the password can see this",0,true),
+                Utils.createCommandOption(ApplicationCommandType.STRING,"message","This is what normal people see",
+                        null,true),Utils.createCommandOption(ApplicationCommandType.STRING,"hiddenMessage","Hidden message,only people that has the password can see this",null,true),
                 Utils.createCommandOption(ApplicationCommandType.STRING,"password","Password to encrypt the message,if nothing gets entered default password will be used")
         );
 
@@ -231,10 +231,11 @@ public class InvisibleMessages extends Plugin {
                             dialog.setOnOkListener(v1 -> {
 
                                 new Thread(()->{
-                                    if (!dialog.getInput().isEmpty())settings.setString("password", dialog.getInput());
-                                    String input = dialog.getInput().isEmpty()?settings.getString("password","Password"):dialog.getInput();
+                                    String dialogIn = dialog.getInput().trim();
+                                    if (!dialogIn.isEmpty())settings.setString("password", dialogIn);
+                                    String input = dialogIn.isEmpty()?settings.getString("password","Password"):dialogIn;
 
-                                    String decrypedMessage = null;
+                                    String decrypedMessage;
                                     try {
                                         decrypedMessage = InvChatAPI.decrypt(message.getContent(), input);
                                     } catch (Exception e) {
