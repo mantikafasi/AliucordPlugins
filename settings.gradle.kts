@@ -8,6 +8,8 @@ project(":POGlugin").projectDir = File("./POGlugin")
 include(":LightShotRoulette")
 project(":LightShotRoulette").projectDir = File("./LightShotRoulette")
 
+include(":InvisibleMessages")
+project(":InvisibleMessages").projectDir = File("./InvisibleMessages")
 
 include(":Someone")
 project(":Someone").projectDir= File("./Someone")

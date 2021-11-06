@@ -38,7 +38,6 @@ import com.discord.utilities.time.ClockFactory;
 import com.discord.widgets.channels.list.WidgetChannelsListItemChannelActions;
 import com.discord.widgets.chat.list.actions.WidgetChatListActions;
 import com.discord.widgets.chat.list.adapter.WidgetChatListAdapterItemMessage;
-
 import com.google.gson.reflect.TypeToken;
 import com.lytefast.flexinput.R;
 import com.lytefast.flexinput.fragment.FlexInputFragment;
@@ -70,6 +69,11 @@ public class InvisibleMessages extends Plugin {
         lockIcon = ContextCompat.getDrawable(context, R.d.ic_channel_text_locked).mutate();
         hideIcon = ContextCompat.getDrawable(context,R.d.avd_show_password).mutate();
         hideIcon.setTint(ColorCompat.getColor(context,R.c.primary_dark_400));
+//getPassword(0)
+        String encrypted = EncryptionAPI.encrypt("Hi","pw");
+
+        logger.info(encrypted);
+        
 
         patchSendButton();
         patchActions();
@@ -211,7 +215,6 @@ public class InvisibleMessages extends Plugin {
                     var actions = (WidgetChatListActions)cf.thisObject;
                     var scrollView = (NestedScrollView)actions.getView();
                     var lay = (LinearLayout)scrollView.getChildAt(0);
-
 
 
 

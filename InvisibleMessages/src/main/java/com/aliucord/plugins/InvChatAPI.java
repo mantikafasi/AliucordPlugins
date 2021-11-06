@@ -22,6 +22,11 @@ public class InvChatAPI {
 
     public static String encrypt(String password,String secret,String cover) throws IOException {
 
+        String a = EncryptionAPI.encrypt(secret,password);
+
+        return EncryptionAPI.putToString(cover,a);
+
+        /*
         JSONObject json = new JSONObject();
         try {
             json.put("type","hide").put("password",password).put("secret",secret).put("cover",cover);
@@ -30,11 +35,15 @@ public class InvChatAPI {
         } catch (JSONException e) { e.printStackTrace(); logger.error(e);}
         return null; //fail  :sob:
 
+         */
+
     }
 
     public static String decrypt(String message,String password) throws IOException {
-        JSONObject json = new JSONObject();
+        //EncryptionAPI.decrypt(message,password);
+        //return "";
 
+        JSONObject json = new JSONObject();
 
         try {
             json.put("type","reveal").put("password",password).put("secret",message);
@@ -45,6 +54,8 @@ public class InvChatAPI {
         }
 
         return null; //fail :husk:
+
+
     }
     public static String makeJSONRequest(JSONObject json) throws IOException, JSONException {
 

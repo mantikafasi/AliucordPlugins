@@ -105,7 +105,17 @@ public class Page extends SettingsPage {
 
         optLay.addView(save);
         optLay.addView(cancel);
+
+
+        var colorpicker = new betterColorPickerView(ctx,null);
+        colorpicker.setOnColorChangedListener(color -> {
+            button.setBackgroundColor(color);
+        });
+
+
+
         lay.addView(optLay);
+        lay.addView(colorpicker);
         updateButtonColor();
 
     }
@@ -185,6 +195,7 @@ public class Page extends SettingsPage {
 
             }
         });
+
 
 
         et.setEnabled(false); //disabled for now
