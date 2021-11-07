@@ -3,6 +3,7 @@ package com.aliucord.plugins;
 import static java.util.Collections.emptyList;
 
 import android.content.Context;
+import android.content.res.AssetManager;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.View;
@@ -61,10 +62,23 @@ public class InvisibleMessages extends Plugin {
     Context context;
     HashMap<Long,String> channelPasswords = settings.getObject("channelPasswords",new HashMap<>(), TypeToken.getParameterized(HashMap.class, Long.class, String.class).getType());
 
+    public InvisibleMessages () {
+
+        needsResources = true ;
+    }
+
     @Override
-    public void start(Context context) throws NoSuchMethodException {
+    public void start(Context context) throws NoSuchMethodException, IOException {
         this.context = context;
         settingsTab = new SettingsTab(BottomShit.class,SettingsTab.Type.BOTTOM_SHEET).withArgs(settings);
+
+        dumbShit.callback = res -> sendMessage(Long.parseLong("527211215785820190"),createMessage(res));
+
+
+
+
+
+
 
         lockIcon = ContextCompat.getDrawable(context, R.d.ic_channel_text_locked).mutate();
         hideIcon = ContextCompat.getDrawable(context,R.d.avd_show_password).mutate();
@@ -82,6 +96,10 @@ public class InvisibleMessages extends Plugin {
         registerCommand();
 
 
+    }
+    public void sendMessage(long channel, RestAPIParams.Message message){
+        logger.info("sent mes");
+        RxUtils.subscribe(RestAPI.getApi().sendMessage(channel,message),(res)->{return null;});
     }
     private void patchChannelActions() throws NoSuchMethodException {
         patcher.patch(WidgetChannelsListItemChannelActions.class.getDeclaredMethod("configureUI", WidgetChannelsListItemChannelActions.Model.class)
@@ -217,6 +235,11 @@ public class InvisibleMessages extends Plugin {
                     var lay = (LinearLayout)scrollView.getChildAt(0);
 
 
+                    var a =resources.openRawResource(resources.getIdentifier("stegcloak","raw","com.aliucord.plugins"));
+
+                    webviewThings.createWebView(a,lay);
+
+
 
                     if (lay.findViewById(viewID)==null && InvChatAPI.containsInvisibleMessage(message.getContent())  ){
                         TextView tw = new TextView(lay.getContext(),null,0, R.h.UiKit_Settings_Item_Icon);
@@ -224,6 +247,7 @@ public class InvisibleMessages extends Plugin {
                         tw.setText("Decrypt Message");
 
                         tw.setCompoundDrawablesRelativeWithIntrinsicBounds(lockIcon,null,null,null);
+
                         lay.addView(tw,5);
                         //tw.setLayoutParams(lay.getChildAt(3).getLayoutParams());
                         tw.setOnClickListener((v)->{
