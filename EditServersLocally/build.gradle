@@ -1,9 +1,12 @@
-version = "1.0.6"
+version = "1.0.7"
 description = "Allows you to edit Servers locally\n" +
         "Its Still in WIP \n" +
         "Currently you can set Server Names, Server Icons and Channel Names \n" +
         "To set Channel Name long press on channel and press 'Set Channel Name', to change server settings long press on server image or press server name and click 'Local Server Settings'"
 aliucord.changelog.set("""
+# 1.0.7
+* Updated it to work on 101.3
+
 # 1.0.6
 * Made the menus look better -Animal
 * died of death

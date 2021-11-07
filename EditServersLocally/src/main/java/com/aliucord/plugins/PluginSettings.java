@@ -34,7 +34,7 @@ public class PluginSettings extends BottomSheet {
         var context = requireContext();
         setPadding(20);
 
-        TextView title = new TextView(context, null, 0, R.h.UiKit_Settings_Item_Header);
+        TextView title = new TextView(context, null, 0, R.i.UiKit_Settings_Item_Header);
         title.setText("Edit Servers Locally");
         title.setTypeface(ResourcesCompat.getFont(context, Constants.Fonts.whitney_semibold));
         title.setGravity(Gravity.START);

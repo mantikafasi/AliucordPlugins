@@ -27,6 +27,7 @@ import com.aliucord.utils.DimenUtils;
 import com.aliucord.utils.ReflectUtils;
 import com.aliucord.wrappers.ChannelWrapper;
 import com.discord.api.channel.Channel;
+import com.discord.app.AppActivity;
 import com.discord.databinding.WidgetChannelsListItemActionsBinding;
 import com.discord.databinding.WidgetChannelsListItemChannelBinding;
 import com.discord.databinding.WidgetChannelsListItemChannelVoiceBinding;
@@ -46,6 +47,7 @@ import com.discord.widgets.guilds.contextmenu.GuildContextMenuViewModel;
 import com.discord.widgets.guilds.contextmenu.WidgetGuildContextMenu;
 import com.discord.widgets.guilds.profile.WidgetGuildProfileSheet;
 import com.discord.widgets.guilds.profile.WidgetGuildProfileSheetViewModel;
+import com.discord.widgets.servers.SettingsChannelListAdapter;
 import com.google.gson.reflect.TypeToken;
 import com.lytefast.flexinput.R;
 
@@ -85,7 +87,7 @@ public class EditServersLocally extends Plugin {
 
 
         this.context = context;
-        editIcon = ContextCompat.getDrawable(context, R.d.ic_edit_24dp);
+        editIcon = ContextCompat.getDrawable(context, R.e.ic_edit_24dp);
         editIcon = editIcon.mutate();
         settingsTab = new SettingsTab(PluginSettings.class, SettingsTab.Type.BOTTOM_SHEET).withArgs(settings);
 
@@ -176,7 +178,7 @@ public class EditServersLocally extends Plugin {
                             return;
                         }
 
-                        TextView tw = new TextView(lay.getContext(), null, 0, R.h.UiKit_Settings_Item_Icon);
+                        TextView tw = new TextView(lay.getContext(), null, 0, R.i.UiKit_Settings_Item_Icon);
                         tw.setId(serverSettingsID);
                         int pd = DimenUtils.getDefaultPadding();
                         tw.setPadding(pd, pd, pd, pd);
@@ -214,7 +216,7 @@ public class EditServersLocally extends Plugin {
                         if (v.findViewById(serverSettingsID) != null) {
                             return;
                         }
-                        TextView tw = new TextView(v.getContext(), null, 0, R.h.ContextMenuTextOption);
+                        TextView tw = new TextView(v.getContext(), null, 0, R.i.ContextMenuTextOption);
                         tw.setLayoutParams(binding.e.getLayoutParams());
                         tw.setId(serverSettingsID);
 
@@ -253,10 +255,9 @@ public class EditServersLocally extends Plugin {
                             channels.set(new HashMap<>());
                         }
                         //saving instances of textviews so we can change them when channel name changed
-                        channels.get().put(ch.getId(), binding.d);
+                        channels.get().put(ch.getId(), binding.e);
 
                         //getting saved names and changing channel name to it
-
 
                         if (chdata.channelName != null) {
                             try {
@@ -266,7 +267,7 @@ public class EditServersLocally extends Plugin {
                                 logger.error(e);
                             }
 
-                            binding.d.setText(chdata.channelName);
+                            binding.e.setText(chdata.channelName);
                         }
 
                     } catch (NoSuchFieldException | IllegalAccessException e) {
@@ -338,7 +339,7 @@ public class EditServersLocally extends Plugin {
                         params.leftMargin = DimenUtils.dpToPx(20);
 
 
-                        TextView tw = new TextView(v.getContext(), null, 0, R.h.UiKit_Settings_Item_Icon);
+                        TextView tw = new TextView(v.getContext(), null, 0, R.i.UiKit_Settings_Item_Icon);
 
                         tw.setText("Set Channel Name");
 
@@ -372,12 +373,11 @@ public class EditServersLocally extends Plugin {
             itemClass.setAccessible(true);
             patcher.patch(WidgetChannelsListAdapter.ItemChannelVoice.class.getDeclaredMethod("onConfigure", int.class, ChannelListItem.class), new Hook(callFrame -> {
                 var a = (ChannelListItemVoiceChannel) callFrame.args[1];
-                if (PermissionUtils.can(16, a.component3())) return; //took this from halal
+                if (PermissionUtils.can(16, a.getPermission())) return; //took this from halal
                 var channel = ((ChannelListItemVoiceChannel) callFrame.args[1]).getChannel();
 
                 var chWrapped = new ChannelWrapper(channel);
                 var chdata = getChannelData(chWrapped.getId());
-                logger.info(chdata.toString());
                 try {
 
                     var binding = (WidgetChannelsListItemChannelVoiceBinding) itemClass.get(callFrame.thisObject);
@@ -387,7 +387,9 @@ public class EditServersLocally extends Plugin {
                     }
 
                     if (chdata.channelName != null) {
-                        binding.c.setText(chdata.channelName);
+                        binding.f.setText(chdata.channelName);
+                        //binding.c.setText(chdata.channelName);
+
 
                         try {
                             ReflectUtils.setField(channel, "name", chdata.channelName);
@@ -398,6 +400,8 @@ public class EditServersLocally extends Plugin {
 
                     }
 
+
+
                     binding.a.setOnLongClickListener(view -> {
 
                         if (currentGuild.get() != chWrapped.getGuildId()) {
@@ -405,7 +409,7 @@ public class EditServersLocally extends Plugin {
                             channels.set(new HashMap<>());
                         }
 
-                        channels.get().put(chWrapped.getId(), binding.c);
+                        channels.get().put(chWrapped.getId(), binding.f);
 
                         createDialog("Set Voice Channel Name", chdata, binding.a.getContext());
                         return true;

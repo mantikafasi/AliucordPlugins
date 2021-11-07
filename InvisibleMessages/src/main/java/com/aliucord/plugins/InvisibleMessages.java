@@ -67,8 +67,8 @@ public class InvisibleMessages extends Plugin {
         this.context = context;
         settingsTab = new SettingsTab(BottomShit.class,SettingsTab.Type.BOTTOM_SHEET).withArgs(settings);
 
-        lockIcon = ContextCompat.getDrawable(context, R.d.ic_channel_text_locked).mutate();
-        hideIcon = ContextCompat.getDrawable(context,R.d.avd_show_password).mutate();
+        lockIcon = ContextCompat.getDrawable(context, R.e.ic_channel_text_locked).mutate();
+        hideIcon = ContextCompat.getDrawable(context,R.e.avd_show_password).mutate();
         hideIcon.setTint(ColorCompat.getColor(context,R.c.primary_dark_400));
 
         patchSendButton();
@@ -99,7 +99,7 @@ public class InvisibleMessages extends Plugin {
                         params.leftMargin = DimenUtils.dpToPx(20);
 
 
-                        TextView tw = new TextView(v.getContext(), null, 0, R.h.UiKit_Settings_Item_Icon);
+                        TextView tw = new TextView(v.getContext(), null, 0, R.i.UiKit_Settings_Item_Icon);
 
                         tw.setText("Set Channel Password (InvisibleMessages)");
 
@@ -216,7 +216,7 @@ public class InvisibleMessages extends Plugin {
 
 
                     if (lay.findViewById(viewID)==null && InvChatAPI.containsInvisibleMessage(message.getContent())  ){
-                        TextView tw = new TextView(lay.getContext(),null,0, R.h.UiKit_Settings_Item_Icon);
+                        TextView tw = new TextView(lay.getContext(),null,0, R.i.UiKit_Settings_Item_Icon);
                         tw.setId(viewID);
                         tw.setText("Decrypt Message");
 

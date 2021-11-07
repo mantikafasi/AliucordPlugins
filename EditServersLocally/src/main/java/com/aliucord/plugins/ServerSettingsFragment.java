@@ -88,10 +88,10 @@ public class ServerSettingsFragment extends SettingsPage {
     @SuppressLint("SetTextI18n")
     public void createOption(optionType optionName, LinearLayout viewLayout) {
 
-        TextView tw = new TextView(ctx, null, 0, R.h.UiKit_Settings_Item_Label);
+        TextView tw = new TextView(ctx, null, 0, R.i.UiKit_Settings_Item_Label);
         EditText et = new EditText(ctx);
         tw.setTypeface(ResourcesCompat.getFont(ctx, Constants.Fonts.whitney_semibold));
-        et.setTextColor(ContextCompat.getColor(ctx, R.c.grey_1_alpha_60));
+        et.setTextColor(ContextCompat.getColor(ctx, R.c.primary_000));
         et.setHintTextColor(ContextCompat.getColor(ctx, R.c.grey_2));
         var dp = DimenUtils.getDefaultPadding();
         tw.setPadding(dp, dp, dp, dp);

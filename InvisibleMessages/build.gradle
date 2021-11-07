@@ -1,7 +1,10 @@
-version = "1.0.563440"
+version = "1.0.563441"
 description = "Encrypts/Decrypts/Hides Messages \n To send message encrypted long click to send button,To decrypt message long click to message and press 'Decrypt Message' (it will not show if message doesnt contain any hidden text)"
 
 aliucord.changelog.set("""
+#1.0.563441
+* Updated it to work on 101.3
+
 #1.0.563440
 *Now passwords are automaticly trimmed(removes spaces from beginning and end of the text)
 *Some Fix
