@@ -167,9 +167,6 @@ public class ServerSettingsFragment extends SettingsPage {
     }
 
     public void setSettings() {
-
-
-
         plugin.updateGuildData(data);
         Toast.makeText(ctx, "Settings Saved", Toast.LENGTH_SHORT).show();
         var guild2 = GuildUtilsKt.createApiGuild(StoreStream.getGuilds().getGuild(guild.getId()));

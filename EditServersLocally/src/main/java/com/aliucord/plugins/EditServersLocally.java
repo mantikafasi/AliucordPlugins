@@ -394,16 +394,11 @@ public class EditServersLocally extends Plugin {
             var inStr = dialog.getInput();
             if (inStr.isEmpty()) removeData(data.channelID);
             data.channelName = !inStr.isEmpty() ? inStr : null;
-
-
-
             updateChannel(data);
             Channel ch = StoreStream.getChannels().getChannel(data.channelID);
             try {
-
                 ReflectUtils.setField(ch, "name", !inStr.isEmpty() ? inStr : data.orginalName);
                 updateTextChannel(data);
-
 
             } catch (NoSuchFieldException | IllegalAccessException e) {
                 e.printStackTrace();
@@ -414,35 +409,6 @@ public class EditServersLocally extends Plugin {
             dialog.dismiss();
         });
         dialog.show(fm, "a");
-
-
-
-
-        /*
-        AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
-        builder.setMessage(message)
-                .setPositiveButton("Set",(dialog, which) -> {
-                    data.channelName = et.getText().toString()!=""?et.getText().toString():null;
-                    logger.info(data.toString());
-
-                    updateChannel(data);
-                    Channel ch = StoreStream.getChannels().getChannel(data.channelID);
-                    try {
-                        if (et.getText().toString()!=""){
-                            ReflectUtils.setField(ch,"name",et.getText().toString());
-                            updateTextChannel(data);
-                        }
-
-                    } catch (NoSuchFieldException | IllegalAccessException e) { e.printStackTrace(); }
-                    StoreStream.getChannels().handleChannelOrThreadCreateOrUpdate(ch);
-                    updateChannelData(data);
-                    setChannelData();
-                })
-                .setNegativeButton("Cancel", (dialog, id) -> {}).setView(lay).setNeutralButton("Remove",(dialog, which) -> removeData(data.channelID));
-
-        builder.create().show();
-
-         */
 
     }
 
@@ -458,7 +424,7 @@ public class EditServersLocally extends Plugin {
 
     public void updateTextChannel(ChannelData data) {
         TextView b = (TextView) channels.get().get(data.channelID);
-        b.setText(data.channelName == null ? data.orginalName : data.channelName);
+        if (b!=null) b.setText(data.channelName == null ? data.orginalName : data.channelName);
     }
 
     public ChannelData getChannelData(long id) {
