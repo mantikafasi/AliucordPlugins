@@ -157,6 +157,7 @@ public class ServerSettingsFragment extends SettingsPage {
                     @Override
                     public void afterTextChanged(Editable s) {
                         data.imageURL = s.toString().trim().isEmpty() ? null : s.toString();
+
                         MGImages.setImage$default(imageView, data.imageURL == null ? data.orginalURL : data.imageURL + "?size=" + mediaProxySize, imageView.getWidth(), imageView.getHeight(), true, null, (o, o1) -> true, 112, null);
                     }
                 });
@@ -166,6 +167,8 @@ public class ServerSettingsFragment extends SettingsPage {
     }
 
     public void setSettings() {
+
+
 
         plugin.updateGuildData(data);
         Toast.makeText(ctx, "Settings Saved", Toast.LENGTH_SHORT).show();
@@ -178,11 +181,12 @@ public class ServerSettingsFragment extends SettingsPage {
         } catch (NoSuchFieldException | IllegalAccessException e) {
             e.printStackTrace();
         }
-        if (data.serverName != null || data.orginalName != null) {
+        if (data.serverName != null || data.imageURL != null) {
             StoreStream.access$handleGuildUpdate(StoreStream.getPresences().getStream(), guild2);
         } else {
             plugin.removeGuildData(data.guildID);
         }
+
         getActivity().onBackPressed();
     }
 

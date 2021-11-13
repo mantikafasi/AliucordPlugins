@@ -12,6 +12,7 @@ import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.core.widget.NestedScrollView;
+import androidx.fragment.app.FragmentManager;
 
 import com.aliucord.Constants;
 import com.aliucord.Logger;
@@ -91,7 +92,16 @@ public class EditServersLocally extends Plugin {
         editIcon = editIcon.mutate();
         settingsTab = new SettingsTab(PluginSettings.class, SettingsTab.Type.BOTTOM_SHEET).withArgs(settings);
 
-
+        patchChannel();
+        patchGuild();
+        patchWidgetGuildProfileSheet();
+        patchGuildContextMenu();
+        patchWidgetChannelLıstItemText();
+        patchIconUtils();
+        patchChannelActionsMenu();
+        patchVoiceChannels();
+    }
+    public void patchChannel() throws NoSuchMethodException {
         patcher.patch(Channel.class.getDeclaredMethod("m"), new Hook((cf) -> {
             //patching 'getChannelName' method so I can change channels name
             try {
@@ -105,30 +115,9 @@ public class EditServersLocally extends Plugin {
             }
 
         }));
+    }
 
-
-
-
-        /*
-        patcher.patch(Guild.class.getDeclaredMethod("v"),new PreHook((cf)->{
-            var thisobj =(Guild) cf.thisObject;
-            try {
-                long guildid = (long) ReflectUtils.getField(thisobj,"id");
-                GuildData data = guildData.get(guildid);
-
-                //logger.info(String.valueOf(guildid));
-                if (data.serverName!=null){
-                    cf.setResult(data.serverName);
-                }
-
-            } catch (NoSuchFieldException | IllegalAccessException e) {
-                logger.error(e);
-            }
-        }));
-
-         */
-
-
+    public void patchGuild() throws NoSuchMethodException {
         patcher.patch(com.discord.models.guild.Guild.class.getDeclaredMethod("getName"), new PreHook((cf) -> {
             com.discord.models.guild.Guild guild = (com.discord.models.guild.Guild) cf.thisObject;
             GuildData data = getGuildData(guild.getId());
@@ -144,26 +133,9 @@ public class EditServersLocally extends Plugin {
                 }
             }
         }));
+    }
 
-        /*
-        for (Constructor<?> constructor : com.discord.models.guild.Guild.class.getConstructors()) {
-            patcher.patch(constructor,new Hook((cf)->{
-                try {
-                    com.discord.models.guild.Guild guild = (com.discord.models.guild.Guild) cf.thisObject;
-
-                    GuildData data = getGuildData(guild.getId());
-                   // if (data.orginalName==null){data.orginalName= (String) ReflectUtils.getField(cf.thisObject,"name");updateGuildData(data);}
-                    if(data.serverName!=null){
-                        ReflectUtils.setField(cf.thisObject,"name",data.serverName);
-                    }
-
-                } catch (NoSuchFieldException | IllegalAccessException e) {
-                    e.printStackTrace();
-                }
-
-            }));
-        }*/
-
+    public void patchWidgetGuildProfileSheet() throws NoSuchMethodException {
         patcher.patch(WidgetGuildProfileSheet.class.getDeclaredMethod("configureTabItems", long.class, WidgetGuildProfileSheetViewModel.TabItems.class, boolean.class)
                 , new Hook((cf) -> {
                     try {
@@ -200,7 +172,9 @@ public class EditServersLocally extends Plugin {
 
 
                 }));
+    }
 
+    public void patchGuildContextMenu() throws NoSuchMethodException {
         patcher.patch(WidgetGuildContextMenu.class.getDeclaredMethod("configureUI", GuildContextMenuViewModel.ViewState.class)
                 , new Hook((cf) -> {
                     //adding set server name,photo to Guild Settings
@@ -237,7 +211,9 @@ public class EditServersLocally extends Plugin {
                         e.printStackTrace();
                     }
                 }));
+    }
 
+    public void patchWidgetChannelLıstItemText() throws NoSuchMethodException {
         patcher.patch(WidgetChannelsListAdapter.ItemChannelText.class.getDeclaredMethod("onConfigure", int.class, ChannelListItem.class), new Hook(
                 (cf) -> {
                     WidgetChannelsListAdapter.ItemChannelText thisobj = (WidgetChannelsListAdapter.ItemChannelText) cf.thisObject;
@@ -274,31 +250,10 @@ public class EditServersLocally extends Plugin {
                         e.printStackTrace();
                     }
                 }));
-        /*
-        patcher.patch(GuildListViewHolder.GuildViewHolder.class.getDeclaredMethod("configureGuildIconImage", com.discord.models.guild.Guild.class, boolean.class),
-                new Hook((cf)->{
-                    var thisobj = (GuildListViewHolder.GuildViewHolder)cf.thisObject;
-                    var guild = (com.discord.models.guild.Guild)cf.args[0];
-                    try {
-                        WidgetGuildsListItemGuildBinding binding = (WidgetGuildsListItemGuildBinding) ReflectUtils.getField(thisobj,"bindingGuild");
-                        GuildData data = getGuildData(guild.getId());
-                        if (data.imageURL!=null){
 
-                            binding.d.setImageURI(data.imageURL);
-                            logger.info(IconUtils.getForGuild(guild));
+    }
 
-                            //ReflectUtils.setField(guild,"icon","changed");
-                            //StoreStream.access$handleGuildUpdate(StoreStream.getNotices().getStream(),GuildUtilsKt.createApiGuild(guild));
-                        }
-
-
-                    } catch (NoSuchFieldException | IllegalAccessException e) {
-                        e.printStackTrace();
-                    }
-                }));
-
-         */
-
+    public void patchIconUtils() throws NoSuchMethodException {
         patcher.patch(IconUtils.class.getDeclaredMethod("getForGuild", Long.class, String.class, String.class, boolean.class, Integer.class),
                 new PreHook((cf) -> {
                     long guildID = (long) cf.args[0];
@@ -317,8 +272,9 @@ public class EditServersLocally extends Plugin {
                     cf.setResult(data.imageURL != null ? data.imageURL : data.orginalURL);
 
                 }));
+    }
 
-
+    public void patchChannelActionsMenu() throws NoSuchMethodException {
         patcher.patch(WidgetChannelsListItemChannelActions.class.getDeclaredMethod("configureUI", WidgetChannelsListItemChannelActions.Model.class),
                 new Hook((cf) -> {
                     //Putting 'Set Channel Name' button to actions
@@ -354,7 +310,7 @@ public class EditServersLocally extends Plugin {
 
                         tw.setId(View.generateViewId());
                         tw.setOnClickListener(v1 -> {
-                            createDialog("Set Text Channel Name", data, v.getContext());
+                            createDialog("Set Text Channel Name", data, actions.getParentFragmentManager());
                             actions.dismiss();
                         });
                         layout.addView(tw);
@@ -364,7 +320,6 @@ public class EditServersLocally extends Plugin {
                     }
 
                 }));
-        patchVoiceChannels();
     }
 
     public void patchVoiceChannels() {
@@ -375,7 +330,6 @@ public class EditServersLocally extends Plugin {
                 var a = (ChannelListItemVoiceChannel) callFrame.args[1];
                 if (PermissionUtils.can(16, a.getPermission())) return; //took this from halal
                 var channel = ((ChannelListItemVoiceChannel) callFrame.args[1]).getChannel();
-
                 var chWrapped = new ChannelWrapper(channel);
                 var chdata = getChannelData(chWrapped.getId());
                 try {
@@ -388,10 +342,9 @@ public class EditServersLocally extends Plugin {
 
                     if (chdata.channelName != null) {
                         binding.f.setText(chdata.channelName);
-                        //binding.c.setText(chdata.channelName);
-
 
                         try {
+                            
                             ReflectUtils.setField(channel, "name", chdata.channelName);
                             ReflectUtils.setField(callFrame.thisObject, "channel", channel);
                         } catch (NoSuchFieldException | IllegalAccessException e) {
@@ -411,7 +364,7 @@ public class EditServersLocally extends Plugin {
 
                         channels.get().put(chWrapped.getId(), binding.f);
 
-                        createDialog("Set Voice Channel Name", chdata, binding.a.getContext());
+                        createDialog("Set Voice Channel Name", chdata,Utils.appActivity.getSupportFragmentManager());
                         return true;
                     });
 
@@ -429,14 +382,19 @@ public class EditServersLocally extends Plugin {
 
     }
 
-    public void createDialog(String message, ChannelData data, Context ctx) {
+    public void createDialog(String message, ChannelData data, FragmentManager fm) {
 
-        InputDialog dialog = new InputDialog().setTitle(message).setPlaceholderText(data.channelName != null ? data.channelName : data.orginalName).setDescription("To reset channel name empty the text box and click confirm");
+        InputDialog dialog = new InputDialog().setTitle(message).setPlaceholderText(data.orginalName).setDescription("To reset channel name empty the text box and click confirm");
 
+
+        dialog.setOnDialogShownListener(v -> {
+            if (data.channelName != null) dialog.getInputLayout().getEditText().setText(data.channelName);
+        });
         dialog.setOnOkListener(v -> {
             var inStr = dialog.getInput();
             if (inStr.isEmpty()) removeData(data.channelID);
             data.channelName = !inStr.isEmpty() ? inStr : null;
+
 
 
             updateChannel(data);
@@ -455,7 +413,7 @@ public class EditServersLocally extends Plugin {
             setChannelData();
             dialog.dismiss();
         });
-        dialog.show(Utils.getAppActivity().getSupportFragmentManager(), "a");
+        dialog.show(fm, "a");
 
 
 
