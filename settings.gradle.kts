@@ -33,7 +33,5 @@ project(":InvisibleMessages").projectDir = File("./InvisibleMessages")
 include(":RickRoll")
 project(":RickRoll").projectDir = File("./RickRoll")
 
-
-
 rootProject.name = "AliucordPlugins"
 

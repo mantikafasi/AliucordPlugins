@@ -24,9 +24,9 @@ public class InvChatAPI {
 
         JSONObject json = new JSONObject();
         try {
-            json.put("type","hide").put("password",password).put("secret",secret).put("cover",cover);
-
-            return makeJSONRequest(json);
+            json.put("type","hide").put("password",password).put("secret",secret +"\u200b").put("cover",cover);
+            String encryptedMessage = makeJSONRequest(json);
+            return ("\u200b" + encryptedMessage);
         } catch (JSONException e) { e.printStackTrace(); logger.error(e);}
         return null; //fail  :sob:
 
@@ -34,8 +34,6 @@ public class InvChatAPI {
 
     public static String decrypt(String message,String password) throws IOException {
         JSONObject json = new JSONObject();
-
-
         try {
             json.put("type","reveal").put("password",password).put("secret",message);
             return makeJSONRequest(json);
