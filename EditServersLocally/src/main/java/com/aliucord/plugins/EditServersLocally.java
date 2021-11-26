@@ -259,7 +259,7 @@ public class EditServersLocally extends Plugin {
                     long guildID = (long) cf.args[0];
                     // Changing Server Icon to saved one if exists
                     GuildData data = getGuildData(guildID);
-                    if (data.orginalURL == null) {
+                    if (data.orginalURL.equals("") || data.orginalURL == null) {
 
                         try {
                             data.orginalURL = (XposedBridge.invokeOriginalMethod(cf.method, cf.thisObject, cf.args).toString());
