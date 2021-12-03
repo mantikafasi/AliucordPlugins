@@ -36,5 +36,8 @@ project(":RickRoll").projectDir = File("./RickRoll")
 include(":EncryptDMs")
 project(":EncryptDMs").projectDir = File("./EncryptDMs")
 
+include(":StupidityDB")
+project(":StupidityDB").projectDir = File("./StupidityDB")
+
 rootProject.name = "AliucordPlugins"
 

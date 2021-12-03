@@ -2,11 +2,15 @@ package com.aliucord.plugins;
 import javax.crypto.Cipher;
 import java.io.InputStream;
 import java.security.*;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Map;
+
 import android.util.Base64;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import android.util.Base64;
+import android.util.Pair;
 
 public class RSA {
     public static KeyPair generateKeyPair() throws Exception {
@@ -15,6 +19,32 @@ public class RSA {
         KeyPair pair = generator.generateKeyPair();
 
         return pair;
+    }
+
+    private static Pair<KeyFactory,X509EncodedKeySpec> generateKeyFactory(String key){
+        byte[] data = Base64.decode((key.getBytes()),0);
+        X509EncodedKeySpec spec = new X509EncodedKeySpec(data);
+        try{
+            return new Pair<>(KeyFactory.getInstance("RSA"),spec);
+        } catch (Exception e){
+            return null;
+        }
+
+    }
+
+    public static Key loadPublicKey(String stored) {
+        try{
+            var keyfac = generateKeyFactory(stored);
+            return keyfac.first.generatePublic(keyfac.second);
+        } catch (Exception e){
+            return null;
+        }
+    }
+    public static Key loadPrivateKey(String stored) {
+        try{
+            var keyfac = generateKeyFactory(stored);
+            return keyfac.first.generatePrivate(keyfac.second);
+        } catch (Exception e){return null;}
     }
 
 
