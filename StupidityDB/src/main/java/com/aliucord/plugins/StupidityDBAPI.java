@@ -2,12 +2,8 @@ package com.aliucord.plugins;
 
 import static java.util.Collections.emptyList;
 
-import android.net.http.HttpResponseCache;
-import android.util.Log;
-
 import com.aliucord.Http;
 import com.aliucord.Logger;
-import com.aliucord.api.SettingsAPI;
 import com.aliucord.utils.RxUtils;
 import com.aliucord.wrappers.ChannelWrapper;
 import com.discord.models.domain.NonceGenerator;
@@ -19,12 +15,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.Map;
 
 public class StupidityDBAPI {
-    //static String serverip="http://192.168.1.35";
+    //static String serverip="http://192.168.1.35"; local ip used for testing
     static String serverip="https://mantikralligi1.pythonanywhere.com";
     static long botid = Long.parseLong("915703782174752809");
     static Cache cache = new Cache();
@@ -39,7 +32,7 @@ public class StupidityDBAPI {
             cache.setUserCache(userID,res);
             return res;
         } catch (IOException e) {
-            new Logger("poga").error(e);
+            new Logger("StupidityDB").error(e);
             return null;
         }
 

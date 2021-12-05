@@ -2,6 +2,8 @@ package com.aliucord.plugins;
 
 import static com.lytefast.flexinput.R.i.UiKit_ImageButton;
 
+import com.aliucord.Constants;
+import com.lytefast.flexinput.R;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.text.InputType;
@@ -9,42 +11,31 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.res.ResourcesCompat;
 import androidx.core.widget.NestedScrollView;
-import androidx.viewpager.widget.ViewPager;
 
 import com.aliucord.Utils;
 import com.aliucord.annotations.AliucordPlugin;
-import com.aliucord.api.CommandsAPI;
 import com.aliucord.entities.Plugin;
 import com.aliucord.fragments.InputDialog;
 import com.aliucord.patcher.Hook;
 import com.aliucord.utils.DimenUtils;
 import com.aliucord.utils.ReflectUtils;
-import com.aliucord.wrappers.ChannelWrapper;
-import com.discord.databinding.WidgetChannelsListItemActionsBinding;
-import com.discord.databinding.WidgetUserSheetBinding;
 import com.discord.models.message.Message;
 import com.discord.utilities.color.ColorCompat;
-import com.discord.widgets.channels.list.WidgetChannelsListItemChannelActions;
 import com.discord.widgets.chat.list.adapter.WidgetChatListAdapterItemMessage;
+import com.discord.widgets.user.profile.UserProfileHeaderView;
+import com.discord.widgets.user.profile.UserProfileHeaderViewModel;
 import com.discord.widgets.user.usersheet.WidgetUserSheet;
 import com.discord.widgets.user.usersheet.WidgetUserSheetViewModel;
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.net.CacheRequest;
-import java.util.Collections;
 
 @SuppressWarnings("unused")
 @AliucordPlugin
 public class StupidityDB extends Plugin {
-
 
 
     @Override
@@ -53,10 +44,10 @@ public class StupidityDB extends Plugin {
         hideIcon.setTint(ColorCompat.getColor(context, com.lytefast.flexinput.R.c.primary_dark_400));
 
         patcher.patch(WidgetChatListAdapterItemMessage.class.getDeclaredMethod("configureItemTag", Message.class),
-                new Hook((cf)->{
-                    var thisobj =(WidgetChatListAdapterItemMessage)cf.thisObject;
-                    var message = (Message)cf.args[0];
-                    new Thread(()->{
+                new Hook((cf) -> {
+                    var thisobj = (WidgetChatListAdapterItemMessage) cf.thisObject;
+                    var message = (Message) cf.args[0];
+                    new Thread(() -> {
                         try {
                             TextView itemTimestampField = (TextView) ReflectUtils.getField(cf.thisObject, "itemTimestamp");
                             String stupidity = StupidityDBAPI.getUserData(message.getAuthor().i());
@@ -64,8 +55,8 @@ public class StupidityDB extends Plugin {
 
                             Utils.mainThread.post(
                                     () -> {
-                                        if (itemTimestampField != null && !itemTimestampField.getText().toString().endsWith("Stupit") && stupidity!=null && !stupidity.equals("None"))
-                                            itemTimestampField.setText(itemTimestampField.getText() + " %" + stupidity +" Stupit)");
+                                        if (itemTimestampField != null && !itemTimestampField.getText().toString().endsWith("Stupit") && stupidity != null && !stupidity.equals("None"))
+                                            itemTimestampField.setText(itemTimestampField.getText() + " %" + stupidity + " Stupit)");
                                     }
                             );
                         } catch (NoSuchFieldException | IllegalAccessException e) {
@@ -74,29 +65,48 @@ public class StupidityDB extends Plugin {
                         }
                     }).start();
                 }));
+        var profileheadertextid = View.generateViewId();
+        patcher.patch(UserProfileHeaderView.class.getDeclaredMethod("updateViewState", UserProfileHeaderViewModel.ViewState.Loaded.class),
+                new Hook((cf)->{
+                    var thisobj = (UserProfileHeaderView)cf.thisObject;
+                    var binding = UserProfileHeaderView.access$getBinding$p(thisobj);
+                    var customStatusViewId = Utils.getResId("user_profile_header_custom_status", "id");
+                    var customStatus = binding.a.findViewById(customStatusViewId); //stole thi from juby, tyyy juby
+                    var layout = (LinearLayout)customStatus.getParent();
+
+                    var detailsTW =(TextView) layout.findViewById(profileheadertextid);
+                    if (detailsTW==null){
+                        detailsTW = new TextView(context,null, R.i.UiKit_TextView_Semibold);
+                        layout.addView(detailsTW);
+                        var viewstate = (UserProfileHeaderViewModel.ViewState.Loaded)cf.args[0];
+                        var userid= viewstate.component1().getId();
+                        detailsTW.setId(profileheadertextid);
+                        detailsTW.setTextColor(ColorCompat.getThemedColor(layout.getContext(), R.b.colorTextMuted));
+                        var stupidity =StupidityDBAPI.getUserData(userid);
+                        if (stupidity!=null && !stupidity.equals("None")) detailsTW.setText("%" + stupidity +" Stupit");
+
+                        detailsTW.setTypeface(ResourcesCompat.getFont(context, Constants.Fonts.whitney_semibold));
+
+                    }
+                }));
 
         int twid = View.generateViewId();
         patcher.patch(WidgetUserSheet.class.getDeclaredMethod("configureProfileActionButtons", WidgetUserSheetViewModel.ViewState.Loaded.class),
-                new Hook((cf)->{
+                new Hook((cf) -> {
                     var model = (WidgetUserSheetViewModel.ViewState.Loaded) cf.args[0];
-
-
                     var thisobj = (WidgetUserSheet) cf.thisObject;
-                    var nestedScrollView = (NestedScrollView) thisobj.requireView();
-
                     var binding = WidgetUserSheet.access$getBinding$p(thisobj);
 
-
                     var layout = binding.A;
-                    binding.f.setVisibility(View.VISIBLE);
+                    //binding.f.setVisibility(View.VISIBLE);
                     View v = layout.getChildAt(0);
 
-                    if(layout.findViewById(twid)==null){
+                    if (layout.findViewById(twid) == null) {
                         ViewGroup.LayoutParams param = v.getLayoutParams();
                         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(param.width, param.height);
                         params.leftMargin = DimenUtils.dpToPx(20);
 
-                        Button button = new Button(v.getContext(), null, 0,UiKit_ImageButton);
+                        Button button = new Button(v.getContext(), null, 0, UiKit_ImageButton);
                         button.setText("Vote Stupidity");
                         button.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
 
@@ -113,20 +123,17 @@ public class StupidityDB extends Plugin {
                             });
                             dialog.setOnOkListener(v2 -> {
                                 var input = Integer.parseInt(dialog.getInput());
-                                if (input>100 || input<0){
+                                if (input > 100 || input < 0) {
                                     Toast.makeText(context, "Input Should Be Between 0 and 100", Toast.LENGTH_SHORT).show();
                                 } else {
-                                    StupidityDBAPI.sendUserData(input,model.getUser().getId());
+                                    StupidityDBAPI.sendUserData(input, model.getUser().getId());
                                     dialog.dismiss();
                                 }
                             });
-                            dialog.show(thisobj.getChildFragmentManager(),"epic");
+                            dialog.show(thisobj.getChildFragmentManager(), "epic");
                         });
                         layout.addView(button);
                     }
-
-
-
                 }));
     }
 
