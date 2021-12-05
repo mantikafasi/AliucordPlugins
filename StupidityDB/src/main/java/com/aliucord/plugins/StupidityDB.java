@@ -2,8 +2,6 @@ package com.aliucord.plugins;
 
 import static com.lytefast.flexinput.R.i.UiKit_ImageButton;
 
-import com.aliucord.Constants;
-import com.lytefast.flexinput.R;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.text.InputType;
@@ -16,8 +14,8 @@ import android.widget.Toast;
 
 import androidx.core.content.ContextCompat;
 import androidx.core.content.res.ResourcesCompat;
-import androidx.core.widget.NestedScrollView;
 
+import com.aliucord.Constants;
 import com.aliucord.Utils;
 import com.aliucord.annotations.AliucordPlugin;
 import com.aliucord.entities.Plugin;
@@ -32,65 +30,28 @@ import com.discord.widgets.user.profile.UserProfileHeaderView;
 import com.discord.widgets.user.profile.UserProfileHeaderViewModel;
 import com.discord.widgets.user.usersheet.WidgetUserSheet;
 import com.discord.widgets.user.usersheet.WidgetUserSheetViewModel;
+import com.lytefast.flexinput.R;
 
 @SuppressWarnings("unused")
 @AliucordPlugin
 public class StupidityDB extends Plugin {
-
+    Context context;
+    int profileheadertextid = View.generateViewId();
+    int twid = View.generateViewId();
+    Drawable stupidityIcon;
 
     @Override
     public void start(Context context) throws NoSuchMethodException {
-        Drawable hideIcon = ContextCompat.getDrawable(context, com.lytefast.flexinput.R.e.abc_seekbar_tick_mark_material).mutate();
-        hideIcon.setTint(ColorCompat.getColor(context, com.lytefast.flexinput.R.c.primary_dark_400));
+        this.context = context;
+        stupidityIcon = ContextCompat.getDrawable(context, com.lytefast.flexinput.R.e.ic_emoji_24dp).mutate();
+        //stupidityIcon.setTint(ColorCompat.getColor(context, com.lytefast.flexinput.R.c.primary_dark_400));
 
-        patcher.patch(WidgetChatListAdapterItemMessage.class.getDeclaredMethod("configureItemTag", Message.class),
-                new Hook((cf) -> {
-                    var thisobj = (WidgetChatListAdapterItemMessage) cf.thisObject;
-                    var message = (Message) cf.args[0];
-                    new Thread(() -> {
-                        try {
-                            TextView itemTimestampField = (TextView) ReflectUtils.getField(cf.thisObject, "itemTimestamp");
-                            String stupidity = StupidityDBAPI.getUserData(message.getAuthor().i());
-                            logger.info(stupidity);
+        patchProfileHeaderView();
+        patchWidgetChatListAdapterItemMessage();
+        patchWidgerUserSheet();
+    }
 
-                            Utils.mainThread.post(
-                                    () -> {
-                                        if (itemTimestampField != null && !itemTimestampField.getText().toString().endsWith("Stupit") && stupidity != null && !stupidity.equals("None"))
-                                            itemTimestampField.setText(itemTimestampField.getText() + " %" + stupidity + " Stupit)");
-                                    }
-                            );
-                        } catch (NoSuchFieldException | IllegalAccessException e) {
-                            logger.error(e);
-                            e.printStackTrace();
-                        }
-                    }).start();
-                }));
-        var profileheadertextid = View.generateViewId();
-        patcher.patch(UserProfileHeaderView.class.getDeclaredMethod("updateViewState", UserProfileHeaderViewModel.ViewState.Loaded.class),
-                new Hook((cf)->{
-                    var thisobj = (UserProfileHeaderView)cf.thisObject;
-                    var binding = UserProfileHeaderView.access$getBinding$p(thisobj);
-                    var customStatusViewId = Utils.getResId("user_profile_header_custom_status", "id");
-                    var customStatus = binding.a.findViewById(customStatusViewId); //stole thi from juby, tyyy juby
-                    var layout = (LinearLayout)customStatus.getParent();
-
-                    var detailsTW =(TextView) layout.findViewById(profileheadertextid);
-                    if (detailsTW==null){
-                        detailsTW = new TextView(context,null, R.i.UiKit_TextView_Semibold);
-                        layout.addView(detailsTW);
-                        var viewstate = (UserProfileHeaderViewModel.ViewState.Loaded)cf.args[0];
-                        var userid= viewstate.component1().getId();
-                        detailsTW.setId(profileheadertextid);
-                        detailsTW.setTextColor(ColorCompat.getThemedColor(layout.getContext(), R.b.colorTextMuted));
-                        var stupidity =StupidityDBAPI.getUserData(userid);
-                        if (stupidity!=null && !stupidity.equals("None")) detailsTW.setText("%" + stupidity +" Stupit");
-
-                        detailsTW.setTypeface(ResourcesCompat.getFont(context, Constants.Fonts.whitney_semibold));
-
-                    }
-                }));
-
-        int twid = View.generateViewId();
+    public void patchWidgerUserSheet() throws NoSuchMethodException {
         patcher.patch(WidgetUserSheet.class.getDeclaredMethod("configureProfileActionButtons", WidgetUserSheetViewModel.ViewState.Loaded.class),
                 new Hook((cf) -> {
                     var model = (WidgetUserSheetViewModel.ViewState.Loaded) cf.args[0];
@@ -110,7 +71,7 @@ public class StupidityDB extends Plugin {
                         button.setText("Vote Stupidity");
                         button.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
 
-                        button.setCompoundDrawablesRelativeWithIntrinsicBounds(null, hideIcon, null, null);
+                        button.setCompoundDrawablesRelativeWithIntrinsicBounds(null, stupidityIcon, null, null);
                         button.setLayoutParams(layout.getChildAt(0).getLayoutParams());
 
                         button.setId(twid);
@@ -137,9 +98,58 @@ public class StupidityDB extends Plugin {
                 }));
     }
 
+    public void patchWidgetChatListAdapterItemMessage() throws NoSuchMethodException {
+        patcher.patch(WidgetChatListAdapterItemMessage.class.getDeclaredMethod("configureItemTag", Message.class),
+                new Hook((cf) -> {
+                    var thisobj = (WidgetChatListAdapterItemMessage) cf.thisObject;
+                    var message = (Message) cf.args[0];
+                    new Thread(() -> {
+                        try {
+                            TextView itemTimestampField = (TextView) ReflectUtils.getField(cf.thisObject, "itemTimestamp");
+                            String stupidity = StupidityDBAPI.getUserData(message.getAuthor().i());
+                            Utils.mainThread.post(
+                                    () -> {
+                                        if (itemTimestampField != null && !itemTimestampField.getText().toString().endsWith("Stupit") && stupidity != null && !stupidity.equals("None"))
+                                            itemTimestampField.setText(itemTimestampField.getText() + " %" + stupidity + " Stupit)");
+                                    }
+                            );
+                        } catch (NoSuchFieldException | IllegalAccessException e) {
+                            logger.error(e);
+                            e.printStackTrace();
+                        }
+                    }).start();
+                }));
+    }
+
+    public void patchProfileHeaderView() throws NoSuchMethodException {
+        patcher.patch(UserProfileHeaderView.class.getDeclaredMethod("updateViewState", UserProfileHeaderViewModel.ViewState.Loaded.class),
+                new Hook((cf) -> {
+                    var thisobj = (UserProfileHeaderView) cf.thisObject;
+                    var binding = UserProfileHeaderView.access$getBinding$p(thisobj);
+                    var customStatusViewId = Utils.getResId("user_profile_header_custom_status", "id");
+                    var customStatus = binding.a.findViewById(customStatusViewId); //stole thi from juby, tyyy juby
+                    var layout = (LinearLayout) customStatus.getParent();
+
+                    var detailsTW = (TextView) layout.findViewById(profileheadertextid);
+                    if (detailsTW == null) {
+                        detailsTW = new TextView(context,null, R.i.UiKit_TextView_Semibold);
+                        layout.addView(detailsTW);
+                        var viewstate = (UserProfileHeaderViewModel.ViewState.Loaded)cf.args[0];
+                        var userid= viewstate.component1().getId();
+                        detailsTW.setId(profileheadertextid);
+                        detailsTW.setTextColor(ColorCompat.getThemedColor(layout.getContext(), R.b.colorTextMuted));
+                        var stupidity =StupidityDBAPI.getUserData(userid);
+                        if (stupidity!=null && !stupidity.equals("None")) detailsTW.setText("%" + stupidity +" Stupit");
+
+                        detailsTW.setTypeface(ResourcesCompat.getFont(context, Constants.Fonts.whitney_semibold));
+
+                    }
+                }));
+
+    }
+
     @Override
     public void stop(Context context) {
         patcher.unpatchAll();
-        commands.unregisterAll();
     }
 }

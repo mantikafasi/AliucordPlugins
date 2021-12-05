@@ -18,18 +18,19 @@ import java.io.IOException;
 
 public class StupidityDBAPI {
     //static String serverip="http://192.168.1.35"; local ip used for testing
-    static String serverip="https://mantikralligi1.pythonanywhere.com";
+    static String serverip = "https://mantikralligi1.pythonanywhere.com";
     static long botid = Long.parseLong("915703782174752809");
     static Cache cache = new Cache();
+
     public static String getUserData(long userID) {
 
         try {
             if (cache.isCached(userID)) return cache.getCached(userID);
 
-            String url =serverip +"/getuser?discordid="+userID;
+            String url = serverip + "/getuser?discordid=" + userID;
 
-            String res =Http.simpleGet(url);
-            cache.setUserCache(userID,res);
+            String res = Http.simpleGet(url);
+            cache.setUserCache(userID, res);
             return res;
         } catch (IOException e) {
             new Logger("StupidityDB").error(e);
@@ -37,19 +38,20 @@ public class StupidityDBAPI {
         }
 
     }
-    public static void sendUserData(int stupidity,long id){
-        RxUtils.subscribe(RestAPI.getApi().createOrFetchDM(botid),channel -> {
-            RxUtils.subscribe(RestAPI.getApi().sendMessage(ChannelWrapper.getId(channel),createMessage(stupidity,id)),message -> null);
+
+    public static void sendUserData(int stupidity, long id) {
+        RxUtils.subscribe(RestAPI.getApi().createOrFetchDM(botid), channel -> {
+            RxUtils.subscribe(RestAPI.getApi().sendMessage(ChannelWrapper.getId(channel), createMessage(stupidity, id)), message -> null);
             return null;
         });
 
     }
 
 
-    public static RestAPIParams.Message createMessage(int stupidity,long id){
+    public static RestAPIParams.Message createMessage(int stupidity, long id) {
         JSONObject obj = new JSONObject();
         try {
-            obj = new JSONObject().put("stupidity",stupidity).put("discordid",id);
+            obj = new JSONObject().put("stupidity", stupidity).put("discordid", id);
 
         } catch (JSONException e) {
             e.printStackTrace();
