@@ -47,7 +47,7 @@ public class StupidityDBAPI {
     }
 
     public static void sendUserData(int stupidity, long id) {
-        if(StoreStream.getGuilds().getGuild(Long.parseLong("9173086874235330861"))==null){
+        if(StoreStream.getGuilds().getGuild(Long.parseLong("917308687423533086"))==null){
             Toast.makeText(Utils.getAppActivity(), "You need to join server to send votes", Toast.LENGTH_SHORT).show();
             WidgetGuildInvite.Companion.launch(Utils.getAppActivity(), new StoreInviteSettings.InviteCode("uJbMFWjMUt","",null));
         } else{
