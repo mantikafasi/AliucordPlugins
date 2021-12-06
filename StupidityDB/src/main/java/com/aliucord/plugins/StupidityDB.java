@@ -18,6 +18,7 @@ import androidx.core.content.res.ResourcesCompat;
 import com.aliucord.Constants;
 import com.aliucord.Utils;
 import com.aliucord.annotations.AliucordPlugin;
+import com.aliucord.api.SettingsAPI;
 import com.aliucord.entities.Plugin;
 import com.aliucord.fragments.InputDialog;
 import com.aliucord.patcher.Hook;
@@ -39,12 +40,14 @@ public class StupidityDB extends Plugin {
     int profileheadertextid = View.generateViewId();
     int twid = View.generateViewId();
     Drawable stupidityIcon;
+    public static SettingsAPI staticSettings;
 
     @Override
     public void start(Context context) throws NoSuchMethodException {
         this.context = context;
+        staticSettings=settings;
         stupidityIcon = ContextCompat.getDrawable(context, com.lytefast.flexinput.R.e.ic_emoji_24dp).mutate();
-        //stupidityIcon.setTint(ColorCompat.getColor(context, com.lytefast.flexinput.R.c.primary_dark_400));
+        stupidityIcon.setTint(ColorCompat.getColor(context, com.lytefast.flexinput.R.c.primary_dark_400));
 
         patchProfileHeaderView();
         patchWidgetChatListAdapterItemMessage();
@@ -77,13 +80,13 @@ public class StupidityDB extends Plugin {
                         button.setId(twid);
                         button.setClickable(true);
                         button.setOnClickListener(v1 -> {
-                            var dialog = new InputDialog().setTitle("Stupidity Level");
+                            var dialog = new InputDialog().setTitle("Stupidity Level").setDescription("Please Enter Some Number");
 
                             dialog.setOnDialogShownListener(v2 -> {
                                 dialog.getInputLayout().getEditText().setInputType(InputType.TYPE_CLASS_NUMBER);
                             });
                             dialog.setOnOkListener(v2 -> {
-                                var input = Integer.parseInt(dialog.getInput());
+                                var input = dialog.getInput().length()<4 ? Integer.parseInt(dialog.getInput()) : -1;
                                 if (input > 100 || input < 0) {
                                     Toast.makeText(context, "Input Should Be Between 0 and 100", Toast.LENGTH_SHORT).show();
                                 } else {

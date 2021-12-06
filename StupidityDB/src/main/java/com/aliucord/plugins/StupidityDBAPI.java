@@ -2,14 +2,21 @@ package com.aliucord.plugins;
 
 import static java.util.Collections.emptyList;
 
+import android.widget.Toast;
+
 import com.aliucord.Http;
 import com.aliucord.Logger;
+import com.aliucord.Utils;
 import com.aliucord.utils.RxUtils;
 import com.aliucord.wrappers.ChannelWrapper;
 import com.discord.models.domain.NonceGenerator;
 import com.discord.restapi.RestAPIParams;
+import com.discord.stores.StoreApplicationStreaming;
+import com.discord.stores.StoreInviteSettings;
+import com.discord.stores.StoreStream;
 import com.discord.utilities.rest.RestAPI;
 import com.discord.utilities.time.ClockFactory;
+import com.discord.widgets.guilds.invite.WidgetGuildInvite;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -40,13 +47,19 @@ public class StupidityDBAPI {
     }
 
     public static void sendUserData(int stupidity, long id) {
-        RxUtils.subscribe(RestAPI.getApi().createOrFetchDM(botid), channel -> {
-            RxUtils.subscribe(RestAPI.getApi().sendMessage(ChannelWrapper.getId(channel), createMessage(stupidity, id)), message -> null);
-            return null;
-        });
+        if(StoreStream.getGuilds().getGuild(Long.parseLong("9173086874235330861"))==null){
+            Toast.makeText(Utils.getAppActivity(), "You need to join server to send votes", Toast.LENGTH_SHORT).show();
+            WidgetGuildInvite.Companion.launch(Utils.getAppActivity(), new StoreInviteSettings.InviteCode("uJbMFWjMUt","",null));
+        } else{
+            RxUtils.subscribe(RestAPI.getApi().createOrFetchDM(botid), channel -> {
+                RxUtils.subscribe(RestAPI.getApi().sendMessage(ChannelWrapper.getId(channel), createMessage(stupidity, id)), message -> null);
+
+                return null;
+            });
+        }
+
 
     }
-
 
     public static RestAPIParams.Message createMessage(int stupidity, long id) {
         JSONObject obj = new JSONObject();
