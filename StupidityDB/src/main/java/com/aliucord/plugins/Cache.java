@@ -11,7 +11,7 @@ public class Cache {
     SettingsAPI settings = new SettingsAPI("StupidityDBCache");
 
     public void setUserCache(long id, String stupidity) {
-        long time = Calendar.getInstance().getTimeInMillis() / 1000 + 86400;
+        long time = Calendar.getInstance().getTimeInMillis() / 1000 + 21600;
         settings.setObject(String.valueOf(id), new Pair<String, Long>(stupidity, time));//stupidity and time its saved
     }
 
@@ -24,5 +24,9 @@ public class Cache {
         long time = Calendar.getInstance().getTimeInMillis() / 1000;
         if (pair.second < time) settings.remove(String.valueOf(id));
         return pair.first;
+    }
+
+    public void clearCache() {
+        settings.resetSettings();
     }
 }

@@ -11,7 +11,6 @@ import com.aliucord.utils.RxUtils;
 import com.aliucord.wrappers.ChannelWrapper;
 import com.discord.models.domain.NonceGenerator;
 import com.discord.restapi.RestAPIParams;
-import com.discord.stores.StoreApplicationStreaming;
 import com.discord.stores.StoreInviteSettings;
 import com.discord.stores.StoreStream;
 import com.discord.utilities.rest.RestAPI;
@@ -27,7 +26,7 @@ public class StupidityDBAPI {
     //static String serverip="http://192.168.1.35"; local ip used for testing
     static String serverip = "https://mantikralligi1.pythonanywhere.com";
     static long botid = Long.parseLong("915703782174752809");
-    static Cache cache = new Cache();
+    public static Cache cache = new Cache();
 
     public static String getUserData(long userID) {
 
@@ -46,19 +45,51 @@ public class StupidityDBAPI {
 
     }
 
-    public static void sendUserData(int stupidity, long id) {
-        if(StoreStream.getGuilds().getGuild(Long.parseLong("917308687423533086"))==null){
+    public static String sendUserData(int stupidity, long id) {
+        if (StupidityDB.staticSettings.getBool("useOAUTH2", true)) {
+            return sendUserDataWithHttp(stupidity, id);
+        } else {
+            return sendUserDataDiscord(stupidity, id);
+        }
+    }
+
+    public static boolean isUserinServer() {
+        return !(StoreStream.getGuilds().getGuild(Long.parseLong("917308687423533086")) == null);
+    }
+
+    public static String sendUserDataDiscord(int stupidity, long id) {
+        if (!isUserinServer()) {
             Toast.makeText(Utils.getAppActivity(), "You need to join server to send votes", Toast.LENGTH_SHORT).show();
-            WidgetGuildInvite.Companion.launch(Utils.getAppActivity(), new StoreInviteSettings.InviteCode("uJbMFWjMUt","",null));
-        } else{
+            WidgetGuildInvite.Companion.launch(Utils.getAppActivity(), new StoreInviteSettings.InviteCode("uJbMFWjMUt", "", null));
+            return "Accept Invite and try again";
+        } else {
             RxUtils.subscribe(RestAPI.getApi().createOrFetchDM(botid), channel -> {
                 RxUtils.subscribe(RestAPI.getApi().sendMessage(ChannelWrapper.getId(channel), createMessage(stupidity, id)), message -> null);
-
                 return null;
             });
+            return "Vote Sent";
         }
+    }
 
+    public static String sendUserDataWithHttp(int stupidity, long id) {
+        if (StupidityDB.staticSettings.getString("token", null) != null) {
+            String url = serverip + "/vote";
 
+            try {
+                var json = new JSONObject()
+                        .put("token", StupidityDB.staticSettings.getString("token", null))
+                        .put("discordid", id)
+                        .put("stupidity", stupidity);
+                return Http.simplePost(url, json.toString());
+            } catch (JSONException | IOException e) {
+                new Logger("StupidityDBAPI").error(e);
+                return "An Error Occured";
+            }
+        } else {
+            Utils.openPageWithProxy(Utils.getAppActivity(), new AuthorazationPage());
+
+        }
+        return "Token is null,Please Authorize";
     }
 
     public static RestAPIParams.Message createMessage(int stupidity, long id) {

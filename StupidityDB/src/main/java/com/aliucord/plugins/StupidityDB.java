@@ -45,9 +45,15 @@ public class StupidityDB extends Plugin {
     @Override
     public void start(Context context) throws NoSuchMethodException {
         this.context = context;
-        staticSettings=settings;
+        staticSettings = settings;
         stupidityIcon = ContextCompat.getDrawable(context, com.lytefast.flexinput.R.e.ic_emoji_24dp).mutate();
         stupidityIcon.setTint(ColorCompat.getColor(context, com.lytefast.flexinput.R.c.primary_dark_400));
+        settingsTab = new SettingsTab(BottomShit.class, SettingsTab.Type.BOTTOM_SHEET).withArgs(settings);
+        var is110 = settings.getBool("is110", true);
+        if (is110) {
+            settings.setBool("useOAUTH2", !StupidityDBAPI.isUserinServer());
+            settings.setBool("is110", false);
+        }
 
         patchProfileHeaderView();
         patchWidgetChatListAdapterItemMessage();
@@ -80,17 +86,29 @@ public class StupidityDB extends Plugin {
                         button.setId(twid);
                         button.setClickable(true);
                         button.setOnClickListener(v1 -> {
+
+                            if (settings.getString("token", null) == null && settings.getBool("useOAUTH2", false)) {
+                                Utils.openPageWithProxy(Utils.getAppActivity(), new AuthorazationPage());
+                                return;
+                            }
+
                             var dialog = new InputDialog().setTitle("Stupidity Level").setDescription("Please Enter Some Number");
 
                             dialog.setOnDialogShownListener(v2 -> {
                                 dialog.getInputLayout().getEditText().setInputType(InputType.TYPE_CLASS_NUMBER);
                             });
                             dialog.setOnOkListener(v2 -> {
-                                var input = dialog.getInput().length()<4 ? Integer.parseInt(dialog.getInput()) : -1;
+                                var input = dialog.getInput().length() < 4 ? Integer.parseInt(dialog.getInput()) : -1;
                                 if (input > 100 || input < 0) {
                                     Toast.makeText(context, "Input Should Be Between 0 and 100", Toast.LENGTH_SHORT).show();
                                 } else {
-                                    StupidityDBAPI.sendUserData(input, model.getUser().getId());
+                                    Utils.threadPool.execute(() -> {
+                                        var result = StupidityDBAPI.sendUserData(input, model.getUser().getId());
+                                        Utils.getAppActivity().runOnUiThread(() -> {
+                                            Toast.makeText(context, result, Toast.LENGTH_SHORT).show();
+
+                                        });
+                                    });
                                     dialog.dismiss();
                                 }
                             });
@@ -113,7 +131,7 @@ public class StupidityDB extends Plugin {
                             Utils.mainThread.post(
                                     () -> {
                                         if (itemTimestampField != null && !itemTimestampField.getText().toString().endsWith("Stupit") && stupidity != null && !stupidity.equals("None"))
-                                            itemTimestampField.setText(itemTimestampField.getText() + " %" + stupidity + " Stupit)");
+                                            itemTimestampField.setText(itemTimestampField.getText() + " %" + stupidity + " Stupit");
                                     }
                             );
                         } catch (NoSuchFieldException | IllegalAccessException e) {
