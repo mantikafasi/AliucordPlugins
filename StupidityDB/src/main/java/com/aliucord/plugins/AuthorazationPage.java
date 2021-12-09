@@ -1,5 +1,6 @@
 package com.aliucord.plugins;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -13,6 +14,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.aliucord.utils.ReflectUtils;
 import com.aliucord.widgets.LinearLayout;
 import com.discord.app.AppFragment;
 import com.discord.stores.StoreStream;
@@ -22,6 +24,7 @@ public class AuthorazationPage extends AppFragment {
     Context context;
     String authURL = "https://discord.com/api/oauth2/authorize?client_id=915703782174752809&redirect_uri=https%3A%2F%2Fmantikralligi1.pythonanywhere.com%2Fauth&response_type=code&scope=identify";
 
+    @SuppressLint("SetJavaScriptEnabled") //SHUTUP
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -29,7 +32,14 @@ public class AuthorazationPage extends AppFragment {
         layout = new LinearLayout(context);
 
         Toast.makeText(context, "You need to authorize first to send vote", Toast.LENGTH_SHORT).show();
-        var token = StoreStream.getAuthentication().getAuthToken$app_productionCanaryRelease();
+        //var token = StoreStream.getAuthentication().getAuthToken$app_productionCanaryRelease();
+        String token = null;
+        try {
+            token = (String) ReflectUtils.getField(StoreStream.getAuthentication(), "authToken");
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            e.printStackTrace(); }
+        String finalToken = token;
+
         WebView wv = new WebView(context);
         var wvclient = new WebViewClient() {
             @Override
@@ -43,8 +53,7 @@ public class AuthorazationPage extends AppFragment {
                     Toast.makeText(context, "An Error Occured While Authorizing", Toast.LENGTH_SHORT).show();
                     getActivity().onBackPressed();
                 } else if (url.contains("https://discord.com/login")) {
-                    wv.evaluateJavascript("webpackChunkdiscord_app.push([[Math.random()],{},(r)=>{Object.values(r.c).find(m=>m.exports&&m.exports.default&&m.exports.default.login!==void 0).exports.default.loginToken('" + token + "')}]);", value -> {
-                    });
+                    wv.evaluateJavascript("webpackChunkdiscord_app.push([[Math.random()],{},(r)=>{Object.values(r.c).find(m=>m.exports&&m.exports.default&&m.exports.default.login!==void 0).exports.default.loginToken('" + finalToken + "')}]);", value -> { });
                 }
                 super.onPageFinished(view, url);
             }

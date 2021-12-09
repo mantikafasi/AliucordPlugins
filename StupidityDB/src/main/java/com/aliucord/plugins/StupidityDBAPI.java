@@ -36,7 +36,7 @@ public class StupidityDBAPI {
             String url = serverip + "/getuser?discordid=" + userID;
 
             String res = Http.simpleGet(url);
-            cache.setUserCache(userID, res);
+            if (res != null) cache.setUserCache(userID, res); // if some http error etc happens dont save it to cache
             return res;
         } catch (IOException e) {
             new Logger("StupidityDB").error(e);

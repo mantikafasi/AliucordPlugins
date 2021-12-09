@@ -98,6 +98,10 @@ public class StupidityDB extends Plugin {
                                 dialog.getInputLayout().getEditText().setInputType(InputType.TYPE_CLASS_NUMBER);
                             });
                             dialog.setOnOkListener(v2 -> {
+                                if (dialog.getInput().length()==0) {
+                                    Toast.makeText(context, "Please Inter Some Number", Toast.LENGTH_SHORT).show();
+                                    return;
+                                }
                                 var input = dialog.getInput().length() < 4 ? Integer.parseInt(dialog.getInput()) : -1;
                                 if (input > 100 || input < 0) {
                                     Toast.makeText(context, "Input Should Be Between 0 and 100", Toast.LENGTH_SHORT).show();
@@ -106,7 +110,6 @@ public class StupidityDB extends Plugin {
                                         var result = StupidityDBAPI.sendUserData(input, model.getUser().getId());
                                         Utils.getAppActivity().runOnUiThread(() -> {
                                             Toast.makeText(context, result, Toast.LENGTH_SHORT).show();
-
                                         });
                                     });
                                     dialog.dismiss();
