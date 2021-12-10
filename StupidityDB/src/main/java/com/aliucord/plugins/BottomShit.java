@@ -13,6 +13,7 @@ import androidx.core.content.res.ResourcesCompat;
 import com.aliucord.Constants;
 import com.aliucord.Utils;
 import com.aliucord.api.SettingsAPI;
+import com.aliucord.fragments.InputDialog;
 import com.aliucord.views.DangerButton;
 import com.aliucord.widgets.BottomSheet;
 import com.discord.views.CheckedSetting;
@@ -54,6 +55,24 @@ public class BottomShit extends BottomSheet {
             Utils.openPageWithProxy(Utils.getAppActivity(), new AuthorazationPage());
         });
 
+        Button enterTokenManually = new Button(context);
+        enterTokenManually.setText("Enter Token Manually");
+        enterTokenManually.setTextColor(com.lytefast.flexinput.R.b.primary_800);
+        enterTokenManually.setOnClickListener(oc -> {
+            var dialog = new InputDialog().setTitle("Enter Token").setDescription("Long Click To Button to get token (discord sometimes ratelimiting api so if youre getting error thats probably why)");
+            dialog.setOnOkListener(v -> {
+                var token =dialog.getInput();
+                if (!token.equals("")) settings.setString("token",token); else
+                    Toast.makeText(context, "Please Enter Token", Toast.LENGTH_SHORT).show();
+            });
+            dialog.show(getParentFragmentManager(),"uga");
+        });
+        enterTokenManually.setOnLongClickListener(v -> {
+            Utils.launchUrl("https://discord.com/api/oauth2/authorize?client_id=915703782174752809&redirect_uri=https%3A%2F%2Fmantikralligi1.pythonanywhere.com%2Fauth&response_type=code&scope=identify");
+            return true;
+        });
+
+
         TextView radioText = new TextView(context, null, 0, com.lytefast.flexinput.R.i.UiKit_Settings_Item_Header);
         radioText.setText("Voting Type");
         radioText.setTypeface(ResourcesCompat.getFont(context, Constants.Fonts.whitney_semibold));
@@ -81,8 +100,10 @@ public class BottomShit extends BottomSheet {
         addView(title);
         addView(clearCacheButton);
         addView(authorizate);
+        addView(enterTokenManually);
         addView(radioText);
         addView(useAPI);
         addView(useBot);
+
     }
 }
