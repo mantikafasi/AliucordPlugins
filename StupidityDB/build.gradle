@@ -1,4 +1,4 @@
-version = "1.2.2"
+version = "1.2.2.1"
 description = "StupidityDB"
 aliucord.changelog.set("***1.2.1***\n -> Some Fix \n***1.2.0*** \n -> Added Option to send votes via HTTP api (requires discord OAUTH2 Authorization) \n -> Lowered Cache Time To 6 Hours (from 24 hours)")
 

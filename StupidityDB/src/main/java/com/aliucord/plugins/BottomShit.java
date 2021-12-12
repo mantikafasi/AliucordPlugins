@@ -49,7 +49,7 @@ public class BottomShit extends BottomSheet {
         });
 
         Button authorizate = new Button(context);
-        authorizate.setText("Get OAUTH2 Token");
+        authorizate.setText("Authorize");
         authorizate.setTextColor(com.lytefast.flexinput.R.b.primary_800);
         authorizate.setOnClickListener(oc -> {
             Utils.openPageWithProxy(Utils.getAppActivity(), new AuthorazationPage());

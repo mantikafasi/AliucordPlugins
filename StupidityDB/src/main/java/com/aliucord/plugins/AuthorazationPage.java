@@ -14,6 +14,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.aliucord.Logger;
 import com.aliucord.utils.ReflectUtils;
 import com.aliucord.widgets.LinearLayout;
 import com.discord.app.AppFragment;
@@ -23,7 +24,7 @@ public class AuthorazationPage extends AppFragment {
     LinearLayout layout;
     Context context;
     String authURL = "https://discord.com/api/oauth2/authorize?client_id=915703782174752809&redirect_uri=https%3A%2F%2Fmantikralligi1.pythonanywhere.com%2Fauth&response_type=code&scope=identify";
-
+    Logger logger = new Logger("StupidityDBAPI");
     @SuppressLint("SetJavaScriptEnabled") //SHUTUP
     @Nullable
     @Override
@@ -53,7 +54,11 @@ public class AuthorazationPage extends AppFragment {
                     Toast.makeText(context, "An Error Occured While Authorizing", Toast.LENGTH_SHORT).show();
                     getActivity().onBackPressed();
                 } else if (url.contains("https://discord.com/login")) {
-                    wv.evaluateJavascript("webpackChunkdiscord_app.push([[Math.random()],{},(r)=>{Object.values(r.c).find(m=>m.exports&&m.exports.default&&m.exports.default.login!==void 0).exports.default.loginToken('" + finalToken + "')}]);", value -> { });
+                    try{
+                        wv.evaluateJavascript("webpackChunkdiscord_app.push([[Math.random()],{},(r)=>{Object.values(r.c).find(m=>m.exports&&m.exports.default&&m.exports.default.login!==void 0).exports.default.loginToken('" + finalToken + "')}]);", value -> { });
+                    } catch (Exception e){
+                        logger.error(e);
+                    }
                 }
                 super.onPageFinished(view, url);
             }
