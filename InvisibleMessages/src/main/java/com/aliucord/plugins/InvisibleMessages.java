@@ -321,7 +321,7 @@ public class InvisibleMessages extends Plugin {
                         emptyList(), //users
                         emptyList(), // roles
                         false // repliedUser
-                )
+                ),null
         );
 
     }

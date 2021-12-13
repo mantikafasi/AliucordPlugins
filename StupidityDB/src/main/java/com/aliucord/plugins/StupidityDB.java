@@ -67,8 +67,7 @@ public class StupidityDB extends Plugin {
                     var thisobj = (WidgetUserSheet) cf.thisObject;
                     var binding = WidgetUserSheet.access$getBinding$p(thisobj);
 
-                    var layout = binding.A;
-                    //binding.f.setVisibility(View.VISIBLE);
+                    var layout = binding.D;
                     View v = layout.getChildAt(0);
 
                     if (layout.findViewById(twid) == null) {

@@ -112,7 +112,8 @@ public class StupidityDBAPI {
                         emptyList(), //users
                         emptyList(), // roles
                         false // repliedUser
-                )
+
+                ),null
         );
 
     }
