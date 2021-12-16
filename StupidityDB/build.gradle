@@ -1,4 +1,4 @@
-version = "1.2.2.1"
+version = "1.2.2.2"
 description = "StupidityDB"
 aliucord.changelog.set("" +
         "***1.2.2.2***\n*Fix For discord 105.22 \n" +
