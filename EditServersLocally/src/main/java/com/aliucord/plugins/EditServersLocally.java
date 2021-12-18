@@ -28,7 +28,6 @@ import com.aliucord.utils.DimenUtils;
 import com.aliucord.utils.ReflectUtils;
 import com.aliucord.wrappers.ChannelWrapper;
 import com.discord.api.channel.Channel;
-import com.discord.app.AppActivity;
 import com.discord.databinding.WidgetChannelsListItemActionsBinding;
 import com.discord.databinding.WidgetChannelsListItemChannelBinding;
 import com.discord.databinding.WidgetChannelsListItemChannelVoiceBinding;
@@ -48,7 +47,6 @@ import com.discord.widgets.guilds.contextmenu.GuildContextMenuViewModel;
 import com.discord.widgets.guilds.contextmenu.WidgetGuildContextMenu;
 import com.discord.widgets.guilds.profile.WidgetGuildProfileSheet;
 import com.discord.widgets.guilds.profile.WidgetGuildProfileSheetViewModel;
-import com.discord.widgets.servers.SettingsChannelListAdapter;
 import com.google.gson.reflect.TypeToken;
 import com.lytefast.flexinput.R;
 
@@ -57,8 +55,6 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-
-import de.robv.android.xposed.XposedBridge;
 
 @AliucordPlugin
 public class EditServersLocally extends Plugin {
@@ -123,14 +119,6 @@ public class EditServersLocally extends Plugin {
             GuildData data = getGuildData(guild.getId());
             if (data.serverName != null) {
                 cf.setResult(data.serverName);
-            } else if (data.orginalName != null) {
-                cf.setResult(data.orginalName);
-            } else {
-                try {
-                    cf.setResult(XposedBridge.invokeOriginalMethod(cf.method, cf.thisObject, cf.args).toString());
-                } catch (IllegalAccessException | InvocationTargetException e) {
-                    e.printStackTrace();
-                }
             }
         }));
     }
@@ -186,7 +174,7 @@ public class EditServersLocally extends Plugin {
                         WidgetGuildContextMenuBinding binding = (WidgetGuildContextMenuBinding) method.invoke(thisObject);
                         LinearLayout v = (LinearLayout) binding.e.getParent();
                         var guild = state.getGuild();
-
+                        logger.info(guild.toString());
                         if (v.findViewById(serverSettingsID) != null) {
                             return;
                         }
@@ -201,10 +189,8 @@ public class EditServersLocally extends Plugin {
                         Context ctx = binding.e.getContext();
                         tw.setText("Local Server Settings");
                         tw.setOnClickListener(v1 -> {
-
                             ServerSettingsFragment page = new ServerSettingsFragment(guild, EditServersLocally.this);
                             Utils.openPageWithProxy(ctx, page);
-
                         });
                         v.addView(tw);
                     } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
@@ -218,7 +204,6 @@ public class EditServersLocally extends Plugin {
                 (cf) -> {
                     WidgetChannelsListAdapter.ItemChannelText thisobj = (WidgetChannelsListAdapter.ItemChannelText) cf.thisObject;
                     try {
-
                         WidgetChannelsListItemChannelBinding binding = (WidgetChannelsListItemChannelBinding) ReflectUtils.getField(thisobj, "binding");
                         ChannelListItemTextChannel channelListItemTextChannel = (ChannelListItemTextChannel) cf.args[1];
                         long i = ChannelWrapper.getId(channelListItemTextChannel.component1());
@@ -226,26 +211,15 @@ public class EditServersLocally extends Plugin {
                         var channel = channelListItemTextChannel.getChannel();
                         var chdata = getChannelData(i);
                         if (ch.getGuildId() != currentGuild.get()) {
-
                             currentGuild.set(ch.getGuildId());
                             channels.set(new HashMap<>());
                         }
                         //saving instances of textviews so we can change them when channel name changed
                         channels.get().put(ch.getId(), binding.e);
-
                         //getting saved names and changing channel name to it
-
                         if (chdata.channelName != null) {
-                            try {
-                                ReflectUtils.setField(channel, "name", chdata.channelName);
-                                ReflectUtils.setField(cf.thisObject, "channel", channel);
-                            } catch (NoSuchFieldException | IllegalAccessException e) {
-                                logger.error(e);
-                            }
-
                             binding.e.setText(chdata.channelName);
                         }
-
                     } catch (NoSuchFieldException | IllegalAccessException e) {
                         e.printStackTrace();
                     }
@@ -259,17 +233,7 @@ public class EditServersLocally extends Plugin {
                     long guildID = (long) cf.args[0];
                     // Changing Server Icon to saved one if exists
                     GuildData data = getGuildData(guildID);
-                    if (data.orginalURL.equals("") || data.orginalURL == null) {
-
-                        try {
-                            data.orginalURL = (XposedBridge.invokeOriginalMethod(cf.method, cf.thisObject, cf.args).toString());
-                            updateGuildData(data);
-
-                        } catch (IllegalAccessException | InvocationTargetException e) {
-                            logger.error(e);
-                        }
-                    }
-                    cf.setResult(data.imageURL != null ? data.imageURL : data.orginalURL);
+                    if (data.imageURL != null) cf.setResult(data.imageURL);
 
                 }));
     }

@@ -43,6 +43,7 @@ public class ServerSettingsFragment extends SettingsPage {
         this.plugin = plugin;
 
         data = plugin.getGuildData(guild);
+        data.guildID = guild.getId();
         if (data.orginalName == null && data.serverName == null) {
             data.orginalName = guild.getName();
         }

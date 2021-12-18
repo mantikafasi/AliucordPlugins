@@ -1,18 +1,10 @@
 package com.aliucord.plugins.DataClasses;
 
-import com.aliucord.Logger;
-import com.aliucord.wrappers.GuildWrapper;
 import com.discord.models.guild.Guild;
-import com.discord.stores.StoreStream;
-import com.discord.utilities.guilds.GuildUtilsKt;
-import com.discord.utilities.icon.IconUtils;
 
 public class GuildData {
 
     public long guildID;
-
-
-
     public String serverName;
     public String imageURL;
     public String orginalURL;
@@ -24,9 +16,7 @@ public class GuildData {
         this.guildID = guildID;
     }
     public GuildData(Guild guild){
-        //GuildWrapper wrapper = new GuildWrapper(guild);
-        orginalName=guild.getName();
-
+        guildID = guild.getId();
     }
 
     @Override

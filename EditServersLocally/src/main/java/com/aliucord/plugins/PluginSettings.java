@@ -46,7 +46,7 @@ public class PluginSettings extends BottomSheet {
             confirmReset.setIsDangerous(true);
             confirmReset.setDescription("Are you sure you want to delete all channel names?");
             confirmReset.setOnOkListener(ok -> {
-                settings.setObject("channelData", new HashMap<Long,ChannelData>());
+                settings.setObject("channelData", new HashMap<Long, ChannelData>());
                 Utils.showToast("Deleted all channel names, restart discord to see changes");
                 confirmReset.dismiss();
                 dismiss();
@@ -62,7 +62,7 @@ public class PluginSettings extends BottomSheet {
             confirmReset.setIsDangerous(true);
             confirmReset.setDescription("Are you sure you want to delete all server settings?");
             confirmReset.setOnOkListener(ok -> {
-                settings.setObject("guildData",new HashMap<Long, GuildData>());
+                settings.setObject("guildData", new HashMap<Long, GuildData>());
                 Utils.showToast("Deleted all server settings, restart discord to see changes");
                 confirmReset.dismiss();
                 dismiss();
