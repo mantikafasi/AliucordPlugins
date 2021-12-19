@@ -6,6 +6,7 @@ buildscript {
         google()
         mavenCentral()
         maven("https://jitpack.io")
+        maven("https://maven.aliucord.com/snapshots")
     }
     dependencies {
         classpath("com.github.Aliucord:gradle:main-SNAPSHOT")
@@ -19,6 +20,7 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        maven("https://maven.aliucord.com/snapshots")
         maven("https://jitpack.io")
     }
 }
@@ -58,7 +60,7 @@ subprojects {
         val implementation by configurations
 
         discord("com.discord:discord:aliucord-SNAPSHOT")
-        implementation("com.github.Aliucord:Aliucord:main-SNAPSHOT")
+        implementation("com.aliucord:Aliucord:main-SNAPSHOT")
         implementation("androidx.appcompat:appcompat:1.3.1")
         implementation("com.google.android.material:material:1.4.0")
         implementation("androidx.constraintlayout:constraintlayout:2.1.0")

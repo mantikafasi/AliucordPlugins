@@ -39,5 +39,8 @@ project(":EncryptDMs").projectDir = File("./EncryptDMs")
 include(":StupidityDB")
 project(":StupidityDB").projectDir = File("./StupidityDB")
 
+include(":Base64")
+project(":Base64").projectDir = File("./Base64")
+
 rootProject.name = "AliucordPlugins"
 
