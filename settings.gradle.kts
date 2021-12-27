@@ -42,5 +42,11 @@ project(":StupidityDB").projectDir = File("./StupidityDB")
 include(":Base64")
 project(":Base64").projectDir = File("./Base64")
 
+include(":EditMessagesLocally")
+project(":EditMessagesLocally").projectDir = File("./EditMessagesLocally")
+
+include(":Vibrator")
+project(":Vibrator").projectDir = File("./Vibrator")
+
 rootProject.name = "AliucordPlugins"
 

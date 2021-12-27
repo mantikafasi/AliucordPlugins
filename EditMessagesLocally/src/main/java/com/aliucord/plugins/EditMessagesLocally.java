@@ -14,6 +14,8 @@ import com.aliucord.Utils;
 import com.aliucord.annotations.AliucordPlugin;
 import com.aliucord.entities.Plugin;
 import com.aliucord.patcher.Hook;
+import com.aliucord.patcher.InsteadHook;
+import com.aliucord.patcher.PreHook;
 import com.aliucord.utils.ReflectUtils;
 import com.discord.models.user.CoreUser;
 import com.discord.stores.StoreStream;
@@ -23,6 +25,11 @@ import com.discord.widgets.chat.list.WidgetChatList;
 import com.discord.widgets.chat.list.actions.WidgetChatListActions;
 import com.discord.widgets.chat.list.entries.MessageEntry;
 
+import java.lang.reflect.InvocationTargetException;
+
+import de.robv.android.xposed.XC_MethodReplacement;
+import de.robv.android.xposed.XposedBridge;
+
 @SuppressWarnings("unused")
 @AliucordPlugin
 public class EditMessagesLocally extends Plugin {
@@ -31,8 +38,10 @@ public class EditMessagesLocally extends Plugin {
 
     @Override
     public void start(Context context) throws NoSuchMethodException {
-        patcher.patch(MessageQueue.class.getDeclaredMethod("doEdit", MessageRequest.Edit.class, MessageQueue.DrainListener.class), new Hook((cf) -> {
+        patcher.patch(MessageQueue.class.getDeclaredMethod("doEdit", MessageRequest.Edit.class, MessageQueue.DrainListener.class), new InsteadHook((cf) -> {
             var edit = (MessageRequest.Edit) cf.args[0];
+            logger.info("got called");
+
             var channelId = edit.getChannelId();
             var messageId = edit.getMessageId();
             var content = edit.getContent();
@@ -40,6 +49,7 @@ public class EditMessagesLocally extends Plugin {
             if (!(new CoreUser(mes.getAuthor()).getId() == me)) {
                 try {
                     ReflectUtils.setField(mes, "content", content);
+                    logger.info("edited");
                 } catch (NoSuchFieldException | IllegalAccessException e) {
                     logger.error(e);
                 }
@@ -50,11 +60,16 @@ public class EditMessagesLocally extends Plugin {
                     int i = CollectionUtils.findIndex(wchlist.getInternalData(), e -> e instanceof MessageEntry && ((MessageEntry) e).getMessage().getId() == mes.getId());
                     wchlist.notifyItemChanged(i);
                 });
-                cf.setResult(null);
+            } else {
+                logger.info("other shit");
+                try {
+                    XposedBridge.invokeOriginalMethod(cf.method,cf.thisObject,cf.args);
+                } catch (IllegalAccessException | InvocationTargetException e) {
+                    e.printStackTrace();
+                }
             }
+            return null;
         }));
-
-
         Drawable editIcon = ContextCompat.getDrawable(context, com.lytefast.flexinput.R.e.ic_edit_24dp).mutate();
 
         patcher.patch(WidgetChatListActions.class.getDeclaredMethod("configureUI", WidgetChatListActions.Model.class),
