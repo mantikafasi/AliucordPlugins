@@ -51,5 +51,8 @@ project(":Vibrator").projectDir = File("./Vibrator")
 include(":PluginWiper")
 project(":PluginWiper").projectDir = File("./PluginWiper")
 
+include(":AntiFreeNitro")
+project(":AntiFreeNitro").projectDir = File("./AntiFreeNitro")
+
 rootProject.name = "AliucordPlugins"
 
