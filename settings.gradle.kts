@@ -48,5 +48,8 @@ project(":EditMessagesLocally").projectDir = File("./EditMessagesLocally")
 include(":Vibrator")
 project(":Vibrator").projectDir = File("./Vibrator")
 
+include(":PluginWiper")
+project(":PluginWiper").projectDir = File("./PluginWiper")
+
 rootProject.name = "AliucordPlugins"
 
