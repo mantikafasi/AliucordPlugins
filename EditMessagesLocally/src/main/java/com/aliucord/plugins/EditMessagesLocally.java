@@ -15,19 +15,18 @@ import com.aliucord.annotations.AliucordPlugin;
 import com.aliucord.entities.Plugin;
 import com.aliucord.patcher.Hook;
 import com.aliucord.patcher.InsteadHook;
-import com.aliucord.patcher.PreHook;
 import com.aliucord.utils.ReflectUtils;
 import com.discord.models.user.CoreUser;
 import com.discord.stores.StoreStream;
 import com.discord.utilities.messagesend.MessageQueue;
 import com.discord.utilities.messagesend.MessageRequest;
+import com.discord.utilities.messagesend.MessageResult;
 import com.discord.widgets.chat.list.WidgetChatList;
 import com.discord.widgets.chat.list.actions.WidgetChatListActions;
 import com.discord.widgets.chat.list.entries.MessageEntry;
 
 import java.lang.reflect.InvocationTargetException;
 
-import de.robv.android.xposed.XC_MethodReplacement;
 import de.robv.android.xposed.XposedBridge;
 
 @SuppressWarnings("unused")
@@ -40,20 +39,19 @@ public class EditMessagesLocally extends Plugin {
     public void start(Context context) throws NoSuchMethodException {
         patcher.patch(MessageQueue.class.getDeclaredMethod("doEdit", MessageRequest.Edit.class, MessageQueue.DrainListener.class), new InsteadHook((cf) -> {
             var edit = (MessageRequest.Edit) cf.args[0];
-            logger.info("got called");
-
+            var listener = (MessageQueue.DrainListener) cf.args[1];
             var channelId = edit.getChannelId();
             var messageId = edit.getMessageId();
             var content = edit.getContent();
             var mes = StoreStream.getMessages().getMessage(channelId, messageId);
+
             if (!(new CoreUser(mes.getAuthor()).getId() == me)) {
                 try {
                     ReflectUtils.setField(mes, "content", content);
-                    logger.info("edited");
                 } catch (NoSuchFieldException | IllegalAccessException e) {
                     logger.error(e);
                 }
-                StoreStream.access$handleMessageUpdate(StoreStream.getVoiceParticipants().getStream(), mes.synthesizeApiMessage());
+                listener.complete(new MessageResult.Success(mes.synthesizeApiMessage()));
 
                 Utils.mainThread.post(() -> {
                     var wchlist = WidgetChatList.access$getAdapter$p(Utils.widgetChatList);
@@ -61,11 +59,10 @@ public class EditMessagesLocally extends Plugin {
                     wchlist.notifyItemChanged(i);
                 });
             } else {
-                logger.info("other shit");
                 try {
                     XposedBridge.invokeOriginalMethod(cf.method,cf.thisObject,cf.args);
                 } catch (IllegalAccessException | InvocationTargetException e) {
-                    e.printStackTrace();
+                    logger.error(e);
                 }
             }
             return null;
