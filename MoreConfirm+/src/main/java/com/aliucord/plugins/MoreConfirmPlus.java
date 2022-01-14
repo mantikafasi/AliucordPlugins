@@ -58,6 +58,7 @@ public class MoreConfirmPlus extends Plugin {
             } else {
                 try {
                     XposedBridge.invokeOriginalMethod(cf.method,cf.thisObject,cf.args);
+                    dialogshown.set(true);
                 } catch (IllegalAccessException | InvocationTargetException e) {
                     logger.error("shit",e);
                 }
