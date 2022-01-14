@@ -54,5 +54,8 @@ project(":PluginWiper").projectDir = File("./PluginWiper")
 include(":AntiFreeNitro")
 project(":AntiFreeNitro").projectDir = File("./AntiFreeNitro")
 
+include(":MoreConfirm+")
+project(":MoreConfirm+").projectDir = File("./MoreConfirm+")
+
 rootProject.name = "AliucordPlugins"
 
