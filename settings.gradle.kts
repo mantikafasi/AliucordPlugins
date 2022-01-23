@@ -57,5 +57,8 @@ project(":AntiFreeNitro").projectDir = File("./AntiFreeNitro")
 include(":MoreConfirmPlusPlusPlus")
 project(":MoreConfirmPlusPlusPlus").projectDir = File("./MoreConfirmPlusPlusPlus")
 
+include(":PluginRepo")
+project(":PluginRepo").projectDir = File("./PluginRepo")
+
 rootProject.name = "AliucordPlugins"
 
