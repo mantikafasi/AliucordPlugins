@@ -26,6 +26,19 @@ import com.discord.widgets.settings.WidgetSettings;
 public class PluginRepo extends Plugin {
     @Override
     public void start(Context context) throws NoSuchMethodException {
+        /*
+        Utils.threadPool.execute(() -> {
+            try {
+                Thread.sleep(4000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            Utils.mainThread.post(() -> {
+                Utils.openPageWithProxy(Utils.getAppActivity(),new PluginsPage());
+            });
+        });
+
+         */
         patcher.patch(WidgetSettings.class.getDeclaredMethod("onViewBound", View.class),new Hook(cf -> {
             Context ctx = ((WidgetSettings) cf.thisObject).requireContext();
             CoordinatorLayout view = (CoordinatorLayout) cf.args[0];

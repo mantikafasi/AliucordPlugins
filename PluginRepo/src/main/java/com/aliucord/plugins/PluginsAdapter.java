@@ -23,6 +23,7 @@ import com.discord.widgets.user.usersheet.WidgetUserSheet;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 
 public class PluginsAdapter extends RecyclerView.Adapter<PluginsAdapter.ViewHolder> {
@@ -32,7 +33,6 @@ public class PluginsAdapter extends RecyclerView.Adapter<PluginsAdapter.ViewHold
     public List<Plugin> data;
     public PluginsAdapter(AppFragment fragment, Collection<Plugin> plugins) {
         super();
-
         this.fragment = fragment;
         ctx = fragment.requireContext();
         data = (List<Plugin>) plugins;

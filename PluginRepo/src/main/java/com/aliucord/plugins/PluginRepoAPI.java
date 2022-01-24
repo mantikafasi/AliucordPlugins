@@ -10,7 +10,9 @@ import com.aliucord.Logger;
 import com.aliucord.PluginManager;
 import com.aliucord.Utils;
 import com.aliucord.entities.Plugin;
+import com.aliucord.plugins.filtering.Developer;
 import com.aliucord.utils.GsonUtils;
+import com.google.gson.reflect.TypeToken;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -19,6 +21,7 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class PluginRepoAPI {
@@ -33,18 +36,22 @@ public class PluginRepoAPI {
         return getPlugins(query,0);
     }
 
+
+    public static HashMap<String,String> filters;
     public static List<Plugin> getPlugins(String query,int index){
         var plugins = new ArrayList<Plugin>();
         try {
-            String args = "?index=" +index;
-            if (!query.isEmpty()) args+="&query="+query;
+            JSONObject filter = new JSONObject(filters);
+            filter.put("index",index);
+            filter.put("query",query);
 
-            var pluginarray = new JSONArray(Http.simpleGet(API_URL +"/getPlugins" + args));
+            var pluginarray = new JSONArray(Http.simplePost(API_URL +"/getPlugins",filter.toString()));
+            logger.info(pluginarray.toString());
             for (int i = 0;i<pluginarray.length();i++) {
                 var plugin = (JSONObject)pluginarray.get(i);
                 plugins.add(getPluginFromJson(plugin));
             }
-        } catch (JSONException | IOException e) {
+        } catch (Exception e) {
             new Logger("PluginRepo").error(e);
 
         }
@@ -88,4 +95,9 @@ public class PluginRepoAPI {
         return success;
     }
 
+    public static List<Developer> getDevelopers() {
+        try{
+            return GsonUtils.fromJson(Http.simpleGet(API_URL +"/getDevelopers"), TypeToken.getParameterized(ArrayList.class, Developer.class).type);
+        }catch (Exception e) { return new ArrayList<>();}
+    }
 }
