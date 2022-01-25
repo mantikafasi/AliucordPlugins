@@ -8,7 +8,6 @@ project(":POGlugin").projectDir = File("./POGlugin")
 include(":LightShotRoulette")
 project(":LightShotRoulette").projectDir = File("./LightShotRoulette")
 
-
 include(":Someone")
 project(":Someone").projectDir= File("./Someone")
 
@@ -50,9 +49,6 @@ project(":Vibrator").projectDir = File("./Vibrator")
 
 include(":PluginWiper")
 project(":PluginWiper").projectDir = File("./PluginWiper")
-
-include(":AntiFreeNitro")
-project(":AntiFreeNitro").projectDir = File("./AntiFreeNitro")
 
 include(":MoreConfirmPlusPlusPlus")
 project(":MoreConfirmPlusPlusPlus").projectDir = File("./MoreConfirmPlusPlusPlus")

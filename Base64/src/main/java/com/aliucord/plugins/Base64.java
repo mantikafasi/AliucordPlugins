@@ -44,7 +44,7 @@ public class Base64 extends Plugin {
                     var actions = (WidgetChatListActions) cf.thisObject;
                     var scrollView = (NestedScrollView) actions.getView();
                     var lay = (LinearLayout) scrollView.getChildAt(0);
-                    if (lay.findViewById(viewID) == null && message.getContent().matches("^@(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$\n")) {
+                    if (lay.findViewById(viewID) == null && !message.getContent().contains(" ")) {
                         TextView tw = new TextView(lay.getContext(), null, 0, com.lytefast.flexinput.R.i.UiKit_Settings_Item_Icon);
                         tw.setId(viewID);
                         tw.setText("Base64 Decode Message");

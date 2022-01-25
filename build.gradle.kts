@@ -11,8 +11,6 @@ buildscript {
     dependencies {
         classpath("com.github.Aliucord:gradle:main-SNAPSHOT")
         classpath("com.android.tools.build:gradle:7.0.2")
-
-
     }
 }
 
