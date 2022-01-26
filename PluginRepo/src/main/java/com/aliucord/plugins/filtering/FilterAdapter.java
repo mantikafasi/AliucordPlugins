@@ -107,4 +107,3 @@ public class FilterAdapter extends RecyclerView.Adapter<FilterAdapter.ViewHolder
 
     }
 }
-© 2022 GitHub, Inc.
