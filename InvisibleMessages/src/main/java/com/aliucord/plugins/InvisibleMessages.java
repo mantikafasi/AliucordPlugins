@@ -49,7 +49,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
 
-import c.b.a.e.a;
+
 
 @SuppressWarnings("unused")
 @AliucordPlugin
@@ -270,7 +270,8 @@ public class InvisibleMessages extends Plugin {
                 new Hook((cf)->{
 
                     var thisObject = (FlexInputFragment)cf.thisObject;
-                    a a = thisObject.j();
+
+                    var a = thisObject.j();
 
 
                     a.o.setOnLongClickListener((v)->{

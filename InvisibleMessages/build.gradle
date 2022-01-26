@@ -1,4 +1,4 @@
-version = "1.1.3"
+version = "1.1.4"
 description = "Encrypts/Decrypts/Hides Messages \n To send message encrypted long click to send button,To decrypt message long click to message and press 'Decrypt Message' (it will not show if message doesnt contain any hidden text)"
 
 aliucord.changelog.set("""
