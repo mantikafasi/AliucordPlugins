@@ -4,75 +4,16 @@ import static java.util.Collections.emptyList;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.Intent;
-import android.graphics.drawable.Drawable;
-import android.net.Uri;
-import android.os.Bundle;
-import android.util.Base64;
-import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.LinearLayout;
-import android.widget.TextView;
-import android.widget.Toast;
 
-import androidx.core.content.ContextCompat;
-import androidx.core.widget.NestedScrollView;
-
-import com.aliucord.Utils;
 import com.aliucord.annotations.AliucordPlugin;
-import com.aliucord.entities.MessageEmbedBuilder;
 import com.aliucord.entities.Plugin;
-import com.aliucord.fragments.InputDialog;
-import com.aliucord.patcher.Hook;
-import com.aliucord.utils.DimenUtils;
-import com.aliucord.utils.ReflectUtils;
-import com.aliucord.utils.RxUtils;
-import com.aliucord.wrappers.embeds.AuthorWrapper;
-import com.discord.api.botuikit.ButtonStyle;
-import com.discord.databinding.WidgetCallFullscreenBinding;
-import com.discord.databinding.WidgetChannelTopicBinding;
-import com.discord.databinding.WidgetHomeBinding;
 import com.discord.models.domain.NonceGenerator;
-import com.discord.models.message.Message;
 import com.discord.restapi.RestAPIParams;
-import com.discord.stores.StoreStream;
-import com.discord.utilities.message.MessageUtils;
-import com.discord.utilities.rest.RestAPI;
 import com.discord.utilities.time.ClockFactory;
-import com.discord.widgets.channels.WidgetChannelTopic;
-import com.discord.widgets.channels.WidgetChannelTopicViewModel;
-import com.discord.widgets.chat.list.actions.WidgetChatListActions;
-import com.discord.widgets.chat.list.adapter.WidgetChatListAdapterItemMessage;
-import com.discord.widgets.home.WidgetHome;
-import com.discord.widgets.home.WidgetHomeHeaderManager;
-import com.discord.widgets.home.WidgetHomeModel;
-import com.discord.widgets.user.usersheet.WidgetUserSheet;
-import com.discord.widgets.user.usersheet.WidgetUserSheetViewModel;
-import com.discord.widgets.voice.fullscreen.WidgetCallFullscreen;
-import com.discord.widgets.voice.fullscreen.WidgetCallFullscreenViewModel;
-import com.google.gson.JsonObject;
-import com.google.gson.reflect.TypeToken;
-import com.lytefast.flexinput.fragment.FlexInputFragment;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.security.GeneralSecurityException;
-import java.security.Key;
-import java.security.KeyFactory;
-import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.HashMap;
-
-import c.b.a.e.a;
-import kotlin.random.Random;
 
 @AliucordPlugin
 public class EncryptDMs extends Plugin {

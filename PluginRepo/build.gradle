@@ -1,2 +1,8 @@
-version = "1.0.0"
+version = "1.0.1"
 description = "Install Plugins Easily"
+aliucord.changelog.set("""
+# 1.0.1
+*Added 'Notify new plugins' feature 
+
+
+""")

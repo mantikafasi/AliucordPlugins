@@ -15,6 +15,9 @@ import androidx.core.widget.NestedScrollView;
 import com.aliucord.Constants;
 import com.aliucord.Utils;
 import com.aliucord.annotations.AliucordPlugin;
+import com.aliucord.api.NotificationsAPI;
+import com.aliucord.api.SettingsAPI;
+import com.aliucord.entities.NotificationData;
 import com.aliucord.entities.Plugin;
 import com.aliucord.patcher.Hook;
 import com.aliucord.settings.Plugins;
@@ -27,8 +30,25 @@ import de.robv.android.xposed.XC_MethodReplacement;
 
 @AliucordPlugin
 public class PluginRepo extends Plugin {
+    public static SettingsAPI settingsAPI;
     @Override
     public void start(Context context) throws NoSuchMethodException {
+        settingsAPI = settings;
+        settingsTab = new SettingsTab(BottomShit.class, SettingsTab.Type.BOTTOM_SHEET);
+        if(settings.getBool("checkNewPlugins",true)) {
+            Utils.threadPool.execute(() -> {
+                var newPlugins = PluginRepoAPI.checkNewPlugins();
+                if (newPlugins) {
+                    Utils.mainThread.postDelayed(() -> {
+                        NotificationsAPI.display(new NotificationData().setTitle("PluginRepo").setBody("New Plugins are avaible").setOnClick(view -> null));
+
+                    },10000);
+                }
+
+            });
+        }
+
+
         /*
         Utils.threadPool.execute(() -> {
             try {

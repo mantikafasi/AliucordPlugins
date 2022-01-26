@@ -58,6 +58,25 @@ public class PluginRepoAPI {
         return plugins;
     }
 
+    public static boolean checkNewPlugins(){
+        try {
+            var pluginID =Integer.parseInt(Http.simpleGet(API_URL +"/getLastPlugin"));
+            var lastID = PluginRepo.settingsAPI.getInt("lastPluginID",0) ;
+            if (lastID == 0) {
+                PluginRepo.settingsAPI.setInt("lastPluginID",pluginID);
+                return false;
+            } else if (lastID < pluginID) {
+                PluginRepo.settingsAPI.setInt("lastPluginID",pluginID);
+                return true;
+            } else {
+                return false;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     public static Plugin getPluginFromJson(JSONObject json) throws JSONException {
 
         var manifest = new Plugin.Manifest(json.getString("plugin_name"));
