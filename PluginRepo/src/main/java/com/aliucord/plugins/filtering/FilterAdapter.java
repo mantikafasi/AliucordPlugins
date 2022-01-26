@@ -6,12 +6,10 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.aliucord.PluginManager;
 import com.aliucord.Utils;
 import com.aliucord.plugins.PluginRepoAPI;
 import com.aliucord.plugins.PluginsPage;
@@ -25,7 +23,7 @@ import java.util.List;
 public class FilterAdapter extends RecyclerView.Adapter<FilterAdapter.ViewHolder> {
     AppFragment fragment;
     Context ctx;
-    List<String> filters = new ArrayList<>(Arrays.asList("Author", "Sort By","Download All Plugins"));
+    List<String> filters = new ArrayList<>(Arrays.asList("Author", "Sort By"));
     List<Developer> developers;
     List<SortOption> sort_options = new ArrayList<>(Arrays.asList(
             new SortOption("None", ""),
@@ -69,8 +67,7 @@ public class FilterAdapter extends RecyclerView.Adapter<FilterAdapter.ViewHolder
 
     public enum FilterType {
         Author,
-        sort_by,
-        installAllPlugins
+        sort_by
     }
 
     class ViewHolder extends RecyclerView.ViewHolder {
@@ -82,20 +79,6 @@ public class FilterAdapter extends RecyclerView.Adapter<FilterAdapter.ViewHolder
 
             item.spinner.setSelection(0, false);
 
-            item.textView.setOnClickListener(v -> {
-                item.textView.setText("Installing...");
-                Utils.showToast("Installing All Plugins...");
-                PluginRepoAPI.filters.put("LIMIT",String.valueOf(400));
-                Utils.threadPool.execute(() -> {
-                    var plugins = PluginRepoAPI.getPlugins();
-                    for (var plugin : plugins) {
-                        if (plugin.getName().equals("PluginWiper") || PluginManager.plugins.containsKey(plugin.getName())) continue;
-                        PluginRepoAPI.installPlugin(plugin.getName(),plugin.getManifest().updateUrl);
-                        Utils.showToast("Successfully Installed " + plugin.getName());
-                    }
-                });
-
-            });
             item.spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                 @Override
                 public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -113,7 +96,6 @@ public class FilterAdapter extends RecyclerView.Adapter<FilterAdapter.ViewHolder
                             else refresh = !(null == PluginRepoAPI.filters.remove("author"));
                             break;
                     }
-
                     if (refresh) ((PluginsPage) fragment).makeSearch();
                 }
 
@@ -125,3 +107,4 @@ public class FilterAdapter extends RecyclerView.Adapter<FilterAdapter.ViewHolder
 
     }
 }
+© 2022 GitHub, Inc.

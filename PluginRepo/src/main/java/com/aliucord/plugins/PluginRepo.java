@@ -22,6 +22,9 @@ import com.aliucord.settings.Updater;
 import com.discord.utilities.color.ColorCompat;
 import com.discord.widgets.settings.WidgetSettings;
 
+import de.robv.android.xposed.XC_MethodHook;
+import de.robv.android.xposed.XC_MethodReplacement;
+
 @AliucordPlugin
 public class PluginRepo extends Plugin {
     @Override
@@ -37,8 +40,8 @@ public class PluginRepo extends Plugin {
                 Utils.openPageWithProxy(Utils.getAppActivity(),new PluginsPage());
             });
         });
-
          */
+
         patcher.patch(WidgetSettings.class.getDeclaredMethod("onViewBound", View.class),new Hook(cf -> {
             Context ctx = ((WidgetSettings) cf.thisObject).requireContext();
             CoordinatorLayout view = (CoordinatorLayout) cf.args[0];
