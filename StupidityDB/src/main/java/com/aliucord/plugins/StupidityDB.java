@@ -133,7 +133,7 @@ public class StupidityDB extends Plugin {
                             Utils.mainThread.post(
                                     () -> {
                                         if (itemTimestampField != null && !itemTimestampField.getText().toString().endsWith("Stupit") && stupidity != null && !stupidity.equals("None"))
-                                            itemTimestampField.setText(itemTimestampField.getText() + " %" + stupidity + " Stupit");
+                                            itemTimestampField.setText(itemTimestampField.getText() + " " + stupidity + "% Stupit");
                                     }
                             );
                         } catch (NoSuchFieldException | IllegalAccessException e) {
@@ -162,7 +162,7 @@ public class StupidityDB extends Plugin {
                         detailsTW.setId(profileheadertextid);
                         detailsTW.setTextColor(ColorCompat.getThemedColor(layout.getContext(), R.b.colorTextMuted));
                         var stupidity =StupidityDBAPI.getUserData(userid);
-                        if (stupidity!=null && !stupidity.equals("None")) detailsTW.setText("%" + stupidity +" Stupit");
+                        if (stupidity!=null && !stupidity.equals("None")) detailsTW.setText(stupidity +"% Stupit");
 
                         detailsTW.setTypeface(ResourcesCompat.getFont(context, Constants.Fonts.whitney_semibold));
 
