@@ -40,7 +40,7 @@ public class PluginRepo extends Plugin {
                 var newPlugins = PluginRepoAPI.checkNewPlugins();
                 if (newPlugins) {
                     Utils.mainThread.postDelayed(() -> {
-                        NotificationsAPI.display(new NotificationData().setTitle("PluginRepo").setBody("New Plugins are avaible").setOnClick(view -> null));
+                        NotificationsAPI.display(new NotificationData().setTitle("PluginRepo").setBody("New Plugins are available").setOnClick(view -> null));
 
                     },10000);
                 }
