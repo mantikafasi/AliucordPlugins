@@ -9,14 +9,9 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.aliucord.Utils;
 import com.aliucord.api.SettingsAPI;
 import com.aliucord.utils.DimenUtils;
-import com.aliucord.widgets.BottomSheet;
 import com.discord.app.AppBottomSheet;
-import com.discord.views.CheckedSetting;
-
-import org.w3c.dom.Text;
 
 public class BottomShit extends AppBottomSheet {
 
@@ -46,6 +41,7 @@ public class BottomShit extends AppBottomSheet {
         et.setText(settings.getString("encryptionPassword","Password"));
         tw.setPadding(px,px,px,0);
         et.setPadding(px,px,px,px);
+
 
         lay.addView(tw);
         lay.addView(et);

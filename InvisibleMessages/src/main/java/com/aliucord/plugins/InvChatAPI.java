@@ -8,7 +8,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.util.regex.Pattern;
 
 import external.org.apache.commons.lang3.StringUtils;
 
@@ -51,7 +50,11 @@ public class InvChatAPI {
         var res = request.executeWithBody(json.toString());
         String text = res.text();
         //if (text.startsWith("\""))text = text.substring(1, text.length() - 1);
-        return new JSONObject(text).getString("response");
+        var jsonObj = new JSONObject(text);
+        if (jsonObj.getBoolean("isCorrectPassword")) {
+            return new JSONObject(text).getString("response");
+        }
+        return "Wrong Password";
 
     }
 
