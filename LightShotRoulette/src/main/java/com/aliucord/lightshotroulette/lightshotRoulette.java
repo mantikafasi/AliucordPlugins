@@ -64,7 +64,7 @@ public class lightshotRoulette extends Plugin {
         String val = "";
         String str = "abcdefghijklmnoprstuxwyz0123456789";
         Random random = new Random();
-        int charCount = random.nextInt(2) + 5;
+        int charCount = random.nextInt(1) + 7;
         for (int j=0;j<count;j++){
             val +=  "https://prnt.sc/";
             for (int i = 0 ; i <charCount;i++){
