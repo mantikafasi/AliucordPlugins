@@ -28,8 +28,7 @@ public class KyzaMode extends Plugin {
                     try {
                         var mes = content.component1().trim();
                         if (!mes.endsWith(".")) {
-                            if (!Character.isDigit(mes.charAt(mes.length() - 1))) mes += ". ";
-                            else mes += " . ";
+                            mes += " . ";
                         } else {
                             mes += " ";
                         }
@@ -41,8 +40,11 @@ public class KyzaMode extends Plugin {
                                 str = str.trim();
                                 var firstChar = str.substring(0, 1);
                                 str = str.replaceFirst(firstChar, firstChar.toUpperCase());
+                                newMes += str + ". ";
+                            } else {
+                                newMes += str +" .";
                             }
-                            newMes += str + ". ";
+
                         }
                         mes = newMes;
 
