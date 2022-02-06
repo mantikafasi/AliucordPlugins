@@ -56,5 +56,11 @@ project(":MoreConfirmPlusPlusPlus").projectDir = File("./MoreConfirmPlusPlusPlus
 include(":PluginRepo")
 project(":PluginRepo").projectDir = File("./PluginRepo")
 
+include(":TestPlugin")
+project(":TestPlugin").projectDir = File("./TestPlugin")
+
+include(":KyzaMode")
+project(":KyzaMode").projectDir = File("./KyzaMode")
+
 rootProject.name = "AliucordPlugins"
 
