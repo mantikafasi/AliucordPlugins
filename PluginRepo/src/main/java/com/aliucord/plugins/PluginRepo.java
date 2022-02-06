@@ -37,14 +37,13 @@ public class PluginRepo extends Plugin {
         settingsTab = new SettingsTab(BottomShit.class, SettingsTab.Type.BOTTOM_SHEET);
         if(settings.getBool("checkNewPlugins",true)) {
             Utils.threadPool.execute(() -> {
+                try { Thread.sleep(10000); } catch (InterruptedException e) { e.printStackTrace(); }
                 var newPlugins = PluginRepoAPI.checkNewPlugins();
                 if (newPlugins) {
-                    Utils.mainThread.postDelayed(() -> {
+                    Utils.mainThread.post(() -> {
                         NotificationsAPI.display(new NotificationData().setTitle("PluginRepo").setBody("New Plugins are available").setOnClick(view -> null));
-
-                    },10000);
+                    });
                 }
-
             });
         }
 
