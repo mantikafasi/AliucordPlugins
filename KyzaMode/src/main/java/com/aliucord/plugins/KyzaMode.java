@@ -27,13 +27,21 @@ public class KyzaMode extends Plugin {
                     var content = (MessageContent) cf.args[2];
                     try {
                         var mes = content.component1().trim();
-                        if (!mes.endsWith(".")) mes += ".";
-                        var sentences = mes.split("\\.");
+                        if (!mes.endsWith(".")) {
+                            if (!Character.isDigit(mes.charAt(mes.length() - 1))) mes += ". ";
+                            else mes += " . ";
+                        } else {
+                            mes += " ";
+                        }
+
+                        var sentences = mes.split("\\. ");
                         var newMes = "";
                         for (String str : sentences) {
-                            str = str.trim();
-                            var firstChar = str.substring(0, 1);
-                            str = str.replaceFirst(firstChar, firstChar.toUpperCase());
+                            if (!str.startsWith("http")) {
+                                str = str.trim();
+                                var firstChar = str.substring(0, 1);
+                                str = str.replaceFirst(firstChar, firstChar.toUpperCase());
+                            }
                             newMes += str + ". ";
                         }
                         mes = newMes;

@@ -1,2 +1,7 @@
-version = "1.0.0"
-description = "Forces you to allow spelling rules"
+version = "1.0.1"
+description = "Forces you to fallow spelling rules."
+aliucord.changelog.set("""
+# 1.0.1
+*Quick fix for url's getting broken.
+
+""")
