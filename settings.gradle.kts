@@ -62,5 +62,8 @@ project(":TestPlugin").projectDir = File("./TestPlugin")
 include(":KyzaMode")
 project(":KyzaMode").projectDir = File("./KyzaMode")
 
+include(":BetterBetterStatus")
+project(":BetterBetterStatus").projectDir = File("./BetterBetterStatus")
+
 rootProject.name = "AliucordPlugins"
 
