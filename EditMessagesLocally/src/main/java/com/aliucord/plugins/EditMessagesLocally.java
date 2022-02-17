@@ -76,7 +76,7 @@ public class EditMessagesLocally extends Plugin {
                     var actions = (WidgetChatListActions) cf.thisObject;
                     var scrollView = (NestedScrollView) actions.getView();
                     var lay = (LinearLayout) scrollView.getChildAt(0);
-                    if (lay.findViewById(viewid) == null && message.getAuthor().i() != StoreStream.getUsers().getMe().getId()) {
+                    if (lay.findViewById(viewid) == null && message.getAuthor().getId() != StoreStream.getUsers().getMe().getId()) {
                         TextView tw = new TextView(lay.getContext(), null, 0, com.lytefast.flexinput.R.i.UiKit_Settings_Item_Icon);
                         tw.setId(viewid);
                         tw.setText("Edit Message Locally");

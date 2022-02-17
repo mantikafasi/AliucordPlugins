@@ -129,7 +129,7 @@ public class StupidityDB extends Plugin {
                     new Thread(() -> {
                         try {
                             TextView itemTimestampField = (TextView) ReflectUtils.getField(cf.thisObject, "itemTimestamp");
-                            String stupidity = StupidityDBAPI.getUserData(message.getAuthor().i());
+                            String stupidity = StupidityDBAPI.getUserData(message.getAuthor().getId());
                             Utils.mainThread.post(
                                     () -> {
                                         if (itemTimestampField != null && !itemTimestampField.getText().toString().endsWith("Stupit") && stupidity != null && !stupidity.equals("None"))
