@@ -27,8 +27,12 @@ public class SentVia extends Plugin {
                     var thisobj = (ChatInputViewModel) cf.thisObject;
                     var content = (MessageContent) cf.args[2];
                     try {
-                        var mes = content.component1().trim();
 
+
+                        var mes = content.component1().trim();
+                        if (mes.contains("> **Sent via")) {
+                            return;
+                        }
 
                         mes += "\n> **Sent via " + settings.getString("device", "Aliucord for Android") + "**";
 
