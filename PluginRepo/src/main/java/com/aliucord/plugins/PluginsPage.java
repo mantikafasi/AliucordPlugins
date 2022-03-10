@@ -186,7 +186,6 @@ public class PluginsPage extends SettingsPage {
                     filterView.setVisibility(View.VISIBLE);
                     header.setCompoundDrawablesRelativeWithIntrinsicBounds(openDrawable, null, null, null);
                 }
-
             });
             header.setCompoundDrawablesRelativeWithIntrinsicBounds(closedDrawable, null, null, null);
             int px = DimenUtils.dpToPx(5);

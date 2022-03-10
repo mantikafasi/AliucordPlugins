@@ -57,6 +57,9 @@ public class PluginsAdapter extends RecyclerView.Adapter<PluginsAdapter.ViewHold
         if (PluginManager.plugins.containsKey(p.getName())) {
             holder.card.installButton.setVisibility(View.GONE);
             holder.card.uninstallButton.setVisibility(View.VISIBLE);
+        } else {
+            holder.card.installButton.setVisibility(View.VISIBLE);
+            holder.card.uninstallButton.setVisibility(View.GONE);
         }
 
         holder.card.descriptionView.setText(p.getManifest().description);
@@ -76,7 +79,6 @@ public class PluginsAdapter extends RecyclerView.Adapter<PluginsAdapter.ViewHold
                 }
             }, i, i + author.name.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
-
         holder.card.titleView.setText(spannableTitle);
     }
 

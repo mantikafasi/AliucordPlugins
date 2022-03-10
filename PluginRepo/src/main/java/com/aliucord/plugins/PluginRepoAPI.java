@@ -36,6 +36,7 @@ public class PluginRepoAPI {
         return getPlugins(query,0);
     }
 
+    public static HashMap<String,Object> localFilters = new HashMap<>();
 
     public static HashMap<String,String> filters;
     public static List<Plugin> getPlugins(String query,int index){
@@ -49,7 +50,11 @@ public class PluginRepoAPI {
             logger.info(pluginarray.toString());
             for (int i = 0;i<pluginarray.length();i++) {
                 var plugin = (JSONObject)pluginarray.get(i);
-                plugins.add(getPluginFromJson(plugin));
+                var pluginobj  = getPluginFromJson(plugin);
+                if ( (boolean)localFilters.getOrDefault("showInstalledPlugins",true) || !PluginManager.plugins.containsKey(pluginobj.getName()) ) {
+                    plugins.add(getPluginFromJson(plugin));
+                }
+
             }
         } catch (Exception e) {
             new Logger("PluginRepo").error(e);

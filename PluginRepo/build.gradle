@@ -1,6 +1,9 @@
-version = "1.0.1.2"
+version = "1.0.1.3"
 description = "Install Plugins Easily"
 aliucord.changelog.set("""
+# 1.0.1.3
+*Added filter to hide installed plugins
+
 # 1.0.1.1
 *Fixed stupit typo
 
