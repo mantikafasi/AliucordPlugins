@@ -1,4 +1,3 @@
-
 package com.aliucord.plugins;
 
 import com.aliucord.Http;
@@ -9,32 +8,43 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 
-import external.org.apache.commons.lang3.StringUtils;
-
 public class InvChatAPI {
+    public static String URL = "https://InvisibleChatAPI.hubertmoszkarel.repl.co";
     static Logger logger = new Logger("InvChatAPI");
     static String regex = "[\u200c\u200d\u2062\u2063\u2063]"; //husk
-    public static String URL = "https://InvisibleChatAPI.hubertmoszkarel.repl.co";
-    public static boolean containsInvisibleMessage(String message){
-        return StringUtils.containsAny(message,"\u200c\u2062\u2063\u2063");
+
+    public static boolean containsInvisibleMessage(String message) {
+
+        return containsAny(message, "\u200c\u2062\u2063\u2063");
     }
 
-    public static String encrypt(String password,String secret,String cover) throws IOException {
+    public static boolean containsAny(String string, String searchChars) {
+        for (var a : searchChars.toCharArray()) {
+            if (string.contains(String.valueOf(a))) return true;
+        }
+        return false;
+    }
+
+
+    public static String encrypt(String password, String secret, String cover) throws IOException {
 
         JSONObject json = new JSONObject();
         try {
-            json.put("type","hide").put("password",password).put("secret",secret +"\u200b").put("cover",cover);
+            json.put("type", "hide").put("password", password).put("secret", secret + "\u200b").put("cover", cover);
             String encryptedMessage = makeJSONRequest(json);
             return ("\u200b" + encryptedMessage);
-        } catch (JSONException e) { e.printStackTrace(); logger.error(e);}
+        } catch (JSONException e) {
+            e.printStackTrace();
+            logger.error(e);
+        }
         return null; //fail  :sob:
 
     }
 
-    public static String decrypt(String message,String password) throws IOException {
+    public static String decrypt(String message, String password) throws IOException {
         JSONObject json = new JSONObject();
         try {
-            json.put("type","reveal").put("password",password).put("secret",message);
+            json.put("type", "reveal").put("password", password).put("secret", message);
             return makeJSONRequest(json);
         } catch (JSONException e) {
             logger.error(e);
@@ -43,6 +53,7 @@ public class InvChatAPI {
 
         return null; //fail :husk:
     }
+
     public static String makeJSONRequest(JSONObject json) throws IOException, JSONException {
 
         var request = new Http.Request(URL, "POST");

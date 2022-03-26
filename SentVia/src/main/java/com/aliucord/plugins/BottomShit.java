@@ -15,6 +15,9 @@ import com.discord.app.AppBottomSheet;
 
 public class BottomShit extends AppBottomSheet {
     SettingsAPI settings;
+    TextView tw;
+    EditText et;
+
     public BottomShit(SettingsAPI settings) {
         this.settings = settings;
     }
@@ -23,8 +26,6 @@ public class BottomShit extends AppBottomSheet {
     public int getContentViewResId() {
         return 0;
     }
-    TextView tw;
-    EditText et;
 
     @Override
     public View onCreateView(LayoutInflater layoutInflater, ViewGroup viewGroup, Bundle bundle) {
@@ -36,11 +37,11 @@ public class BottomShit extends AppBottomSheet {
         tw.setText("Your Stupit Device");
 
 
-        et  = new EditText(context);
+        et = new EditText(context);
 
-        et.setText(settings.getString("device","Aliucord for Android"));
-        tw.setPadding(px,px,px,0);
-        et.setPadding(px,px,px,px);
+        et.setText(settings.getString("device", "Aliucord for Android"));
+        tw.setPadding(px, px, px, 0);
+        et.setPadding(px, px, px, px);
 
 
         lay.addView(tw);
@@ -50,8 +51,7 @@ public class BottomShit extends AppBottomSheet {
 
     @Override
     public void onDestroy() {
-        settings.setString("device",et.getText().toString().trim().isEmpty()?"Aliucord for Android":et.getText().toString().trim());
-
+        settings.setString("device", et.getText().toString().trim().isEmpty() ? "Aliucord for Android" : et.getText().toString().trim());
         super.onDestroy();
     }
 }

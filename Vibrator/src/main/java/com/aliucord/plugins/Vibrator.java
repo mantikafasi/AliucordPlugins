@@ -19,7 +19,7 @@ public class Vibrator extends Plugin {
     public void start(Context context) {
         thread = new Thread(() -> {
             android.os.Vibrator v = (android.os.Vibrator) Utils.appActivity.getSystemService(Context.VIBRATOR_SERVICE);
-            while (true){
+            while (true) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     v.vibrate(VibrationEffect.createOneShot(10000, VibrationEffect.DEFAULT_AMPLITUDE));
                 } else {

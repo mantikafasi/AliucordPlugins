@@ -42,17 +42,14 @@ public class KyzaMode extends Plugin {
                                 str = str.replaceFirst(firstChar, firstChar.toUpperCase());
                                 newMes += str + ". ";
                             } else {
-                                newMes += str +" .";
+                                newMes += str + " .";
                             }
-
                         }
                         mes = newMes;
-
                         ReflectUtils.setField(content, "textContent", mes);
                     } catch (NoSuchFieldException | IllegalAccessException e) {
                         e.printStackTrace();
                     }
-
                 }));
     }
 

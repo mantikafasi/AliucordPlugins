@@ -38,7 +38,6 @@ import com.discord.utilities.time.ClockFactory;
 import com.discord.widgets.channels.list.WidgetChannelsListItemChannelActions;
 import com.discord.widgets.chat.list.actions.WidgetChatListActions;
 import com.discord.widgets.chat.list.adapter.WidgetChatListAdapterItemMessage;
-
 import com.google.gson.reflect.TypeToken;
 import com.lytefast.flexinput.R;
 import com.lytefast.flexinput.fragment.FlexInputFragment;
@@ -48,8 +47,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
-
-
 
 @SuppressWarnings("unused")
 @AliucordPlugin
@@ -177,7 +174,6 @@ public class InvisibleMessages extends Plugin {
                     var thisobj = (WidgetChatListAdapterItemMessage)cf.thisObject;
                     try {
                         var itemTimestampField =(TextView) ReflectUtils.getField(cf.thisObject,"itemTimestamp");
-
                         //var tw = (SimpleDraweeSpanTextView)ReflectUtils.getField(thisobj,"itemText");
                         if (itemTimestampField!=null){
                             if (InvChatAPI.containsInvisibleMessage(msg.getContent())){
@@ -211,10 +207,6 @@ public class InvisibleMessages extends Plugin {
                     var actions = (WidgetChatListActions)cf.thisObject;
                     var scrollView = (NestedScrollView)actions.getView();
                     var lay = (LinearLayout)scrollView.getChildAt(0);
-
-
-
-
                     if (lay.findViewById(viewID)==null && InvChatAPI.containsInvisibleMessage(message.getContent())  ){
                         TextView tw = new TextView(lay.getContext(),null,0, R.i.UiKit_Settings_Item_Icon);
                         tw.setId(viewID);
@@ -258,22 +250,13 @@ public class InvisibleMessages extends Plugin {
 
                         });
                     }
-
-
-
-
                 }));
-
     }
     private void patchSendButton() throws NoSuchMethodException {
         patcher.patch(FlexInputFragment.class.getDeclaredMethod("onViewCreated", View.class, Bundle.class),
                 new Hook((cf)->{
-
                     var thisObject = (FlexInputFragment)cf.thisObject;
-
                     var a = thisObject.j();
-
-
                     a.o.setOnLongClickListener((v)->{
                         String text =a.q.getText().toString();
                         if (text.split(" ").length<2){
@@ -322,7 +305,8 @@ public class InvisibleMessages extends Plugin {
                         emptyList(), //users
                         emptyList(), // roles
                         false // repliedUser
-                ),null
+                ), null, null
+
         );
 
     }

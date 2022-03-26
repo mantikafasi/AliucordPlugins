@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.text.method.LinkMovementMethod;
 import android.view.Gravity;
-import android.view.View;
 import android.widget.GridLayout;
 import android.widget.TextView;
 
@@ -19,9 +18,8 @@ import com.aliucord.views.Divider;
 import com.aliucord.views.ToolbarButton;
 import com.aliucord.widgets.LinearLayout;
 import com.discord.utilities.color.ColorCompat;
-import com.discord.views.CheckedSetting;
-import com.lytefast.flexinput.R;
 import com.google.android.material.card.MaterialCardView;
+import com.lytefast.flexinput.R;
 
 public class PluginCard extends MaterialCardView {
     public final LinearLayout root;
@@ -50,9 +48,9 @@ public class PluginCard extends MaterialCardView {
         titleView.setTextSize(16.0f);
         titleView.setTypeface(ResourcesCompat.getFont(ctx, Constants.Fonts.whitney_semibold));
         titleView.setMovementMethod(LinkMovementMethod.getInstance());
-        titleView.setTextColor(ColorCompat.getColor(ctx,R.c.primary_dark_200));
+        titleView.setTextColor(ColorCompat.getColor(ctx, R.c.primary_dark_200));
         int px = DimenUtils.dpToPx(15);
-        titleView.setPadding(px,px,px,px);
+        titleView.setPadding(px, px, px, px);
 
         root.addView(titleView);
         root.addView(new Divider(ctx));

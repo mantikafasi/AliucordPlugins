@@ -42,7 +42,6 @@ public class SentVia extends Plugin {
                     }
 
                 }));
-
     }
 
     @Override

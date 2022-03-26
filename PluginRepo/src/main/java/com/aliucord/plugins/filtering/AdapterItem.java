@@ -3,7 +3,6 @@ package com.aliucord.plugins.filtering;
 import android.content.Context;
 import android.text.method.LinkMovementMethod;
 import android.view.View;
-import android.widget.CheckBox;
 import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -24,9 +23,10 @@ public class AdapterItem extends RelativeLayout {
     public int viewType; //-1,0 is spinner,1 is checkbox
 
     public AdapterItem(Context context) {
-        this(context,0);
+        this(context, 0);
     }
-    public AdapterItem(Context context,int viewType) {
+
+    public AdapterItem(Context context, int viewType) {
         super(context);
         this.viewType = viewType;
         textView = new TextView(context);
@@ -45,8 +45,8 @@ public class AdapterItem extends RelativeLayout {
                 setting = new Spinner(context);
                 break;
             case 1:
-                setting = Utils.createCheckedSetting(context, CheckedSetting.ViewType.CHECK,"","");
-                ((CheckedSetting)setting).setChecked(true);
+                setting = Utils.createCheckedSetting(context, CheckedSetting.ViewType.CHECK, "", "");
+                ((CheckedSetting) setting).setChecked(true);
 
                 break;
         }

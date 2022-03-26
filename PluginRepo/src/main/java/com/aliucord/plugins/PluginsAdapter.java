@@ -23,7 +23,6 @@ import com.discord.widgets.user.usersheet.WidgetUserSheet;
 
 import java.io.File;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 
 public class PluginsAdapter extends RecyclerView.Adapter<PluginsAdapter.ViewHolder> {
@@ -31,6 +30,7 @@ public class PluginsAdapter extends RecyclerView.Adapter<PluginsAdapter.ViewHold
     private final AppFragment fragment;
     private final Context ctx;
     public List<Plugin> data;
+
     public PluginsAdapter(AppFragment fragment, Collection<Plugin> plugins) {
         super();
         this.fragment = fragment;
@@ -65,7 +65,7 @@ public class PluginsAdapter extends RecyclerView.Adapter<PluginsAdapter.ViewHold
         holder.card.descriptionView.setText(p.getManifest().description);
         holder.card.changeLogButton.setVisibility(!p.getManifest().changelog.equals("null") ? View.VISIBLE : View.GONE);
 
-        if (manifest.authors== null) return;
+        if (manifest.authors == null) return;
         String title = String.format("%s v%s by %s", p.getName(), manifest.version, TextUtils.join(", ", manifest.authors));
 
         SpannableString spannableTitle = new SpannableString(title);
@@ -105,15 +105,16 @@ public class PluginsAdapter extends RecyclerView.Adapter<PluginsAdapter.ViewHold
     public void onInstallClick(int position) {
         Plugin p = data.get(position);
         Utils.threadPool.execute(() -> {
-            if (PluginRepoAPI.installPlugin(p.getName(),p.getManifest().updateUrl)) {
+            if (PluginRepoAPI.installPlugin(p.getName(), p.getManifest().updateUrl)) {
                 Utils.mainThread.post(() -> {
-                   Utils.showToast("Successfully installed " + p.getName());
+                    Utils.showToast("Successfully installed " + p.getName());
                     notifyItemChanged(position);
                 });
 
             }
         });
     }
+
     public void onUninstallClick(int position) {
         Plugin p = data.get(position);
 
@@ -132,7 +133,6 @@ public class PluginsAdapter extends RecyclerView.Adapter<PluginsAdapter.ViewHold
             PluginManager.plugins.remove(p.getName());
             notifyItemChanged(position);
             PluginManager.logger.infoToast("Successfully deleted " + p.getName());
-
 
 
             dialog.dismiss();

@@ -50,8 +50,6 @@ public class ServerSettingsFragment extends SettingsPage {
 
     }
 
-    enum optionType {SERVERNAME, SERVERIMAGE}
-
     @SuppressLint("SetTextI18n")
     @Override
     public void onViewBound(View view) {
@@ -187,5 +185,7 @@ public class ServerSettingsFragment extends SettingsPage {
 
         getActivity().onBackPressed();
     }
+
+    enum optionType {SERVERNAME, SERVERIMAGE}
 
 }

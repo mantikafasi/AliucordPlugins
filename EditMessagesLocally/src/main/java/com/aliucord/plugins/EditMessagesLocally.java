@@ -23,6 +23,7 @@ import com.discord.utilities.messagesend.MessageRequest;
 import com.discord.utilities.messagesend.MessageResult;
 import com.discord.widgets.chat.list.WidgetChatList;
 import com.discord.widgets.chat.list.actions.WidgetChatListActions;
+import com.discord.widgets.chat.list.adapter.WidgetChatListAdapterItemSystemMessage;
 import com.discord.widgets.chat.list.entries.MessageEntry;
 
 import java.lang.reflect.InvocationTargetException;

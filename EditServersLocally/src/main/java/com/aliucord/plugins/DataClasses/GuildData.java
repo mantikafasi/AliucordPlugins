@@ -11,11 +11,11 @@ public class GuildData {
     public String orginalName;
 
 
-
-    public GuildData(long guildID){
+    public GuildData(long guildID) {
         this.guildID = guildID;
     }
-    public GuildData(Guild guild){
+
+    public GuildData(Guild guild) {
         guildID = guild.getId();
     }
 

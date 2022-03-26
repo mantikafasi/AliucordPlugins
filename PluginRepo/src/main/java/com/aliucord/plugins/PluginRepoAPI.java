@@ -1,8 +1,6 @@
 package com.aliucord.plugins;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
-import android.view.View;
 
 import com.aliucord.Constants;
 import com.aliucord.Http;
@@ -26,32 +24,31 @@ import java.util.List;
 
 public class PluginRepoAPI {
     public static final String API_URL = "https://mantikralligi1.pythonanywhere.com";
+    public static HashMap<String, Object> localFilters = new HashMap<>();
+    public static HashMap<String, String> filters;
     static Logger logger = new Logger("PluginRepoAPI");
 
-    public static List<Plugin> getPlugins(){
+    public static List<Plugin> getPlugins() {
         return getPlugins("");
     }
 
     public static List<Plugin> getPlugins(String query) {
-        return getPlugins(query,0);
+        return getPlugins(query, 0);
     }
 
-    public static HashMap<String,Object> localFilters = new HashMap<>();
-
-    public static HashMap<String,String> filters;
-    public static List<Plugin> getPlugins(String query,int index){
+    public static List<Plugin> getPlugins(String query, int index) {
         var plugins = new ArrayList<Plugin>();
         try {
             JSONObject filter = new JSONObject(filters);
-            filter.put("index",index);
-            filter.put("query",query);
+            filter.put("index", index);
+            filter.put("query", query);
 
-            var pluginarray = new JSONArray(Http.simplePost(API_URL +"/getPlugins",filter.toString()));
+            var pluginarray = new JSONArray(Http.simplePost(API_URL + "/getPlugins", filter.toString()));
             logger.info(pluginarray.toString());
-            for (int i = 0;i<pluginarray.length();i++) {
-                var plugin = (JSONObject)pluginarray.get(i);
-                var pluginobj  = getPluginFromJson(plugin);
-                if ( (boolean)localFilters.getOrDefault("showInstalledPlugins",true) || !PluginManager.plugins.containsKey(pluginobj.getName()) ) {
+            for (int i = 0; i < pluginarray.length(); i++) {
+                var plugin = (JSONObject) pluginarray.get(i);
+                var pluginobj = getPluginFromJson(plugin);
+                if ((boolean) localFilters.getOrDefault("showInstalledPlugins", true) || !PluginManager.plugins.containsKey(pluginobj.getName())) {
                     plugins.add(getPluginFromJson(plugin));
                 }
 
@@ -63,15 +60,15 @@ public class PluginRepoAPI {
         return plugins;
     }
 
-    public static boolean checkNewPlugins(){
+    public static boolean checkNewPlugins() {
         try {
-            var pluginID =Integer.parseInt(Http.simpleGet(API_URL +"/getLastPlugin"));
-            var lastID = PluginRepo.settingsAPI.getInt("lastPluginID",0) ;
+            var pluginID = Integer.parseInt(Http.simpleGet(API_URL + "/getLastPlugin"));
+            var lastID = PluginRepo.settingsAPI.getInt("lastPluginID", 0);
             if (lastID == 0) {
-                PluginRepo.settingsAPI.setInt("lastPluginID",pluginID);
+                PluginRepo.settingsAPI.setInt("lastPluginID", pluginID);
                 return false;
             } else if (lastID < pluginID) {
-                PluginRepo.settingsAPI.setInt("lastPluginID",pluginID);
+                PluginRepo.settingsAPI.setInt("lastPluginID", pluginID);
                 return true;
             } else {
                 return false;
@@ -87,12 +84,17 @@ public class PluginRepoAPI {
         var manifest = new Plugin.Manifest(json.getString("plugin_name"));
         manifest.version = json.getString("version");
         manifest.description = json.getString("description");
-        manifest.authors = GsonUtils.fromJson(json.getString("author"),Plugin.Manifest.Author[].class);
+        manifest.authors = GsonUtils.fromJson(json.getString("author"), Plugin.Manifest.Author[].class);
         manifest.changelog = json.getString("changelog");
         manifest.updateUrl = json.getString("download_link"); // I know this is not updateurl
         var plugin = new Plugin(manifest) {
-            @Override public void start(Context context) throws Throwable {}
-            @Override public void stop(Context context) throws Throwable {}
+            @Override
+            public void start(Context context) throws Throwable {
+            }
+
+            @Override
+            public void stop(Context context) throws Throwable {
+            }
         };
         return plugin;
     }
@@ -101,7 +103,7 @@ public class PluginRepoAPI {
         try {
             //copied from PluginFile.kt
             var response = new Http.Request(url).execute();
-            var pluginFile = new File(Constants.PLUGINS_PATH,pluginName + ".zip");
+            var pluginFile = new File(Constants.PLUGINS_PATH, pluginName + ".zip");
             response.saveToFile(pluginFile);
             PluginManager.loadPlugin(Utils.getAppContext(), pluginFile);
             PluginManager.startPlugin(pluginName);
@@ -113,15 +115,17 @@ public class PluginRepoAPI {
     }
 
     public static boolean deletePlugin(String plugin) {
-        var success = new File(Constants.PLUGINS_PATH,plugin + ".zip").delete();
+        var success = new File(Constants.PLUGINS_PATH, plugin + ".zip").delete();
         PluginManager.stopPlugin(plugin);
         PluginManager.unloadPlugin(plugin);
         return success;
     }
 
     public static List<Developer> getDevelopers() {
-        try{
-            return GsonUtils.fromJson(Http.simpleGet(API_URL +"/getDevelopers"), TypeToken.getParameterized(ArrayList.class, Developer.class).type);
-        }catch (Exception e) { return new ArrayList<>();}
+        try {
+            return GsonUtils.fromJson(Http.simpleGet(API_URL + "/getDevelopers"), TypeToken.getParameterized(ArrayList.class, Developer.class).type);
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
     }
 }

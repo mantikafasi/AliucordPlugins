@@ -20,6 +20,7 @@ public class ChannelData {
         this.channelName = channelName;
         this.orginalName = orginalName;
     }
+
     public ChannelData(long id) {
         this.channelID = id;
     }

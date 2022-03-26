@@ -8,11 +8,11 @@ project(":POGlugin").projectDir = File("./POGlugin")
 include(":LightShotRoulette")
 project(":LightShotRoulette").projectDir = File("./LightShotRoulette")
 
-include(":Someone")
-project(":Someone").projectDir= File("./Someone")
+//include(":Someone")
+//project(":Someone").projectDir= File("./Someone")
 
-include(":byebyeSlashCommands")
-project(":byebyeSlashCommands").projectDir = File("./byebyeSlashCommands")
+//include(":byebyeSlashCommands")
+//project(":byebyeSlashCommands").projectDir = File("./byebyeSlashCommands")
 
 include(":BetterSilentTyping")
 project(":BetterSilentTyping").projectDir = File("./BetterSilentTyping")
@@ -32,8 +32,8 @@ project(":InvisibleMessages").projectDir = File("./InvisibleMessages")
 include(":RickRoll")
 project(":RickRoll").projectDir = File("./RickRoll")
 
-include(":EncryptDMs")
-project(":EncryptDMs").projectDir = File("./EncryptDMs")
+//include(":EncryptDMs")
+//project(":EncryptDMs").projectDir = File("./EncryptDMs")
 
 include(":StupidityDB")
 project(":StupidityDB").projectDir = File("./StupidityDB")

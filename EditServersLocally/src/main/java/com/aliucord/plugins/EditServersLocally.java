@@ -65,13 +65,11 @@ public class EditServersLocally extends Plugin {
     // i agree this sucked to look at -animal
 
 
+    public HashMap<Long, ChannelData> channelData = settings.getObject("channelData", new HashMap<>(), TypeToken.getParameterized(HashMap.class, Long.class, ChannelData.class).getType());
+    public HashMap<Long, GuildData> guildData = settings.getObject("guildData", new HashMap<>(), TypeToken.getParameterized(HashMap.class, Long.class, GuildData.class).getType());
     AtomicReference<HashMap<Long, View>> channels = new AtomicReference<>(new HashMap<>());
     AtomicLong currentGuild = new AtomicLong();
     Logger logger = new Logger("EditServersLocally");
-    public HashMap<Long, ChannelData> channelData = settings.getObject("channelData", new HashMap<>(), TypeToken.getParameterized(HashMap.class, Long.class, ChannelData.class).getType());
-    public HashMap<Long, GuildData> guildData = settings.getObject("guildData", new HashMap<>(), TypeToken.getParameterized(HashMap.class, Long.class, GuildData.class).getType());
-
-
     Context context;
     Drawable editIcon;
     int serverSettingsID = View.generateViewId();
@@ -97,6 +95,7 @@ public class EditServersLocally extends Plugin {
         patchChannelActionsMenu();
         patchVoiceChannels();
     }
+
     public void patchChannel() throws NoSuchMethodException {
         patcher.patch(Channel.class.getDeclaredMethod("m"), new Hook((cf) -> {
             //patching 'getChannelName' method so I can change channels name
@@ -308,7 +307,7 @@ public class EditServersLocally extends Plugin {
                         binding.f.setText(chdata.channelName);
 
                         try {
-                            
+
                             ReflectUtils.setField(channel, "name", chdata.channelName);
                             ReflectUtils.setField(callFrame.thisObject, "channel", channel);
                         } catch (NoSuchFieldException | IllegalAccessException e) {
@@ -316,7 +315,6 @@ public class EditServersLocally extends Plugin {
                         }
 
                     }
-
 
 
                     binding.a.setOnLongClickListener(view -> {
@@ -328,7 +326,7 @@ public class EditServersLocally extends Plugin {
 
                         channels.get().put(chWrapped.getId(), binding.f);
 
-                        createDialog("Set Voice Channel Name", chdata,Utils.appActivity.getSupportFragmentManager());
+                        createDialog("Set Voice Channel Name", chdata, Utils.appActivity.getSupportFragmentManager());
                         return true;
                     });
 
@@ -352,7 +350,8 @@ public class EditServersLocally extends Plugin {
 
 
         dialog.setOnDialogShownListener(v -> {
-            if (data.channelName != null) dialog.getInputLayout().getEditText().setText(data.channelName);
+            if (data.channelName != null)
+                dialog.getInputLayout().getEditText().setText(data.channelName);
         });
         dialog.setOnOkListener(v -> {
             var inStr = dialog.getInput();
@@ -388,7 +387,7 @@ public class EditServersLocally extends Plugin {
 
     public void updateTextChannel(ChannelData data) {
         TextView b = (TextView) channels.get().get(data.channelID);
-        if (b!=null) b.setText(data.channelName == null ? data.orginalName : data.channelName);
+        if (b != null) b.setText(data.channelName == null ? data.orginalName : data.channelName);
     }
 
     public ChannelData getChannelData(long id) {

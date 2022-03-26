@@ -20,24 +20,25 @@ import com.aliucord.api.SettingsAPI;
 import com.aliucord.entities.NotificationData;
 import com.aliucord.entities.Plugin;
 import com.aliucord.patcher.Hook;
-import com.aliucord.settings.Plugins;
 import com.aliucord.settings.Updater;
 import com.discord.utilities.color.ColorCompat;
 import com.discord.widgets.settings.WidgetSettings;
 
-import de.robv.android.xposed.XC_MethodHook;
-import de.robv.android.xposed.XC_MethodReplacement;
-
 @AliucordPlugin
 public class PluginRepo extends Plugin {
     public static SettingsAPI settingsAPI;
+
     @Override
     public void start(Context context) throws NoSuchMethodException {
         settingsAPI = settings;
         settingsTab = new SettingsTab(BottomShit.class, SettingsTab.Type.BOTTOM_SHEET);
-        if(settings.getBool("checkNewPlugins",true)) {
+        if (settings.getBool("checkNewPlugins", true)) {
             Utils.threadPool.execute(() -> {
-                try { Thread.sleep(10000); } catch (InterruptedException e) { e.printStackTrace(); }
+                try {
+                    Thread.sleep(10000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 var newPlugins = PluginRepoAPI.checkNewPlugins();
                 if (newPlugins) {
                     Utils.mainThread.post(() -> {
@@ -61,7 +62,7 @@ public class PluginRepo extends Plugin {
         });
          */
 
-        patcher.patch(WidgetSettings.class.getDeclaredMethod("onViewBound", View.class),new Hook(cf -> {
+        patcher.patch(WidgetSettings.class.getDeclaredMethod("onViewBound", View.class), new Hook(cf -> {
             Context ctx = ((WidgetSettings) cf.thisObject).requireContext();
             CoordinatorLayout view = (CoordinatorLayout) cf.args[0];
             LinearLayoutCompat v = (LinearLayoutCompat) ((NestedScrollView) view.getChildAt(1)).getChildAt(0);
@@ -81,7 +82,7 @@ public class PluginRepo extends Plugin {
             }
             openPluginRepo.setOnClickListener(e -> Utils.openPage(e.getContext(), Updater.class));
             v.addView(openPluginRepo, baseIndex);
-            openPluginRepo.setOnClickListener(v1 -> Utils.openPageWithProxy(Utils.getAppActivity(),new PluginsPage()));
+            openPluginRepo.setOnClickListener(v1 -> Utils.openPageWithProxy(Utils.getAppActivity(), new PluginsPage()));
         }));
     }
 
