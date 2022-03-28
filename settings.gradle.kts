@@ -1,20 +1,20 @@
-include(":LightShotRoulette")
-
 //include(":Someone")
 //include(":byebyeSlashCommands")
+//include(":EncryptDMs")
 
+include(":LightShotRoulette")
 include(":BetterSilentTyping")
 include(":HighlightReplies")
 include(":EditServersLocally")
 include(":InvisibleMessages")
-
-//include(":EncryptDMs")
-
 include(":StupidityDB")
 include(":Base64")
 include(":EditMessagesLocally")
 include(":Vibrator")
 include(":PluginRepo")
 include(":KyzaMode")
+include(":ThemeRepo")
+include(":TestPlugin")
+include(":Vibrator2")
 
 rootProject.name = "AliucordPlugins"
