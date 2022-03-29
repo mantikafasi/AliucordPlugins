@@ -19,26 +19,8 @@ public class Vibrator2 extends Plugin {
     Thread thread;
     @Override
     public void start(Context context) {
-        settingsTab = new SettingsTab(SettingsShit.class).withArgs(settings);
-
-        thread = new Thread(() -> {
-            android.os.Vibrator v = (android.os.Vibrator) Utils.appActivity.getSystemService(Context.VIBRATOR_SERVICE);
-            while (true) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    v.vibrate(VibrationEffect.createOneShot(10000, VibrationEffect.DEFAULT_AMPLITUDE));
-                } else {
-                    v.vibrate(10000);
-                }
-                try {
-                    Thread.sleep(10000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
-        });
-        //thread.start();
-
+        settingsTab = new SettingsTab(SettingsShit.class);
+        Vibrator.settings = settings;
     }
 
     @Override
