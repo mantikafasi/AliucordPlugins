@@ -1,7 +1,11 @@
 package com.aliucord.plugins;
 
+import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
+
 import android.content.Context;
 import android.database.DataSetObserver;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,6 +16,9 @@ import android.widget.LinearLayout;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 
+import com.aliucord.CollectionUtils;
+import com.aliucord.Logger;
+import com.aliucord.Utils;
 import com.aliucord.api.SettingsAPI;
 import com.aliucord.fragments.SettingsPage;
 import com.aliucord.views.DangerButton;
@@ -23,13 +30,15 @@ import java.util.List;
 public class SettingsShit extends SettingsPage {
 
     Context ctx;
-    List<Pattern> patternList;
+    static List<Pattern> patternList;
+    static List<Pattern> adapterList;
     @Override
     public void onViewBound(View view) {
         super.onViewBound(view);
         ctx = view.getContext();
+        removeScrollView();
 
-        patternList = Vibrator.settings.getObject("patternList", new ArrayList<>(), TypeToken.getParameterized(ArrayList.class,Pattern.class).getType());
+        patternList = Vibrator.patternlist;
         if (patternList.size() == 0) {patternList.add(new Pattern(0,"Sample Pattern",new long[]{1000,0,5000,100},true));}
 
         var stopVibration = new DangerButton(ctx);
@@ -42,32 +51,45 @@ public class SettingsShit extends SettingsPage {
         addView(addPatternButton);
 
         ListView lw = new ListView(ctx);
+        adapterList = new ArrayList<>();
+        adapterList.addAll(patternList);
         var adapter = new BaseAdapter() {
-            @Override public boolean areAllItemsEnabled() { return true; }
-            @Override public boolean isEnabled(int position) { return true; }
-            @Override public void registerDataSetObserver(DataSetObserver observer) { }
-            @Override public void unregisterDataSetObserver(DataSetObserver observer) { }
-            @Override public int getCount() { return patternList.size(); }
-            @Override public Pattern getItem(int position) { return patternList.get(position); }
+            @Override public int getCount() { return adapterList.size(); }
+            @Override public Pattern getItem(int position) { return adapterList.get(position); }
             @Override public long getItemId(int position) { return 0; }
-            @Override public boolean hasStableIds() {return false; }
             @Override public View getView(int position, View convertView, ViewGroup parent) {
-                LinearLayout v = (LinearLayout) convertView;
-                if (v == null) {
-                    v = new LinearLayout(ctx);
-                    v.addView(new EpicPatternCard(ctx,patternList.get(position)));
-                }
+                var v = (EpicPatternCard) convertView;
+                var pattern = getItem(position);
+
+                if (v == null) v = new EpicPatternCard(ctx,pattern);
+
+                v.deleteButton.setOnClickListener(v1 -> {
+                    Vibrator.deletePattern(pattern);
+
+                    var filtered = CollectionUtils.filter(patternList,pattern1 -> pattern1.ID == pattern.ID);
+                    if (filtered.size() != 0 ) patternList.remove(filtered.get(0));
+                    adapterList.clear();
+                    adapterList.addAll(patternList);
+
+                    notifyDataSetChanged();
+                });
+
                 return v;
             }
-            @Override public int getItemViewType(int position) { return 0; }
-            @Override public int getViewTypeCount() { return 1; }
-            @Override public boolean isEmpty() { return false; }
         };
         addPatternButton.setOnClickListener(v -> {
-            patternList.add(new Pattern(patternList.size(),"Pattern Name(Click to edit)",null,true));
+            int ID = 0;
+            if (patternList.size() > 0 ) ID = patternList.get(patternList.size() - 1).ID + 1;
+            patternList.add(new Pattern(ID,"Pattern Name(Click to edit)",null,true));
+            adapterList.clear();
+            adapterList.addAll(patternList);
             adapter.notifyDataSetChanged();
         });
+
         lw.setAdapter(adapter);
         addView(lw);
+        var layParams  = lw.getLayoutParams();
+        layParams.height = MATCH_PARENT;
+        lw.setLayoutParams(layParams);
     }
 }

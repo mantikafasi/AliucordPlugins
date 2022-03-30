@@ -10,7 +10,9 @@ import com.aliucord.Utils;
 import com.aliucord.annotations.AliucordPlugin;
 import com.aliucord.api.CommandsAPI;
 import com.aliucord.entities.Plugin;
+import com.google.gson.reflect.TypeToken;
 
+import java.util.ArrayList;
 import java.util.Collections;
 
 @SuppressWarnings("unused")
@@ -21,6 +23,7 @@ public class Vibrator2 extends Plugin {
     public void start(Context context) {
         settingsTab = new SettingsTab(SettingsShit.class);
         Vibrator.settings = settings;
+        Vibrator.patternlist = settings.getObject("patternList", new ArrayList<>(), TypeToken.getParameterized(ArrayList.class,Pattern.class).getType());
     }
 
     @Override

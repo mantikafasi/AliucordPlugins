@@ -15,6 +15,7 @@ import java.util.List;
 public class Vibrator {
     public static android.os.Vibrator vibrator = (android.os.Vibrator) Utils.appActivity.getSystemService(Context.VIBRATOR_SERVICE);
     public static SettingsAPI settings;
+    public static List<Pattern> patternlist;
     @SuppressLint("MissingPermission")
     public static void vibrate(long[] pattern,boolean r){
         int repeat;
@@ -27,16 +28,27 @@ public class Vibrator {
     }
 
     public static void savePattern(Pattern pattern){
-        var patterns = (List<Pattern>)settings.getObject("patternList",new ArrayList<Pattern>(), TypeToken.getParameterized(ArrayList.class,Pattern.class).getType());
-        for (var a:patterns) {
+        for (var a:patternlist) {
             if(a.ID == pattern.ID) {
-                patterns.remove(a);
-                patterns.add(pattern);
+                patternlist.remove(a);
+                patternlist.add(pattern);
                 break;
             }
         }
-        settings.setObject("patternList",patterns);
+        settings.setObject("patternList",patternlist);
     }
+
+    public static void deletePattern(Pattern pattern) {
+        for (var a:patternlist) {
+            if(a.ID == pattern.ID) {
+                patternlist.remove(a);
+                break;
+            }
+        }
+        settings.setObject("patternList",patternlist);
+
+    }
+
     @SuppressLint("MissingPermission")
     public static void stop(){
         vibrator.cancel();
