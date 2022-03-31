@@ -30,8 +30,9 @@ public class Vibrator {
     public static void savePattern(Pattern pattern){
         for (var a:patternlist) {
             if(a.ID == pattern.ID) {
+                var index = patternlist.indexOf(a);
                 patternlist.remove(a);
-                patternlist.add(pattern);
+                patternlist.add(index,pattern);
                 break;
             }
         }

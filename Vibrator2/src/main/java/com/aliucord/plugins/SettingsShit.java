@@ -30,16 +30,18 @@ import java.util.List;
 public class SettingsShit extends SettingsPage {
 
     Context ctx;
-    static List<Pattern> patternList;
-    static List<Pattern> adapterList;
+    List<Pattern> patternList;
+    List<Pattern> adapterList;
     @Override
     public void onViewBound(View view) {
         super.onViewBound(view);
         ctx = view.getContext();
         removeScrollView();
 
+        setActionBarTitle("Vibrator 2");
+
         patternList = Vibrator.patternlist;
-        if (patternList.size() == 0) {patternList.add(new Pattern(0,"Sample Pattern",new long[]{1000,0,5000,100},true));}
+        if (patternList.size() == 0) {patternList.add(new Pattern(0,"Sample Pattern",new long[]{0,100,100,200},true));}
 
         var stopVibration = new DangerButton(ctx);
         stopVibration.setText("Stop Vibrator");
@@ -51,17 +53,21 @@ public class SettingsShit extends SettingsPage {
         addView(addPatternButton);
 
         ListView lw = new ListView(ctx);
+        //lw.setVerticalScrollBarEnabled(false);
         adapterList = new ArrayList<>();
         adapterList.addAll(patternList);
         var adapter = new BaseAdapter() {
             @Override public int getCount() { return adapterList.size(); }
             @Override public Pattern getItem(int position) { return adapterList.get(position); }
-            @Override public long getItemId(int position) { return 0; }
+            @Override public long getItemId(int position) { return adapterList.get(position).ID; }
             @Override public View getView(int position, View convertView, ViewGroup parent) {
                 var v = (EpicPatternCard) convertView;
+                new Logger("guh2").info(String.valueOf(position));
                 var pattern = getItem(position);
 
-                if (v == null) v = new EpicPatternCard(ctx,pattern);
+                v = new EpicPatternCard(ctx);
+
+                v.configure(pattern);
 
                 v.deleteButton.setOnClickListener(v1 -> {
                     Vibrator.deletePattern(pattern);
@@ -83,6 +89,9 @@ public class SettingsShit extends SettingsPage {
             patternList.add(new Pattern(ID,"Pattern Name(Click to edit)",null,true));
             adapterList.clear();
             adapterList.addAll(patternList);
+
+            new Logger("guh").info(adapterList.toString());
+
             adapter.notifyDataSetChanged();
         });
 
