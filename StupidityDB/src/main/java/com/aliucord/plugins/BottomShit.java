@@ -73,37 +73,11 @@ public class BottomShit extends BottomSheet {
         });
 
 
-        TextView radioText = new TextView(context, null, 0, com.lytefast.flexinput.R.i.UiKit_Settings_Item_Header);
-        radioText.setText("Voting Type");
-        radioText.setTypeface(ResourcesCompat.getFont(context, Constants.Fonts.whitney_semibold));
-        radioText.setGravity(Gravity.START);
-
-        CheckedSetting useBot = Utils.createCheckedSetting(context, CheckedSetting.ViewType.RADIO, "Discord Bot", "Votes Will be sent using discord bot (You need to be on server)");
-        CheckedSetting useAPI = Utils.createCheckedSetting(context, CheckedSetting.ViewType.RADIO, "HTTP Requests", "Votes Will be sent using HTTP API (You need to authorize to use this)");
-        List<CheckedSetting> radioList = Arrays.asList(useBot, useAPI);
-        RadioManager manager = new RadioManager(radioList);
-        manager.a(settings.getBool("useOAUTH2", false) ? useAPI : useBot);
-
-        useBot.e(v -> {
-            manager.a(useBot);
-            settings.setBool("useOAUTH2", false);
-        });
-        useAPI.e(v -> {
-            if (settings.getString("token", null) == null) {
-                Toast.makeText(context, "You need to authorize to use HTTP Requests", Toast.LENGTH_SHORT).show();
-                Utils.openPageWithProxy(Utils.getAppActivity(), new AuthorazationPage());
-            }
-            settings.setBool("useOAUTH2", true);
-            manager.a(useAPI);
-        });
-
         addView(title);
         addView(clearCacheButton);
         addView(authorizate);
         addView(enterTokenManually);
-        addView(radioText);
-        addView(useAPI);
-        addView(useBot);
+
 
     }
 }

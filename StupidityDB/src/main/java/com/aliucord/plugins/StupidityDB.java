@@ -49,11 +49,7 @@ public class StupidityDB extends Plugin {
         stupidityIcon = ContextCompat.getDrawable(context, com.lytefast.flexinput.R.e.ic_emoji_24dp).mutate();
         stupidityIcon.setTint(ColorCompat.getColor(context, com.lytefast.flexinput.R.c.primary_dark_400));
         settingsTab = new SettingsTab(BottomShit.class, SettingsTab.Type.BOTTOM_SHEET).withArgs(settings);
-        var is110 = settings.getBool("is110", true);
-        if (is110) {
-            settings.setBool("useOAUTH2", !StupidityDBAPI.isUserinServer());
-            settings.setBool("is110", false);
-        }
+
 
         patchProfileHeaderView();
         patchWidgetChatListAdapterItemMessage();

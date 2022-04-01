@@ -46,32 +46,6 @@ public class StupidityDBAPI {
     }
 
     public static String sendUserData(int stupidity, long id) {
-        if (StupidityDB.staticSettings.getBool("useOAUTH2", true)) {
-            return sendUserDataWithHttp(stupidity, id);
-        } else {
-            return sendUserDataDiscord(stupidity, id);
-        }
-    }
-
-    public static boolean isUserinServer() {
-        return !(StoreStream.getGuilds().getGuild(Long.parseLong("917308687423533086")) == null);
-    }
-
-    public static String sendUserDataDiscord(int stupidity, long id) {
-        if (!isUserinServer()) {
-            Toast.makeText(Utils.getAppActivity(), "You need to join server to send votes", Toast.LENGTH_SHORT).show();
-            WidgetGuildInvite.Companion.launch(Utils.getAppActivity(), new StoreInviteSettings.InviteCode("uJbMFWjMUt", "", null));
-            return "Accept Invite and try again";
-        } else {
-            RxUtils.subscribe(RestAPI.getApi().createOrFetchDM(botid), channel -> {
-                RxUtils.subscribe(RestAPI.getApi().sendMessage(ChannelWrapper.getId(channel), createMessage(stupidity, id)), message -> null);
-                return null;
-            });
-            return "Vote Sent";
-        }
-    }
-
-    public static String sendUserDataWithHttp(int stupidity, long id) {
         if (StupidityDB.staticSettings.getString("token", null) != null) {
             String url = serverip + "/vote";
 
@@ -92,29 +66,4 @@ public class StupidityDBAPI {
         return "Token is null,Please Authorize";
     }
 
-    public static RestAPIParams.Message createMessage(int stupidity, long id) {
-        JSONObject obj = new JSONObject();
-        try {
-            obj = new JSONObject().put("stupidity", stupidity).put("discordid", id);
-
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        return new RestAPIParams.Message(
-                obj.toString(), // Content
-                String.valueOf(NonceGenerator.computeNonce(ClockFactory.get())), // Nonce
-                null, // ApplicationId
-                null, // Activity
-                emptyList(), // stickerIds
-                null, // messageReference
-                new RestAPIParams.Message.AllowedMentions( // https://discord.com/developers/docs/resources/channel#allowed-mentions-object-allowed-mentions-structure
-                        emptyList(), // parse
-                        emptyList(), //users
-                        emptyList(), // roles
-                        false // repliedUser
-
-                ),null,null
-        );
-
-    }
 }
