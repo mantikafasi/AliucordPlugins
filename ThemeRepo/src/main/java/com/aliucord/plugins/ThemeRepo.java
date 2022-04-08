@@ -31,6 +31,8 @@ public class ThemeRepo extends Plugin {
     @Override
     public void start(Context context) throws NoSuchMethodException {
 
+        Utils.openPageWithProxy(Utils.getAppActivity(), new ThemesPage());
+
         patcher.patch(WidgetSettings.class.getDeclaredMethod("onViewBound", View.class), new Hook(cf -> {
             Context ctx = ((WidgetSettings) cf.thisObject).requireContext();
             CoordinatorLayout view = (CoordinatorLayout) cf.args[0];

@@ -67,7 +67,7 @@ public class ThemeRepoAPI {
         try {
             new Http.Request(GITHIB_THEMEREPO_URL + "/themes/" + name + ".json").execute().saveToFile(new File(THEME_DIR,name +".json"));
             Utils.showToast("Successfully installed Theme");
-            setThemeStatus(name,false);
+            setThemeStatus(name,true);
             Utils.promptRestart();
             return true;
         } catch (IOException e) {

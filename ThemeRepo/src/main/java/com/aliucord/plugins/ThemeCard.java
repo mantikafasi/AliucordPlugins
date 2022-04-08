@@ -4,12 +4,16 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.text.method.LinkMovementMethod;
 import android.view.Gravity;
+import android.view.View;
 import android.widget.GridLayout;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.constraintlayout.helper.widget.Carousel;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.res.ResourcesCompat;
+import androidx.viewpager.widget.PagerAdapter;
+import androidx.viewpager.widget.ViewPager;
 
 import com.aliucord.Constants;
 import com.aliucord.utils.DimenUtils;
@@ -31,7 +35,7 @@ public class ThemeCard extends MaterialCardView {
     public final DangerButton uninstallButton;
     public final ToolbarButton repoButton;
     public final ToolbarButton changeLogButton;
-    public final Carousel carousel=null;
+    public final ViewPager screenshotsViewPager;
     //com.aliucord.widgets.ThemeCard
 
     @SuppressLint("SetTextI18n")
@@ -93,6 +97,11 @@ public class ThemeCard extends MaterialCardView {
         GridLayout.LayoutParams clparams = new GridLayout.LayoutParams(GridLayout.spec(0), GridLayout.spec(1));
         clparams.setGravity(Gravity.CENTER_VERTICAL);
         buttonLayout.addView(changeLogButton, clparams);
+
+        screenshotsViewPager = new ViewPager(ctx);
+        screenshotsViewPager.setBackgroundColor(R.d.mtrl_snackbar_action_text_color_alpha);
+
+        root.addView(screenshotsViewPager);
 
         root.addView(buttonLayout);
 

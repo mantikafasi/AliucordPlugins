@@ -16,5 +16,6 @@ include(":KyzaMode")
 include(":ThemeRepo")
 include(":TestPlugin")
 include(":Vibrator2")
+include(":GoodPerson")
 
 rootProject.name = "AliucordPlugins"

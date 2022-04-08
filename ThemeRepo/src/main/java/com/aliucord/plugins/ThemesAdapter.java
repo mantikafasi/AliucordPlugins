@@ -1,11 +1,15 @@
 package com.aliucord.plugins;
 
+import static com.aliucord.plugins.ThemeRepoAPI.GITHIB_THEMEREPO_URL;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.net.Uri;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.ClickableSpan;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Filter;
@@ -14,6 +18,7 @@ import android.widget.Filterable;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager.widget.PagerAdapter;
 
 import com.aliucord.CollectionUtils;
 import com.aliucord.Constants;
@@ -24,11 +29,13 @@ import com.aliucord.fragments.ConfirmDialog;
 import com.aliucord.utils.ChangelogUtils;
 import com.discord.app.AppFragment;
 import com.discord.widgets.user.usersheet.WidgetUserSheet;
+import com.facebook.drawee.view.SimpleDraweeView;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.zip.Inflater;
 
 public class ThemesAdapter extends RecyclerView.Adapter<ThemesAdapter.ViewHolder> implements Filterable{
     //com.aliucord.settings.Adapter
@@ -89,6 +96,31 @@ public class ThemesAdapter extends RecyclerView.Adapter<ThemesAdapter.ViewHolder
 
         holder.card.titleView.setText(spannableTitle);
 
+        holder.card.screenshotsViewPager.setAdapter(new PagerAdapter() {
+            @Override
+            public int getCount() {
+                return t.screenshots.size();
+            }
+
+            @Override
+            public boolean isViewFromObject(@NonNull View view, @NonNull Object object) {
+                return view == (object);
+            }
+
+            @NonNull
+            @Override
+            public Object instantiateItem(@NonNull ViewGroup container, int position) {
+                var imageView = new SimpleDraweeView(ctx);
+                container.addView(imageView);
+                imageView.setImageURI(GITHIB_THEMEREPO_URL + t.screenshots.get(position));
+                return imageView;
+            }
+
+            @Override
+            public void destroyItem(@NonNull ViewGroup container, int position, @NonNull Object object) {
+                container.removeView((View)object);
+            }
+        });
 
     }
 
