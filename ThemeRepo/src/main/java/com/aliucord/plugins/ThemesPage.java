@@ -54,6 +54,7 @@ public class ThemesPage extends SettingsPage {
     public void onViewBound(View view) {
         //TODO , ADD IMAGE TO THEMECARD,MAKE FILTERS WORK,MAKE ADD THEME PAGE
         super.onViewBound(view);
+        removeScrollView();
 
         setActionBarTitle("Theme Repo");
         var context = view.getContext();
@@ -95,6 +96,7 @@ public class ThemesPage extends SettingsPage {
             filterView.setVisibility(View.GONE);
 
             var openDrawable = ContextCompat.getDrawable(context, R.e.ic_arrow_down_14dp).mutate();
+
             openDrawable.setTint(ColorCompat.getThemedColor(context, R.b.colorInteractiveNormal));
 
             var closedDrawable = new LayerDrawable(new Drawable[]{openDrawable}) {
@@ -109,6 +111,7 @@ public class ThemesPage extends SettingsPage {
             };
 
             var header = new TextView(context, null, 0, R.i.UiKit_Settings_Item_Header);
+            header.setVisibility(View.GONE);
             header.setText("Filters");
             header.setTypeface(ResourcesCompat.getFont(context, Constants.Fonts.whitney_semibold));
             header.setOnClickListener(v -> {

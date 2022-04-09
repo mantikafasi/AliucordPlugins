@@ -2,9 +2,12 @@ package com.aliucord.plugins;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.graphics.Point;
 import android.text.method.LinkMovementMethod;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.GridLayout;
 import android.widget.TextView;
 
@@ -16,6 +19,7 @@ import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
 import com.aliucord.Constants;
+import com.aliucord.Utils;
 import com.aliucord.utils.DimenUtils;
 import com.aliucord.views.Button;
 import com.aliucord.views.DangerButton;
@@ -29,7 +33,6 @@ import com.lytefast.flexinput.R;
 public class ThemeCard extends MaterialCardView {
     public final LinearLayout root;
     public final TextView titleView;
-    public final TextView descriptionView;
     public final GridLayout buttonLayout;
     public final Button installButton;
     public final DangerButton uninstallButton;
@@ -64,10 +67,6 @@ public class ThemeCard extends MaterialCardView {
         //carousel = new Carousel(ctx);
         //root.addView(carousel);
 
-        descriptionView = new TextView(ctx, null, 0, R.i.UiKit_Settings_Item_Addition);
-        descriptionView.setPadding(p, p, p, p2);
-        root.addView(descriptionView);
-
         buttonLayout = new GridLayout(ctx);
         buttonLayout.setRowCount(1);
         buttonLayout.setColumnCount(5);
@@ -99,9 +98,17 @@ public class ThemeCard extends MaterialCardView {
         buttonLayout.addView(changeLogButton, clparams);
 
         screenshotsViewPager = new ViewPager(ctx);
-        screenshotsViewPager.setBackgroundColor(R.d.mtrl_snackbar_action_text_color_alpha);
+        screenshotsViewPager.setPadding(p2,0,p2*3,0);
+
 
         root.addView(screenshotsViewPager);
+        var layparams = (ViewGroup.LayoutParams)screenshotsViewPager.getLayoutParams();
+        Display display = Utils.appActivity.getWindowManager().getDefaultDisplay();
+        var size = new Point();
+        display.getSize(size);
+        var width = size.x - p2*2;
+        layparams.height = (int) (1080/width * size.y * 0.8);
+        layparams.width = width;
 
         root.addView(buttonLayout);
 
