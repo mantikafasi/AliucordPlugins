@@ -25,7 +25,7 @@ public class ScreenShotsView extends SettingsPage {
         var ctx = Utils.getAppContext();
 
         var viewPager = new ViewPager(ctx);
-        viewPager.setAdapter(new EpicViewPager(screenshots));
+        viewPager.setAdapter(new EpicViewPager(screenshots,false));
         viewPager.setCurrentItem(position);
 
         setActionBarTitle("Screenshot "+(position + 1) +"/"+ screenshots.size());

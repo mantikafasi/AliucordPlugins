@@ -10,4 +10,5 @@ public class Theme {
     public Long authorid;
     public List<String> screenshots;
     public List<String> tags;
+    public String fileName;
 }

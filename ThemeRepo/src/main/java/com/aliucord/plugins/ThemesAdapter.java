@@ -59,7 +59,7 @@ public class ThemesAdapter extends RecyclerView.Adapter<ThemesAdapter.ViewHolder
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Theme t = data.get(position);
 
-        if (ThemeRepoAPI.exists(t.name)) {
+        if (ThemeRepoAPI.exists(t.fileName +".json")) {
             holder.card.installButton.setVisibility(View.GONE);
             holder.card.uninstallButton.setVisibility(View.VISIBLE);
         } else {
@@ -143,7 +143,7 @@ public class ThemesAdapter extends RecyclerView.Adapter<ThemesAdapter.ViewHolder
                 }
                 @Override
                 public int getNewListSize() {
-                    return res.size();
+                   return res.size();
                 }
                 @Override
                 public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
