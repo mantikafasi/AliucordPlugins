@@ -40,8 +40,8 @@ import kotlin.jvm.functions.Function1;
 public class GoodPerson extends Plugin {
 
     List<String> badVerbs  = Arrays.asList("fuck"," cum","kill","destroy");
-    List<String> badNouns = Arrays.asList("shit","bullshit","ass","bitch","nigga","hell","whore","dick","piss","pussy","slut",
-            "tit"," fag","cum","cock","retard","blowjob","bastard","men","man","kotlin","die","sex","nigger");
+    List<String> badNouns = Arrays.asList("cunt","shit","bullshit","ass","bitch","nigga","hell","whore","dick","piss","pussy","slut",
+            "tit"," fag","cum","cock","retard","blowjob","bastard","men","man","kotlin","die","sex","nigger","gay","brainrot","brainless");
 
     List<String> badVerbReplacements  = Arrays.asList("love","eat","deconstruct","marry","fart","teach","display","plug",
             "explode","undress","finish","freeze","beat","free","brush","allocate","date","melt","breed","educate",
