@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.aliucord.CollectionUtils;
+import com.aliucord.Logger;
 import com.aliucord.Utils;
 import com.aliucord.fragments.ConfirmDialog;
 import com.discord.app.AppFragment;
@@ -66,6 +67,7 @@ public class ThemesAdapter extends RecyclerView.Adapter<ThemesAdapter.ViewHolder
             holder.card.installButton.setVisibility(View.VISIBLE);
             holder.card.uninstallButton.setVisibility(View.GONE);
         }
+
 
         String title = String.format("%s v%s by %s", t.name, "", t.author);
 
@@ -122,9 +124,9 @@ public class ThemesAdapter extends RecyclerView.Adapter<ThemesAdapter.ViewHolder
                 String search = constraint.toString().toLowerCase().trim();
                 resultsList = CollectionUtils.filter(originalData, p -> {
                             if (p.name.toLowerCase().contains(search)) return true;
-                            var tags = p.tags;
-                            return tags.contains(search);
-                        }
+                            if (p.tags != null) return p.tags.toString().contains(search);
+                            return false;
+                }
                 );
             }
             FilterResults results = new FilterResults();

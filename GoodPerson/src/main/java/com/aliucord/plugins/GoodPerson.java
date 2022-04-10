@@ -39,9 +39,9 @@ import kotlin.jvm.functions.Function1;
 @AliucordPlugin
 public class GoodPerson extends Plugin {
 
-    List<String> badVerbs  = Arrays.asList("fuck","cum","kill","destroy");
-    List<String> badNouns = Arrays.asList("shit","ass","bitch","nigga","hell","whore","dick","piss","pussy","slut",
-            "tit","fag","cum","cock","retard","blowjob","bastard","men","man","kotlin","die","sex");
+    List<String> badVerbs  = Arrays.asList("fuck"," cum","kill","destroy");
+    List<String> badNouns = Arrays.asList("shit","bullshit","ass","bitch","nigga","hell","whore","dick","piss","pussy","slut",
+            "tit"," fag","cum","cock","retard","blowjob","bastard","men","man","kotlin","die","sex","nigga");
 
     List<String> badVerbReplacements  = Arrays.asList("love","eat","deconstruct","marry","fart","teach","display","plug",
             "explode","undress","finish","freeze","beat","free","brush","allocate","date","melt","breed","educate",
@@ -56,7 +56,7 @@ public class GoodPerson extends Plugin {
         noun = noun.toLowerCase();
         //returns boolean and replacement
         for (var badNoun: badNouns) {
-            if (noun.contains(badNoun)) return true;
+            if (noun.startsWith(badNoun)) return true;
         }
         return false;
     }
@@ -79,8 +79,7 @@ public class GoodPerson extends Plugin {
     }
 
     public String filterWord(String word) {
-
-        logger.info(" + " + isBadNoun(word) + "+" + isBadVerb(word));
+        if (word.contains("http")) return null;
         if (isBadVerb(word) && isBadNoun(word)) {
             if (new Random().nextBoolean()) {
                 return getRandomNoun();
