@@ -6,16 +6,12 @@ import android.graphics.Point;
 import android.text.method.LinkMovementMethod;
 import android.view.Display;
 import android.view.Gravity;
-import android.view.View;
 import android.view.ViewGroup;
 import android.widget.GridLayout;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
-import androidx.constraintlayout.helper.widget.Carousel;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.res.ResourcesCompat;
-import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
 import com.aliucord.Constants;
@@ -98,16 +94,16 @@ public class ThemeCard extends MaterialCardView {
         buttonLayout.addView(changeLogButton, clparams);
 
         screenshotsViewPager = new ViewPager(ctx);
-        screenshotsViewPager.setPadding(p2,0,p2*3,0);
+        screenshotsViewPager.setPadding(p2, 0, p2 * 3, 0);
 
 
         root.addView(screenshotsViewPager);
-        var layparams = (ViewGroup.LayoutParams)screenshotsViewPager.getLayoutParams();
+        var layparams = (ViewGroup.LayoutParams) screenshotsViewPager.getLayoutParams();
         Display display = Utils.appActivity.getWindowManager().getDefaultDisplay();
         var size = new Point();
         display.getSize(size);
-        var width = size.x - p2*2;
-        layparams.height = (int) (1080/width * size.y * 0.8);
+        var width = size.x - p2 * 2;
+        layparams.height = (int) (1080 / width * size.y * 0.8);
         layparams.width = width;
 
         root.addView(buttonLayout);

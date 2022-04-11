@@ -21,8 +21,6 @@ import com.aliucord.settings.Updater;
 import com.discord.utilities.color.ColorCompat;
 import com.discord.widgets.settings.WidgetSettings;
 
-import java.lang.reflect.InvocationTargetException;
-
 @SuppressWarnings("unused")
 @AliucordPlugin
 public class ThemeRepo extends Plugin {

@@ -9,7 +9,6 @@ import androidx.annotation.NonNull;
 import androidx.viewpager.widget.PagerAdapter;
 
 import com.aliucord.Utils;
-import com.aliucord.plugins.ScreenShotsView;
 import com.discord.utilities.images.MGImages;
 import com.facebook.drawee.drawable.ScalingUtils$ScaleType;
 import com.facebook.drawee.view.SimpleDraweeView;
@@ -20,9 +19,11 @@ public class EpicViewPager extends PagerAdapter {
 
     List<String> screenshots;
     boolean addOnClickListener = true;
+
     public EpicViewPager(List<String> screenshots) {
         this.screenshots = screenshots;
     }
+
     public EpicViewPager(List<String> screenshots, boolean addOnClickListener) {
         this.screenshots = screenshots;
         this.addOnClickListener = addOnClickListener;
@@ -43,10 +44,10 @@ public class EpicViewPager extends PagerAdapter {
     public Object instantiateItem(@NonNull ViewGroup container, int position) {
         var imageView = new SimpleDraweeView(Utils.getAppContext());
         MGImages.setScaleType(imageView, ScalingUtils$ScaleType.c);
-        MGImages.setImage(imageView,GITHIB_THEMEREPO_URL + screenshots.get(position));
+        MGImages.setImage(imageView, GITHIB_THEMEREPO_URL + screenshots.get(position));
         imageView.setAdjustViewBounds(true);
         if (addOnClickListener) imageView.setOnClickListener(v -> {
-            Utils.openPageWithProxy(Utils.getAppActivity(),new ScreenShotsView(screenshots,position));
+            Utils.openPageWithProxy(Utils.getAppActivity(), new ScreenShotsView(screenshots, position));
         });
         container.addView(imageView);
         return imageView;
@@ -54,7 +55,7 @@ public class EpicViewPager extends PagerAdapter {
 
     @Override
     public void destroyItem(@NonNull ViewGroup container, int position, @NonNull Object object) {
-        container.removeView((View)object);
+        container.removeView((View) object);
     }
 
 }

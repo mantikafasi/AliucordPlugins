@@ -1,6 +1,5 @@
 package com.aliucord.plugins;
 
-import android.annotation.SuppressLint;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
@@ -11,22 +10,17 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.transition.TransitionManager;
 import android.view.Gravity;
-import android.view.KeyEvent;
 import android.view.View;
-import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toolbar;
 
-import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.res.ResourcesCompat;
-import androidx.core.widget.NestedScrollView;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.viewpager.widget.ViewPager;
 
 import com.aliucord.Constants;
 import com.aliucord.Utils;
@@ -34,14 +28,11 @@ import com.aliucord.fragments.SettingsPage;
 import com.aliucord.plugins.filtering.FilterAdapter;
 import com.aliucord.utils.DimenUtils;
 import com.aliucord.views.TextInput;
-import com.aliucord.views.ToolbarButton;
 import com.discord.utilities.color.ColorCompat;
 import com.lytefast.flexinput.R;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 public class ThemesPage extends SettingsPage {
     private static final int uniqueId = View.generateViewId();
@@ -138,7 +129,7 @@ public class ThemesPage extends SettingsPage {
                 adapter.setData(ThemeRepoAPI.getThemes());
                 Utils.mainThread.post(() -> {
                     adapter.notifyDataSetChanged();
-                    setActionBarSubtitle(adapter.data.size() + " Themes");
+                    setActionBarSubtitle(ThemesAdapter.data.size() + " Themes");
                 });
             });
 

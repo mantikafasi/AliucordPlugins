@@ -4,11 +4,9 @@ import com.aliucord.Constants;
 import com.aliucord.Http;
 import com.aliucord.SettingsUtilsJSON;
 import com.aliucord.Utils;
-import com.aliucord.api.SettingsAPI;
 import com.aliucord.utils.GsonUtils;
 import com.google.gson.reflect.TypeToken;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -51,11 +49,13 @@ public class ThemeRepoAPI {
         return false;
     }
 
-    public static boolean setThemeStatus(String name,boolean status) {
+    public static boolean setThemeStatus(String name, int transparency, boolean status) {
         try {
-            new SettingsUtilsJSON("Themer").setBool(name + "-enabled",status);
+            var settings = new SettingsUtilsJSON("Themer");
+            settings.setBool(name + "-enabled", status);
+            if (transparency != -1) settings.setInt("transparencyMode", transparency);
             return true;
-        } catch (Exception ignored){}
+        } catch (Exception ignored) { }
         return false;
     }
 
@@ -65,12 +65,15 @@ public class ThemeRepoAPI {
 
     public static boolean installTheme(String name) {
         try {
-            new Http.Request(GITHIB_THEMEREPO_URL + "/themes/" + name + ".json").execute().saveToFile(new File(THEME_DIR,name +".json"));
+            var res = new Http.Request(GITHIB_THEMEREPO_URL + "/themes/" + name + ".json").execute();
+            res.saveToFile(new File(THEME_DIR, name + ".json"));
+            var json = new JSONObject(res.text());
+            if (!json.has("transparencyMode")) json.put("transparencyMode", -1);
             Utils.showToast("Successfully installed Theme");
-            setThemeStatus(name,true);
+            setThemeStatus(name, json.getInt("transparencyMode"), true);
             Utils.promptRestart();
             return true;
-        } catch (IOException e) {
+        } catch (IOException | JSONException e) {
             e.printStackTrace();
             Utils.showToast("Failed to install theme (definiletly not my fault)");
             return false;
@@ -80,7 +83,7 @@ public class ThemeRepoAPI {
     public static boolean deleteTheme(String name) {
         var status = new File(THEME_DIR,name + ".json").delete();
         if (status) Utils.showToast("Successfully Uninstalled Theme"); else Utils.showToast("Failed to uninstall theme");
-        setThemeStatus(name,false);
+        setThemeStatus(name,-1,false);
         return status;
     }
 }

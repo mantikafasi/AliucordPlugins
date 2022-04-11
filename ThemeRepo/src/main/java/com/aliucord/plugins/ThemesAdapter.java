@@ -15,7 +15,6 @@ import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.aliucord.CollectionUtils;
-import com.aliucord.Logger;
 import com.aliucord.Utils;
 import com.aliucord.fragments.ConfirmDialog;
 import com.discord.app.AppFragment;
@@ -25,12 +24,61 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-public class ThemesAdapter extends RecyclerView.Adapter<ThemesAdapter.ViewHolder> implements Filterable{
+public class ThemesAdapter extends RecyclerView.Adapter<ThemesAdapter.ViewHolder> implements Filterable {
+    public static List<Theme> data;
+    public static List<Theme> originalData;
     //com.aliucord.settings.Adapter
     private final AppFragment fragment;
     private final Context ctx;
-    public static List<Theme> data;
-    public static List<Theme> originalData;
+    private final Filter filter = new Filter() {
+        @Override
+        protected FilterResults performFiltering(CharSequence constraint) {
+            List<Theme> resultsList;
+            if (constraint == null || constraint.equals(""))
+                resultsList = originalData;
+            else {
+                String search = constraint.toString().toLowerCase().trim();
+                resultsList = CollectionUtils.filter(originalData, p -> {
+                            if (p.name.toLowerCase().contains(search)) return true;
+                            if (p.tags != null) return p.tags.toString().contains(search);
+                            return false;
+                        }
+                );
+            }
+            FilterResults results = new FilterResults();
+            results.values = resultsList;
+            return results;
+        }
+
+        @Override
+        protected void publishResults(CharSequence constraint, FilterResults results) {
+            @SuppressWarnings("unchecked")
+            List<Theme> res = (List<Theme>) results.values;
+            var diff = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+                @Override
+                public int getOldListSize() {
+                    return ThemesAdapter.this.getItemCount();
+                }
+
+                @Override
+                public int getNewListSize() {
+                    return res.size();
+                }
+
+                @Override
+                public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+                    return data.get(oldItemPosition).name.equals(res.get(newItemPosition).name);
+                }
+
+                @Override
+                public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+                    return true;
+                }
+            }, false);
+            data = res;
+            diff.dispatchUpdatesTo(ThemesAdapter.this);
+        }
+    };
 
     public ThemesAdapter(AppFragment fragment, Collection<Theme> themes) {
         super();
@@ -40,7 +88,7 @@ public class ThemesAdapter extends RecyclerView.Adapter<ThemesAdapter.ViewHolder
         data = (List<Theme>) themes;
     }
 
-    public void setData(List<Theme> themes){
+    public void setData(List<Theme> themes) {
         data = themes;
         originalData = new ArrayList<>(themes);
     }
@@ -60,7 +108,7 @@ public class ThemesAdapter extends RecyclerView.Adapter<ThemesAdapter.ViewHolder
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Theme t = data.get(position);
 
-        if (ThemeRepoAPI.exists(t.fileName +".json")) {
+        if (ThemeRepoAPI.exists(t.fileName + ".json")) {
             holder.card.installButton.setVisibility(View.GONE);
             holder.card.uninstallButton.setVisibility(View.VISIBLE);
         } else {
@@ -114,52 +162,6 @@ public class ThemesAdapter extends RecyclerView.Adapter<ThemesAdapter.ViewHolder
         dialog.show(fragment.getParentFragmentManager(), "Confirm Theme Uninstall");
 
     }
-    private final Filter filter = new Filter() {
-        @Override
-        protected FilterResults performFiltering(CharSequence constraint) {
-            List<Theme> resultsList;
-            if (constraint == null || constraint.equals(""))
-                resultsList = originalData;
-            else {
-                String search = constraint.toString().toLowerCase().trim();
-                resultsList = CollectionUtils.filter(originalData, p -> {
-                            if (p.name.toLowerCase().contains(search)) return true;
-                            if (p.tags != null) return p.tags.toString().contains(search);
-                            return false;
-                }
-                );
-            }
-            FilterResults results = new FilterResults();
-            results.values = resultsList;
-            return results;
-        }
-
-        @Override
-        protected void publishResults(CharSequence constraint, FilterResults results) {
-            @SuppressWarnings("unchecked")
-            List<Theme> res = (List<Theme>) results.values;
-            var diff = DiffUtil.calculateDiff(new DiffUtil.Callback() {
-                @Override
-                public int getOldListSize() {
-                    return ThemesAdapter.this.getItemCount();
-                }
-                @Override
-                public int getNewListSize() {
-                   return res.size();
-                }
-                @Override
-                public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-                    return data.get(oldItemPosition).name.equals(res.get(newItemPosition).name);
-                }
-                @Override
-                public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-                    return true;
-                }
-            }, false);
-            data = res;
-            diff.dispatchUpdatesTo(ThemesAdapter.this);
-        }
-    };
 
     @Override
     public Filter getFilter() {

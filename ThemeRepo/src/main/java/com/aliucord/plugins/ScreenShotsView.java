@@ -1,4 +1,5 @@
 package com.aliucord.plugins;
+
 import android.view.View;
 
 import androidx.viewpager.widget.ViewPager;
@@ -12,7 +13,7 @@ public class ScreenShotsView extends SettingsPage {
     List<String> screenshots;
     int position;
 
-    public ScreenShotsView(List<String> screenshots,int position){
+    public ScreenShotsView(List<String> screenshots, int position) {
         this.screenshots = screenshots;
         this.position = position;
     }
@@ -25,10 +26,10 @@ public class ScreenShotsView extends SettingsPage {
         var ctx = Utils.getAppContext();
 
         var viewPager = new ViewPager(ctx);
-        viewPager.setAdapter(new EpicViewPager(screenshots,false));
+        viewPager.setAdapter(new EpicViewPager(screenshots, false));
         viewPager.setCurrentItem(position);
 
-        setActionBarTitle("Screenshot "+(position + 1) +"/"+ screenshots.size());
+        setActionBarTitle("Screenshot " + (position + 1) + "/" + screenshots.size());
 
         viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
@@ -38,7 +39,7 @@ public class ScreenShotsView extends SettingsPage {
 
             @Override
             public void onPageSelected(int position) {
-                setActionBarTitle("Screenshot "+ (position + 1) +"/" + screenshots.size());
+                setActionBarTitle("Screenshot " + (position + 1) + "/" + screenshots.size());
             }
 
             @Override
@@ -48,7 +49,6 @@ public class ScreenShotsView extends SettingsPage {
         });
 
         addView(viewPager);
-
 
 
     }

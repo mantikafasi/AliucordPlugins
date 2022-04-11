@@ -1,4 +1,2 @@
 version = "1.0.0"
 description = "Theme Repo"
-
-aliucord.excludeFromUpdaterJson = true
