@@ -8,7 +8,6 @@ import android.view.Display;
 import android.view.Gravity;
 import android.view.ViewGroup;
 import android.widget.GridLayout;
-import android.widget.TextView;
 
 import androidx.core.content.ContextCompat;
 import androidx.core.content.res.ResourcesCompat;
@@ -19,7 +18,6 @@ import com.aliucord.Utils;
 import com.aliucord.utils.DimenUtils;
 import com.aliucord.views.Button;
 import com.aliucord.views.DangerButton;
-import com.aliucord.views.Divider;
 import com.aliucord.views.ToolbarButton;
 import com.aliucord.widgets.LinearLayout;
 import com.discord.utilities.color.ColorCompat;
@@ -33,8 +31,7 @@ public class ThemeCard extends MaterialCardView {
     public final GridLayout buttonLayout;
     public final Button installButton;
     public final DangerButton uninstallButton;
-    public final ToolbarButton repoButton;
-    public final ToolbarButton changeLogButton;
+    public final ToolbarButton transparencyIcon;
     public final ViewPager screenshotsViewPager;
 
     @SuppressLint("SetTextI18n")
@@ -71,11 +68,10 @@ public class ThemeCard extends MaterialCardView {
         uninstallButton.setText("Uninstall");
         uninstallButton.setVisibility(GONE);
 
-        repoButton = new ToolbarButton(ctx);
-        repoButton.setImageDrawable(ContextCompat.getDrawable(ctx, R.e.ic_account_github_white_24dp));
-
-        changeLogButton = new ToolbarButton(ctx);
-        changeLogButton.setImageDrawable(ContextCompat.getDrawable(ctx, R.e.ic_history_white_24dp));
+        transparencyIcon = new ToolbarButton(ctx);
+        transparencyIcon.setImageDrawable(ContextCompat.getDrawable(ctx, R.e.ic_search));
+        transparencyIcon.setOnClickListener(v -> Utils.showToast("Full Transparent Theme"));
+        transparencyIcon.setVisibility(GONE);
 
         buttonLayout.addView(installButton, new GridLayout.LayoutParams(GridLayout.spec(0), GridLayout.spec(4)));
         buttonLayout.addView(uninstallButton, new GridLayout.LayoutParams(GridLayout.spec(0), GridLayout.spec(4)));
@@ -83,10 +79,7 @@ public class ThemeCard extends MaterialCardView {
 
         GridLayout.LayoutParams params = new GridLayout.LayoutParams(GridLayout.spec(0), GridLayout.spec(0));
         params.setGravity(Gravity.CENTER_VERTICAL);
-        buttonLayout.addView(repoButton, params);
-        GridLayout.LayoutParams clparams = new GridLayout.LayoutParams(GridLayout.spec(0), GridLayout.spec(1));
-        clparams.setGravity(Gravity.CENTER_VERTICAL);
-        buttonLayout.addView(changeLogButton, clparams);
+        buttonLayout.addView(transparencyIcon, params);
 
         screenshotsViewPager = new ViewPager(ctx);
         screenshotsViewPager.setPadding(p2, 0, p2 * 3, 0);

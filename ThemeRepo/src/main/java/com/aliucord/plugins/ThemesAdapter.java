@@ -141,6 +141,8 @@ public class ThemesAdapter extends RecyclerView.Adapter<ThemesAdapter.ViewHolder
             Utils.promptRestart();
         });
 
+        if (t.transparencyMode == 3) holder.card.transparencyIcon.setVisibility(View.VISIBLE);
+
         holder.card.screenshotsViewPager.setAdapter(new EpicViewPager(t.screenshots));
 
 
