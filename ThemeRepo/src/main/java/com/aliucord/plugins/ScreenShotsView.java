@@ -22,7 +22,6 @@ public class ScreenShotsView extends SettingsPage {
     public void onViewBound(View view) {
         super.onViewBound(view);
 
-
         var ctx = Utils.getAppContext();
 
         var viewPager = new ViewPager(ctx);
@@ -43,13 +42,8 @@ public class ScreenShotsView extends SettingsPage {
             }
 
             @Override
-            public void onPageScrollStateChanged(int state) {
-
-            }
+            public void onPageScrollStateChanged(int state) { }
         });
-
         addView(viewPager);
-
-
     }
 }

@@ -8,24 +8,19 @@ import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.RectShape;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.transition.TransitionManager;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ProgressBar;
-import android.widget.TextView;
 import android.widget.Toolbar;
 
 import androidx.core.content.ContextCompat;
-import androidx.core.content.res.ResourcesCompat;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.aliucord.Constants;
 import com.aliucord.Utils;
 import com.aliucord.fragments.SettingsPage;
-import com.aliucord.plugins.filtering.FilterAdapter;
 import com.aliucord.utils.DimenUtils;
 import com.aliucord.views.TextInput;
 import com.discord.utilities.color.ColorCompat;
@@ -43,7 +38,6 @@ public class ThemesPage extends SettingsPage {
 
     @Override
     public void onViewBound(View view) {
-        //TODO , ADD IMAGE TO THEMECARD,MAKE FILTERS WORK,MAKE ADD THEME PAGE
         super.onViewBound(view);
         removeScrollView();
 
@@ -51,7 +45,6 @@ public class ThemesPage extends SettingsPage {
         var context = view.getContext();
         int padding = DimenUtils.getDefaultPadding();
         int p = padding / 2;
-        ThemeRepoAPI.filters = new HashMap<>();
 
         setActionBarSubtitle("Loading...");
 
@@ -78,50 +71,7 @@ public class ThemesPage extends SettingsPage {
             loadingIcon.setIndeterminate(true);
             loadingIcon.setVisibility(View.GONE);
 
-            RecyclerView filterView = new RecyclerView(context);
-            filterView.setLayoutManager(new LinearLayoutManager(context, RecyclerView.VERTICAL, false));
-            FilterAdapter filterAdapter = new FilterAdapter(this);
-            filterView.setAdapter(filterAdapter);
-            filterView.addItemDecoration(decoration);
-            filterView.setPadding(0, padding, 0, 0);
-            filterView.setVisibility(View.GONE);
-
-            var openDrawable = ContextCompat.getDrawable(context, R.e.ic_arrow_down_14dp).mutate();
-
-            openDrawable.setTint(ColorCompat.getThemedColor(context, R.b.colorInteractiveNormal));
-
-            var closedDrawable = new LayerDrawable(new Drawable[]{openDrawable}) {
-                @Override
-                public void draw(Canvas canvas) {
-                    var bounds = openDrawable.getBounds();
-                    canvas.save();
-                    canvas.rotate(270, bounds.width() / 2f, bounds.height() / 2f);
-                    super.draw(canvas);
-                    canvas.restore();
-                }
-            };
-
-            var header = new TextView(context, null, 0, R.i.UiKit_Settings_Item_Header);
-            header.setVisibility(View.GONE);
-            header.setText("Filters");
-            header.setTypeface(ResourcesCompat.getFont(context, Constants.Fonts.whitney_semibold));
-            header.setOnClickListener(v -> {
-                TransitionManager.beginDelayedTransition(getLinearLayout());
-                if (filterView.getVisibility() == View.VISIBLE) {
-                    filterView.setVisibility(View.GONE);
-                    header.setCompoundDrawablesRelativeWithIntrinsicBounds(closedDrawable, null, null, null);
-                } else {
-                    filterView.setVisibility(View.VISIBLE);
-                    header.setCompoundDrawablesRelativeWithIntrinsicBounds(openDrawable, null, null, null);
-                }
-            });
-            header.setCompoundDrawablesRelativeWithIntrinsicBounds(closedDrawable, null, null, null);
-            int px = DimenUtils.dpToPx(5);
-            header.setPadding(px, px * 3, 0, px * 3);
-
             addView(input);
-            addView(header);
-            addView(filterView);
             addView(loadingIcon);
             addView(recyclerView);
 

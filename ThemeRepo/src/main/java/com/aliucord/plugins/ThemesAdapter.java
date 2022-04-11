@@ -125,11 +125,21 @@ public class ThemesAdapter extends RecyclerView.Adapter<ThemesAdapter.ViewHolder
         spannableTitle.setSpan(new ClickableSpan() {
             @Override
             public void onClick(@NonNull View widget) {
-                WidgetUserSheet.Companion.show(t.authorid, fragment.getParentFragmentManager());
+                try {
+                    WidgetUserSheet.Companion.show(t.authorid, fragment.getParentFragmentManager());
+
+                } catch (Exception ignored) {var trolley = ":trolley:";}
             }
         }, i, i + t.author.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
         holder.card.titleView.setText(spannableTitle);
+
+        holder.card.titleView.setChecked(ThemeRepoAPI.isThemeEnabled(t.name));
+
+        holder.card.titleView.setOnCheckedListener(aBoolean -> {
+            ThemeRepoAPI.setThemeStatus(t.name,t.transparencyMode,aBoolean);
+            Utils.promptRestart();
+        });
 
         holder.card.screenshotsViewPager.setAdapter(new EpicViewPager(t.screenshots));
 

@@ -59,9 +59,13 @@ public class ThemeRepoAPI {
         return false;
     }
 
+    public static boolean isThemeEnabled(String themeName) {
+        return new SettingsUtilsJSON("Themer").getBool(themeName + "-enabled",false);
+    }
+
     public static boolean exists(String name){
         return new File(THEME_DIR,name).exists();
-    }
+    } //TODO edit this
 
     public static boolean installTheme(String name) {
         try {

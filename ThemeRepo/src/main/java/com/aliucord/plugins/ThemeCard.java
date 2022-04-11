@@ -23,19 +23,19 @@ import com.aliucord.views.Divider;
 import com.aliucord.views.ToolbarButton;
 import com.aliucord.widgets.LinearLayout;
 import com.discord.utilities.color.ColorCompat;
+import com.discord.views.CheckedSetting;
 import com.google.android.material.card.MaterialCardView;
 import com.lytefast.flexinput.R;
 
 public class ThemeCard extends MaterialCardView {
     public final LinearLayout root;
-    public final TextView titleView;
+    public final CheckedSetting titleView;
     public final GridLayout buttonLayout;
     public final Button installButton;
     public final DangerButton uninstallButton;
     public final ToolbarButton repoButton;
     public final ToolbarButton changeLogButton;
     public final ViewPager screenshotsViewPager;
-    //com.aliucord.widgets.ThemeCard
 
     @SuppressLint("SetTextI18n")
     public ThemeCard(Context ctx) {
@@ -48,20 +48,15 @@ public class ThemeCard extends MaterialCardView {
         int p2 = p / 2;
 
         root = new LinearLayout(ctx);
+        titleView = Utils.createCheckedSetting(ctx, CheckedSetting.ViewType.SWITCH,"","");
 
-        titleView = new TextView(ctx);
-        titleView.setTextSize(16.0f);
-        titleView.setTypeface(ResourcesCompat.getFont(ctx, Constants.Fonts.whitney_semibold));
-        titleView.setMovementMethod(LinkMovementMethod.getInstance());
+        var titleTextView = titleView.l.a();
+        titleTextView.setTextSize(16.0f);
+        titleTextView.setTypeface(ResourcesCompat.getFont(ctx, Constants.Fonts.whitney_semibold));
+        titleTextView.setMovementMethod(LinkMovementMethod.getInstance());
         titleView.setTextColor(ColorCompat.getColor(ctx, R.c.primary_dark_200));
-        int px = DimenUtils.dpToPx(15);
-        titleView.setPadding(px, px, px, px);
 
         root.addView(titleView);
-        root.addView(new Divider(ctx));
-
-        //carousel = new Carousel(ctx);
-        //root.addView(carousel);
 
         buttonLayout = new GridLayout(ctx);
         buttonLayout.setRowCount(1);
