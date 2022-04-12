@@ -1,7 +1,10 @@
 package com.aliucord.plugins;
 
-import com.aliucord.Constants;
+import static com.aliucord.plugins.ThemeRepoUtils.THEME_DIR;
+import static com.aliucord.plugins.ThemeRepoUtils.getFileNameWithName;
+
 import com.aliucord.Http;
+import com.aliucord.Logger;
 import com.aliucord.SettingsUtilsJSON;
 import com.aliucord.Utils;
 import com.aliucord.utils.GsonUtils;
@@ -21,7 +24,6 @@ public class ThemeRepoAPI {
     public static final String GITHIB_THEMEREPO_URL = "https://raw.githubusercontent.com/mantikafasi/AliucordThemeRepo/main/";
     public static HashMap<String, Object> localFilters = new HashMap<>();
     public static HashMap<String, String> filters;
-    public static final File THEME_DIR = new File(Constants.BASE_PATH, "themes");
 
     public static List<Theme> getThemes(){
         try {
@@ -60,34 +62,40 @@ public class ThemeRepoAPI {
     }
 
     public static boolean isThemeEnabled(String themeName) {
-        return new SettingsUtilsJSON("Themer").getBool(themeName + "-enabled",false);
+        return new SettingsUtilsJSON("Themer").getBool(themeName + "-enabled", false);
     }
 
-    public static boolean exists(String name){
-        return new File(THEME_DIR,name).exists();
-    } //TODO edit this
+    public static boolean exists(String name) {
+        var themesMap = ThemeRepoUtils.getThemeNames();
+        return (themesMap.containsKey(name) || themesMap.containsValue(name));
 
-    public static boolean installTheme(String name) {
+    }
+
+    public static boolean installTheme(Theme theme) {
         try {
-            var res = new Http.Request(GITHIB_THEMEREPO_URL + "/themes/" + name + ".json").execute();
-            res.saveToFile(new File(THEME_DIR, name + ".json"));
-            var json = new JSONObject(res.text());
-            if (!json.has("transparencyMode")) json.put("transparencyMode", -1);
+            new Http.Request(GITHIB_THEMEREPO_URL + "/themes/" + theme.fileName).execute().saveToFile(new File(THEME_DIR, theme.fileName));
+
             Utils.showToast("Successfully installed Theme");
-            setThemeStatus(name, json.getInt("transparencyMode"), true);
+            setThemeStatus(theme.name, theme.transparencyMode, true);
             Utils.promptRestart();
             return true;
-        } catch (IOException | JSONException e) {
-            e.printStackTrace();
+        } catch (IOException e) {
+            new Logger("ThemeRepoInstaller").error(e);
             Utils.showToast("Failed to install theme (definiletly not my fault)");
             return false;
         }
     }
 
     public static boolean deleteTheme(String name) {
-        var status = new File(THEME_DIR,name + ".json").delete();
-        if (status) Utils.showToast("Successfully Uninstalled Theme"); else Utils.showToast("Failed to uninstall theme");
-        setThemeStatus(name,-1,false);
+        var fileName = getFileNameWithName(name);
+
+        boolean status = false;
+        if (fileName != null) status = new File(THEME_DIR, fileName).delete();
+        if (status) {
+            Utils.showToast("Successfully Uninstalled Theme");
+            ThemeRepoUtils.themes.remove(fileName);
+        } else Utils.showToast("Failed to uninstall theme");
+        setThemeStatus(name, -1, false);
         return status;
     }
 }

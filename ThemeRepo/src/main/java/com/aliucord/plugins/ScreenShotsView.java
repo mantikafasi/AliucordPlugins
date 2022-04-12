@@ -42,7 +42,8 @@ public class ScreenShotsView extends SettingsPage {
             }
 
             @Override
-            public void onPageScrollStateChanged(int state) { }
+            public void onPageScrollStateChanged(int state) {
+            }
         });
         addView(viewPager);
     }

@@ -108,12 +108,21 @@ public class ThemesAdapter extends RecyclerView.Adapter<ThemesAdapter.ViewHolder
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Theme t = data.get(position);
 
-        if (ThemeRepoAPI.exists(t.fileName + ".json")) {
+        if (ThemeRepoAPI.exists(t.name)) {
             holder.card.installButton.setVisibility(View.GONE);
             holder.card.uninstallButton.setVisibility(View.VISIBLE);
+            holder.card.titleView.setOnCheckedListener(aBoolean -> {
+                ThemeRepoAPI.setThemeStatus(t.name, t.transparencyMode, aBoolean);
+                Utils.promptRestart();
+            });
+
         } else {
             holder.card.installButton.setVisibility(View.VISIBLE);
             holder.card.uninstallButton.setVisibility(View.GONE);
+            holder.card.titleView.setOnCheckedListener(aBoolean -> {
+                Utils.showToast("Install theme first");
+                holder.card.titleView.setChecked(false);
+            });
         }
 
 
@@ -136,22 +145,16 @@ public class ThemesAdapter extends RecyclerView.Adapter<ThemesAdapter.ViewHolder
 
         holder.card.titleView.setChecked(ThemeRepoAPI.isThemeEnabled(t.name));
 
-        holder.card.titleView.setOnCheckedListener(aBoolean -> {
-            ThemeRepoAPI.setThemeStatus(t.name,t.transparencyMode,aBoolean);
-            Utils.promptRestart();
-        });
-
         if (t.transparencyMode == 3) holder.card.transparencyIcon.setVisibility(View.VISIBLE);
+        else holder.card.transparencyIcon.setVisibility(View.GONE);
 
         holder.card.screenshotsViewPager.setAdapter(new EpicViewPager(t.screenshots));
-
-
     }
 
     public void onInstallClick(int position) {
         Theme t = data.get(position);
         Utils.threadPool.execute(() -> {
-            if (ThemeRepoAPI.installTheme(t.name)) {
+            if (ThemeRepoAPI.installTheme(t)) {
                 Utils.mainThread.post(() -> {
                     notifyItemChanged(position);
                 });

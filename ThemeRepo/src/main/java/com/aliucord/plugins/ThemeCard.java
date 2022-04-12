@@ -45,7 +45,7 @@ public class ThemeCard extends MaterialCardView {
         int p2 = p / 2;
 
         root = new LinearLayout(ctx);
-        titleView = Utils.createCheckedSetting(ctx, CheckedSetting.ViewType.SWITCH,"","");
+        titleView = Utils.createCheckedSetting(ctx, CheckedSetting.ViewType.SWITCH, "", "");
 
         var titleTextView = titleView.l.a();
         titleTextView.setTextSize(16.0f);

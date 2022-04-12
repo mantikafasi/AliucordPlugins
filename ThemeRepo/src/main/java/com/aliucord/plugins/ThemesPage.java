@@ -1,9 +1,6 @@
 package com.aliucord.plugins;
 
-import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.drawable.Drawable;
-import android.graphics.drawable.LayerDrawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.RectShape;
 import android.text.Editable;
@@ -14,7 +11,6 @@ import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.Toolbar;
 
-import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -23,11 +19,9 @@ import com.aliucord.Utils;
 import com.aliucord.fragments.SettingsPage;
 import com.aliucord.utils.DimenUtils;
 import com.aliucord.views.TextInput;
-import com.discord.utilities.color.ColorCompat;
 import com.lytefast.flexinput.R;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 
 public class ThemesPage extends SettingsPage {
     private static final int uniqueId = View.generateViewId();
