@@ -18,6 +18,7 @@ import com.aliucord.patcher.InsteadHook;
 import com.aliucord.utils.ReflectUtils;
 import com.discord.models.user.CoreUser;
 import com.discord.stores.StoreStream;
+import com.discord.utilities.color.ColorCompat;
 import com.discord.utilities.messagesend.MessageQueue;
 import com.discord.utilities.messagesend.MessageRequest;
 import com.discord.utilities.messagesend.MessageResult;
@@ -68,7 +69,7 @@ public class EditMessagesLocally extends Plugin {
             }
             return null;
         }));
-        Drawable editIcon = ContextCompat.getDrawable(context, com.lytefast.flexinput.R.e.ic_edit_24dp).mutate();
+        Drawable editIcon = ContextCompat.getDrawable(context, com.lytefast.flexinput.R.e.ic_edit_24dp);
 
         patcher.patch(WidgetChatListActions.class.getDeclaredMethod("configureUI", WidgetChatListActions.Model.class),
                 new Hook((cf) -> {
@@ -81,6 +82,9 @@ public class EditMessagesLocally extends Plugin {
                         TextView tw = new TextView(lay.getContext(), null, 0, com.lytefast.flexinput.R.i.UiKit_Settings_Item_Icon);
                         tw.setId(viewid);
                         tw.setText("Edit Message Locally");
+                        if (editIcon != null) editIcon.setTint(
+                                ColorCompat.getThemedColor(lay.getContext(), com.lytefast.flexinput.R.b.colorInteractiveNormal)
+                        );
                         tw.setCompoundDrawablesRelativeWithIntrinsicBounds(editIcon, null, null, null);
                         lay.addView(tw, 5);
                         tw.setOnClickListener((v) -> {
