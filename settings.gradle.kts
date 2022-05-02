@@ -17,5 +17,5 @@ include(":ThemeRepo")
 include(":TestPlugin")
 include(":Vibrator2")
 include(":GoodPerson")
-
+include(":StupitCase")
 rootProject.name = "AliucordPlugins"
