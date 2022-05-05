@@ -1,4 +1,4 @@
-version = "1.3.0.0"
+version = "1.3.1.0"
 description = "StupidityDB"
 aliucord.changelog.set("" +
         "***1.3.0.0*** \n Removed Discord Bot Voting type (Because you cant dm to bots anymore it seems)" +

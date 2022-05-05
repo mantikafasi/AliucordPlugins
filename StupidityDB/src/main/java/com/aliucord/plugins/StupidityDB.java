@@ -118,7 +118,7 @@ public class StupidityDB extends Plugin {
     }
 
     public void patchWidgetChatListAdapterItemMessage() throws NoSuchMethodException {
-        patcher.patch(WidgetChatListAdapterItemMessage.class.getDeclaredMethod("configureItemTag", Message.class),
+        patcher.patch(WidgetChatListAdapterItemMessage.class.getDeclaredMethod("configureItemTag", Message.class, boolean.class),
                 new Hook((cf) -> {
                     var thisobj = (WidgetChatListAdapterItemMessage) cf.thisObject;
                     var message = (Message) cf.args[0];

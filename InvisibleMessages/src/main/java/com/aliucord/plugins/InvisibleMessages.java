@@ -168,7 +168,7 @@ public class InvisibleMessages extends Plugin {
         });
     }
     private void patchItemMessage() throws NoSuchMethodException {
-        patcher.patch(WidgetChatListAdapterItemMessage.class.getDeclaredMethod("configureItemTag", Message.class),
+        patcher.patch(WidgetChatListAdapterItemMessage.class.getDeclaredMethod("configureItemTag", Message.class,boolean.class),
                 new Hook((cf)->{
                     var msg =( Message) cf.args[0] ;
                     var thisobj = (WidgetChatListAdapterItemMessage)cf.thisObject;
