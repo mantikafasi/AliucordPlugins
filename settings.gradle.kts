@@ -18,4 +18,5 @@ include(":TestPlugin")
 include(":Vibrator2")
 include(":GoodPerson")
 include(":StupitCase")
+include(":Amog\u200C\u200Dus")
 rootProject.name = "AliucordPlugins"
