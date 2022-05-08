@@ -20,14 +20,11 @@ public class Amogus extends Plugin {
 
     @Override
     public void start(Context context) {
-
-
         var gifpicker = StoreStream.Companion.getGifPicker();
 
         commands.registerCommand("amogus", "Sends random amogus gif", commandContext -> {
             if (modelGifList == null) {
                 CountDownLatch alhamdulillah = new CountDownLatch(1);
-
                 RxUtils.subscribe(gifpicker.observeGifsForSearchQuery("amogus"), modelGifs -> {
                     modelGifList = modelGifs;
                     alhamdulillah.countDown();
@@ -39,7 +36,6 @@ public class Amogus extends Plugin {
                     e.printStackTrace();
                 }
             }
-
             Random random = new Random();
             return new CommandsAPI.CommandResult(modelGifList.get(random.nextInt(modelGifList.size())).component1());
         });
