@@ -109,6 +109,7 @@ public class EditServersLocally extends Plugin {
                 //error handling
             }
 
+
         }));
     }
 
@@ -156,8 +157,6 @@ public class EditServersLocally extends Plugin {
                     } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
                         e.printStackTrace();
                     }
-
-
                 }));
     }
 
@@ -180,7 +179,6 @@ public class EditServersLocally extends Plugin {
                         TextView tw = new TextView(v.getContext(), null, 0, R.i.ContextMenuTextOption);
                         tw.setLayoutParams(binding.e.getLayoutParams());
                         tw.setId(serverSettingsID);
-
 
                         editIcon.setTint(ColorCompat.getThemedColor(v.getContext(), R.b.colorInteractiveNormal));
                         tw.setCompoundDrawablesRelativeWithIntrinsicBounds(editIcon, null, null, null);
@@ -223,7 +221,6 @@ public class EditServersLocally extends Plugin {
                         e.printStackTrace();
                     }
                 }));
-
     }
 
     public void patchIconUtils() throws NoSuchMethodException {
@@ -305,9 +302,7 @@ public class EditServersLocally extends Plugin {
 
                     if (chdata.channelName != null) {
                         binding.f.setText(chdata.channelName);
-
                         try {
-
                             ReflectUtils.setField(channel, "name", chdata.channelName);
                             ReflectUtils.setField(callFrame.thisObject, "channel", channel);
                         } catch (NoSuchFieldException | IllegalAccessException e) {
@@ -333,15 +328,10 @@ public class EditServersLocally extends Plugin {
                 } catch (IllegalAccessException e) {
                     e.printStackTrace();
                 }
-
             }));
-
-
         } catch (NoSuchMethodException | NoSuchFieldException e) {
             e.printStackTrace();
         }
-
-
     }
 
     public void createDialog(String message, ChannelData data, FragmentManager fm) {
@@ -366,7 +356,9 @@ public class EditServersLocally extends Plugin {
             } catch (NoSuchFieldException | IllegalAccessException e) {
                 e.printStackTrace();
             }
-            StoreStream.getChannels().handleChannelOrThreadCreateOrUpdate(ch);
+            runOnStoreThread(() -> {
+                StoreStream.getChannels().handleChannelOrThreadCreateOrUpdate(ch);
+            });
             updateChannelData(data);
             setChannelData();
             dialog.dismiss();
@@ -442,10 +434,18 @@ public class EditServersLocally extends Plugin {
             } catch (NoSuchFieldException | IllegalAccessException e) {
                 logger.error(e);
             }
-            StoreStream.getChannels().handleChannelOrThreadCreateOrUpdate(ch);
+            runOnStoreThread(() -> {
+                StoreStream.getChannels().handleChannelOrThreadCreateOrUpdate(ch);
+            });
 
         }
 
+    }
+    public void runOnStoreThread(Runnable function){
+        StoreStream.access$getDispatcher$p(StoreStream.getNotices().getStream()).schedule(() -> {
+            function.run();
+            return null;
+        });
     }
 
     public void removeGuildData(long id) {

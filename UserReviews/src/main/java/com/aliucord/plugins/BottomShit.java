@@ -14,7 +14,6 @@ import com.aliucord.Constants;
 import com.aliucord.Utils;
 import com.aliucord.api.SettingsAPI;
 import com.aliucord.fragments.InputDialog;
-import com.aliucord.views.DangerButton;
 import com.aliucord.widgets.BottomSheet;
 
 public class BottomShit extends BottomSheet {
@@ -60,7 +59,6 @@ public class BottomShit extends BottomSheet {
             Utils.launchUrl(AuthorazationPage.AUTH_URL);
             return true;
         });
-
 
         addView(title);
         addView(authorizate);

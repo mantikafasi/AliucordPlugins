@@ -16,6 +16,9 @@ import com.aliucord.utils.ReflectUtils;
 import com.discord.api.message.Message;
 import com.discord.models.domain.ModelUserSettings;
 import com.discord.stores.StoreStream;
+import com.discord.views.premium.GiftSelectView;
+import com.discord.widgets.chat.input.gifpicker.GifViewHolder;
+import com.discord.widgets.chat.input.gifpicker.WidgetGifPickerSearch;
 import com.discord.widgets.settings.WidgetSettingsAppearance;
 import com.discord.widgets.settings.WidgetSettingsAppearance$updateTheme$1;
 

@@ -1,6 +1,10 @@
 package com.aliucord.plugins;
 
+import android.util.Pair;
+
 import com.aliucord.Http;
+import com.aliucord.Logger;
+import com.aliucord.plugins.dataclasses.Response;
 import com.aliucord.plugins.dataclasses.Review;
 import com.aliucord.utils.GsonUtils;
 import com.google.gson.Gson;
@@ -24,17 +28,26 @@ public class UserReviewsAPI {
         }
     }
 
-    public static String addReview(String comment,Long userid,String token){
+    public static Response addReview(String comment,Long userid,String token){
         try {
             JSONObject json = new JSONObject();
             json.put("comment",comment);
-            json.put("star","-1");
+            json.put("star",-1);
             json.put("token",token);
             json.put("userid",userid);
-            return Http.simplePost(API_URL + "/addReview",json.toString());
+            var response = Http.simplePost(API_URL + "/addUserReview",json.toString());
+
+            if (response.equals("Updated your review")) {
+                return new Response(true,true,response);
+            } else if (response.equals("Added your review") ){
+                return new Response(false,true,response);
+            } else {
+                return new Response(false,false,response);
+            }
         } catch (JSONException | IOException e) {
             e.printStackTrace();
-            return "An Error Occured";
+            new Logger("guh").error(e);
+            return new Response(false,false,"An Error Occured");
         }
     }
 

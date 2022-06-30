@@ -27,6 +27,7 @@ public class ThemeRepo extends Plugin {
     @Override
     public void start(Context context) throws NoSuchMethodException {
         settingsTab = new SettingsTab(ThemesPage.class);
+
         //Utils.openPageWithProxy(Utils.getAppActivity(), new ThemesPage());
 
         patcher.patch(WidgetSettings.class.getDeclaredMethod("onViewBound", View.class), new Hook(cf -> {
