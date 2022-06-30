@@ -4,9 +4,9 @@
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at 
+ * You may obtain a copy of the License at
  * http://www.apache.org/licenses/LICENSE-2.0
-*/
+ */
 
 package com.aliucord.plugins.ReviewListModal;
 
@@ -28,18 +28,16 @@ public class ViewHolder extends RecyclerView.ViewHolder {
     private static final int identityBarrierId = Utils.getResId("guild_member_identity_barrier", "id");
     private static final int serverAvatarId = Utils.getResId("guild_member_avatar", "id");
     private static final int serverNickId = Utils.getResId("user_profile_adapter_item_user_display_name", "id");
-
-    private final Adapter adapter;
-
     public final SimpleDraweeView icon;
     public final TextView iconText;
     public final TextView name;
     public final TextView serverNick;
+    private final Adapter adapter;
 
     public ViewHolder(Adapter adapter, @NonNull ViewGroup layout) {
         super(layout);
         this.adapter = adapter;
-        layout.setPadding(0, 0,DimenUtils.getDefaultPadding(),DimenUtils.getDefaultPadding());
+        layout.setPadding(0, 0, DimenUtils.getDefaultPadding(), DimenUtils.getDefaultPadding());
         icon = layout.findViewById(iconId);
         iconText = layout.findViewById(iconTextId);
         name = layout.findViewById(serverNameId);

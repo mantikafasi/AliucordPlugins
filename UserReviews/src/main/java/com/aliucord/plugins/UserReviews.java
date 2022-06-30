@@ -20,8 +20,8 @@ import com.discord.widgets.user.usersheet.WidgetUserSheetViewModel;
 @AliucordPlugin
 public class UserReviews extends Plugin {
     public static SettingsAPI staticSettings;
-    int viewID = View.generateViewId();
     public static Logger logger = new Logger("UserReviews");
+    int viewID = View.generateViewId();
 
     @SuppressLint("SetTextI18n")
     @Override
@@ -41,7 +41,7 @@ public class UserReviews extends Plugin {
                     ((LinearLayout) scrollView.findViewById(Utils.getResId("user_sheet_content", "id"))).addView(root);
                 }
 
-            } ));
+            }));
         } catch (NoSuchMethodException e) {
             e.printStackTrace();
         }

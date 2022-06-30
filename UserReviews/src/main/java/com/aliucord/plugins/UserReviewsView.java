@@ -24,7 +24,6 @@ import com.discord.models.user.User;
 import com.discord.stores.StoreStream;
 import com.discord.utilities.color.ColorCompat;
 import com.discord.utilities.rest.RestAPI;
-import com.lytefast.flexinput.widget.FlexEditText;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,11 +45,11 @@ public class UserReviewsView extends LinearLayout {
         var data = UserReviewsAPI.getReviews(user.getId());
 
         if (data != null) {
-            for (int i = 0;i<reviews.size();i++) {
+            for (int i = 0; i < reviews.size(); i++) {
                 var review = data.get(i);
                 if (review.user == null) {
                     review.user = StoreStream.getUsers().getUsers().get(review.getSenderDiscordID());
-                    data.set(i,review);
+                    data.set(i, review);
                 }
             }
             reviews.addAll(data);
@@ -61,7 +60,8 @@ public class UserReviewsView extends LinearLayout {
         }
 
         Utils.mainThread.post(() -> {
-            if(reviews.size() == 0) nobodyReviewed.setVisibility(VISIBLE); else nobodyReviewed.setVisibility(GONE);
+            if (reviews.size() == 0) nobodyReviewed.setVisibility(VISIBLE);
+            else nobodyReviewed.setVisibility(GONE);
 
             adapter.notifyDataSetChanged();
         });
@@ -73,7 +73,7 @@ public class UserReviewsView extends LinearLayout {
         setOrientation(android.widget.LinearLayout.VERTICAL);
         this.user = user;
 
-        title = new TextView(ctx, null,0, com.lytefast.flexinput.R.i.UserProfile_Section_Header);
+        title = new TextView(ctx, null, 0, com.lytefast.flexinput.R.i.UserProfile_Section_Header);
         recycler = new RecyclerView(ctx);
         sendCommentLayout = new LinearLayout(ctx);
         et = new CustomEditText(ctx);
@@ -90,7 +90,7 @@ public class UserReviewsView extends LinearLayout {
 
         nobodyReviewed.setText("Looks like nobody reviewed this user, You can be first");
         nobodyReviewed.setVisibility(GONE);
-        nobodyReviewed.setPadding(0,0,0,padding);
+        nobodyReviewed.setPadding(0, 0, 0, padding);
         nobodyReviewed.setTypeface(null, Typeface.BOLD_ITALIC);
         nobodyReviewed.setTextSize(20f);
 
@@ -100,14 +100,14 @@ public class UserReviewsView extends LinearLayout {
         addView(sendCommentLayout);
         setPadding(padding, padding, padding, padding);
 
-        var etLayoutParams = (android.widget.LinearLayout.LayoutParams)et.getLayoutParams();
+        var etLayoutParams = (android.widget.LinearLayout.LayoutParams) et.getLayoutParams();
         etLayoutParams.width = 0;
         etLayoutParams.height = DimenUtils.dpToPx(40);
         etLayoutParams.weight = 1;
-        etLayoutParams.rightMargin = padding/3;
+        etLayoutParams.rightMargin = padding / 3;
         et.setLayoutParams(etLayoutParams);
 
-        var buttonLayoutParams = (LinearLayout.LayoutParams)buttonFrameLayout.getLayoutParams();
+        var buttonLayoutParams = (LinearLayout.LayoutParams) buttonFrameLayout.getLayoutParams();
         buttonLayoutParams.width = DimenUtils.dpToPx(40);
         buttonLayoutParams.height = DimenUtils.dpToPx(40);
         buttonFrameLayout.setLayoutParams(buttonLayoutParams);
@@ -124,28 +124,28 @@ public class UserReviewsView extends LinearLayout {
         et.setHint("Enter Your Comment ");
         et.setBackgroundResource(android.R.color.transparent);
 
-        buttonFrameLayout.setBackgroundResource(Utils.getResId("drawable_circle_black","drawable"));
+        buttonFrameLayout.setBackgroundResource(Utils.getResId("drawable_circle_black", "drawable"));
 
-        buttonFrameLayout.setBackgroundTintList(ColorStateList.valueOf(ColorCompat.getColor(ctx,com.lytefast.flexinput.R.c.accent_material_light)));
+        buttonFrameLayout.setBackgroundTintList(ColorStateList.valueOf(ColorCompat.getColor(ctx, com.lytefast.flexinput.R.c.accent_material_light)));
         buttonFrameLayout.addView(submit);
         buttonFrameLayout.setOnClickListener(this::onSubmit);
-        submit.setImageResource(Utils.getResId("ic_send_24dp","drawable"));
-        submit.setPadding(padding/2,0,padding/2,0);
+        submit.setImageResource(Utils.getResId("ic_send_24dp", "drawable"));
+        submit.setPadding(padding / 2, 0, padding / 2, 0);
 
 
     }
 
-    public void fetchUsersAndUpdateRecyclerView(){
-        for(int i=0;i<reviews.size();i++) {
+    public void fetchUsersAndUpdateRecyclerView() {
+        for (int i = 0; i < reviews.size(); i++) {
             //fetching users that are not cached and updating recyclerview
             var review = reviews.get(i);
-            if(review.user == null) {
+            if (review.user == null) {
                 int index = i;
                 RxUtils.subscribe(RestAPI.getApi().userGet(review.getSenderDiscordID()), user1 -> {
                     review.user = new CoreUser(user1);
-                    reviews.set(index,review);
+                    reviews.set(index, review);
 
-                    Utils.mainThread.post(()->{
+                    Utils.mainThread.post(() -> {
                         adapter.notifyItemChanged(index);
                     });
                     return null;
@@ -170,7 +170,7 @@ public class UserReviewsView extends LinearLayout {
             Utils.threadPool.execute(() -> {
                 var response = UserReviewsAPI.addReview(message, user.getId(), UserReviews.staticSettings.getString("token", ""));
                 Utils.showToast(response.getText());
-                Utils.mainThread.post(()->submit.setClickable(true));
+                Utils.mainThread.post(() -> submit.setClickable(true));
 
                 if (response.isSuccessful()) {
                     var currentUsername = StoreStream.getUsers().getMe().getUsername() + "#" + StoreStream.getUsers().getMe().getDiscriminator();

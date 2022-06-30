@@ -4,13 +4,14 @@
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at 
+ * You may obtain a copy of the License at
  * http://www.apache.org/licenses/LICENSE-2.0
-*/
+ */
 
 package com.aliucord.plugins.ReviewListModal;
 
-import android.view.*;
+import android.view.LayoutInflater;
+import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -45,8 +46,8 @@ public class Adapter extends RecyclerView.Adapter<ViewHolder> {
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         var review = reviews.get(position);
-        if (review.user != null){
-            IconUtils.setIcon(holder.icon,review.user);
+        if (review.user != null) {
+            IconUtils.setIcon(holder.icon, review.user);
         }
         holder.serverNick.setText(review.getComment());
         holder.name.setText(review.getUsername());

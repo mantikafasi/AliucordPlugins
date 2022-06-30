@@ -4,9 +4,6 @@ import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
-
-import com.aliucord.fragments.ConfirmDialog;
-import com.aliucord.views.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -16,6 +13,7 @@ import com.aliucord.Constants;
 import com.aliucord.Utils;
 import com.aliucord.api.SettingsAPI;
 import com.aliucord.fragments.InputDialog;
+import com.aliucord.views.Button;
 import com.aliucord.widgets.BottomSheet;
 
 public class BottomShit extends BottomSheet {
@@ -47,7 +45,7 @@ public class BottomShit extends BottomSheet {
                 dialog.getInputLayout().setVisibility(View.GONE);
             });
 
-            dialog.show(getParentFragmentManager(),"fart");
+            dialog.show(getParentFragmentManager(), "fart");
 
         });
 
@@ -62,11 +60,12 @@ public class BottomShit extends BottomSheet {
         enterTokenManually.setOnClickListener(oc -> {
             var dialog = new InputDialog().setTitle("Enter Token").setDescription("Long Click To Button to get token (discord sometimes ratelimiting api so if youre getting error thats probably why)");
             dialog.setOnOkListener(v -> {
-                var token =dialog.getInput();
-                if (!token.equals("")) settings.setString("token",token); else
+                var token = dialog.getInput();
+                if (!token.equals("")) settings.setString("token", token);
+                else
                     Toast.makeText(context, "Please Enter Token", Toast.LENGTH_SHORT).show();
             });
-            dialog.show(getParentFragmentManager(),"uga");
+            dialog.show(getParentFragmentManager(), "uga");
         });
         enterTokenManually.setOnLongClickListener(v -> {
             Utils.launchUrl(AuthorazationPage.AUTH_URL);

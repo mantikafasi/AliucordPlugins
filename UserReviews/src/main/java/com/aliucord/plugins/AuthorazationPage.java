@@ -21,10 +21,11 @@ import com.discord.app.AppFragment;
 import com.discord.stores.StoreStream;
 
 public class AuthorazationPage extends AppFragment {
+    public static String AUTH_URL = "https://discord.com/api/oauth2/authorize?client_id=915703782174752809&redirect_uri=https%3A%2F%2Fmantikralligi1.pythonanywhere.com%2FURauth&response_type=code&scope=identify";
     LinearLayout layout;
     Context context;
-    public static String AUTH_URL = "https://discord.com/api/oauth2/authorize?client_id=915703782174752809&redirect_uri=https%3A%2F%2Fmantikralligi1.pythonanywhere.com%2FURauth&response_type=code&scope=identify";
     Logger logger = new Logger("UserReviewsAPI");
+
     @SuppressLint("SetJavaScriptEnabled") //SHUTUP
     @Nullable
     @Override
@@ -38,7 +39,8 @@ public class AuthorazationPage extends AppFragment {
         try {
             token = (String) ReflectUtils.getField(StoreStream.getAuthentication(), "authToken");
         } catch (NoSuchFieldException | IllegalAccessException e) {
-            e.printStackTrace(); }
+            e.printStackTrace();
+        }
         String finalToken = token;
 
         WebView wv = new WebView(context);
@@ -54,9 +56,10 @@ public class AuthorazationPage extends AppFragment {
                     Toast.makeText(context, "An Error Occured While Authorizing", Toast.LENGTH_SHORT).show();
                     getActivity().onBackPressed();
                 } else if (url.contains("https://discord.com/login")) {
-                    try{
-                        wv.evaluateJavascript("webpackChunkdiscord_app.push([[Math.random()],{},(r)=>{Object.values(r.c).find(m=>m.exports&&m.exports.default&&m.exports.default.login!==void 0).exports.default.loginToken('" + finalToken + "')}]);", value -> { });
-                    } catch (Exception e){
+                    try {
+                        wv.evaluateJavascript("webpackChunkdiscord_app.push([[Math.random()],{},(r)=>{Object.values(r.c).find(m=>m.exports&&m.exports.default&&m.exports.default.login!==void 0).exports.default.loginToken('" + finalToken + "')}]);", value -> {
+                        });
+                    } catch (Exception e) {
                         logger.error(e);
                     }
                 }
