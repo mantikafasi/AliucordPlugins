@@ -3,6 +3,7 @@ package com.aliucord.plugins.dataclasses;
 import androidx.annotation.NonNull;
 
 import com.discord.api.user.User;
+import com.discord.stores.StoreStream;
 
 public class Review {
     private String username;
@@ -18,6 +19,7 @@ public class Review {
         this.senderUserID = senderUserID;
         this.star = star;
         this.username = username;
+        this.user = StoreStream.getUsers().getUsers().get(senderDiscordID);
     }
 
     public com.discord.models.user.User getUser() {  return user; }

@@ -4,7 +4,9 @@ import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
-import android.widget.Button;
+
+import com.aliucord.fragments.ConfirmDialog;
+import com.aliucord.views.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -35,17 +37,28 @@ public class BottomShit extends BottomSheet {
         title.setTypeface(ResourcesCompat.getFont(context, Constants.Fonts.whitney_semibold));
         title.setGravity(Gravity.START);
 
+        Button crashing = new Button(context);
+        crashing.setText("Crashing?");
+        crashing.setOnClickListener(v -> {
+            var dialog = new InputDialog();
+            dialog.setOnDialogShownListener(view1 -> {
+                dialog.setTitle("WARNING");
+                dialog.getBody().setText("If your aliucord is crashing while authorization long click to 'Enter Token Manually' button in settings, it will redirtect you to api for getting token. After you get your token click to 'Enter Token Manually' button again and paste it in there");
+                dialog.getInputLayout().setVisibility(View.GONE);
+            });
+
+            dialog.show(getParentFragmentManager(),"fart");
+
+        });
 
         Button authorizate = new Button(context);
         authorizate.setText("Authorize");
-        authorizate.setTextColor(com.lytefast.flexinput.R.b.primary_800);
         authorizate.setOnClickListener(oc -> {
             Utils.openPageWithProxy(Utils.getAppActivity(), new AuthorazationPage());
         });
 
         Button enterTokenManually = new Button(context);
         enterTokenManually.setText("Enter Token Manually");
-        enterTokenManually.setTextColor(com.lytefast.flexinput.R.b.primary_800);
         enterTokenManually.setOnClickListener(oc -> {
             var dialog = new InputDialog().setTitle("Enter Token").setDescription("Long Click To Button to get token (discord sometimes ratelimiting api so if youre getting error thats probably why)");
             dialog.setOnOkListener(v -> {
@@ -61,6 +74,7 @@ public class BottomShit extends BottomSheet {
         });
 
         addView(title);
+        addView(crashing);
         addView(authorizate);
         addView(enterTokenManually);
 

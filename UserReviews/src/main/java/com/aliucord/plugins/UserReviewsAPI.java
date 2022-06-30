@@ -17,13 +17,14 @@ import java.io.IOException;
 import java.util.List;
 
 public class UserReviewsAPI {
+
     public static final String API_URL = "https://mantikralligi1.pythonanywhere.com";
     public static List<Review> getReviews(long userid) {
         try {
             String response = Http.simpleGet(API_URL + "/getUserReviews?discordid=" + userid);
             return GsonUtils.fromJson(response, TypeToken.getParameterized(List.class,Review.class).type);
         } catch (IOException e) {
-            e.printStackTrace();
+            UserReviews.logger.error(e);
             return null;
         }
     }

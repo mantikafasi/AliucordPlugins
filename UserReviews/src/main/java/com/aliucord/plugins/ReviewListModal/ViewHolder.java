@@ -8,7 +8,7 @@
  * http://www.apache.org/licenses/LICENSE-2.0
 */
 
-package com.aliucord.plugins.clonemodal;
+package com.aliucord.plugins.ReviewListModal;
 
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +18,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.aliucord.Utils;
+import com.aliucord.utils.DimenUtils;
 import com.facebook.drawee.view.SimpleDraweeView;
 
 public class ViewHolder extends RecyclerView.ViewHolder {
@@ -38,13 +39,15 @@ public class ViewHolder extends RecyclerView.ViewHolder {
     public ViewHolder(Adapter adapter, @NonNull ViewGroup layout) {
         super(layout);
         this.adapter = adapter;
-
+        layout.setPadding(0, 0,DimenUtils.getDefaultPadding(),DimenUtils.getDefaultPadding());
         icon = layout.findViewById(iconId);
         iconText = layout.findViewById(iconTextId);
         name = layout.findViewById(serverNameId);
         serverNick = layout.findViewById(serverNickId);
 
+
         // Hide server profile stuff
+        layout.findViewById(iconTextId).setVisibility(View.GONE);
         layout.findViewById(identityBarrierId).setVisibility(View.GONE);
         layout.findViewById(serverAvatarId).setVisibility(View.GONE);
 
