@@ -12,7 +12,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.aliucord.CollectionUtils;
-import com.aliucord.Logger;
 import com.aliucord.Utils;
 import com.aliucord.plugins.ReviewListModal.Adapter;
 import com.aliucord.plugins.ReviewListModal.CustomEditText;
@@ -23,7 +22,6 @@ import com.aliucord.widgets.LinearLayout;
 import com.discord.models.user.CoreUser;
 import com.discord.models.user.User;
 import com.discord.stores.StoreStream;
-import com.discord.stores.StoreUser;
 import com.discord.utilities.color.ColorCompat;
 import com.discord.utilities.rest.RestAPI;
 
@@ -41,26 +39,31 @@ public class UserReviewsView extends LinearLayout {
     TextView title;
     TextView nobodyReviewed;
     User user;
+    Cache cache = new Cache();
     Runnable loadData = (() -> {
 
         reviews.clear();
         var data = UserReviewsAPI.getReviews(user.getId());
 
         if (data != null) {
-            UserReviews.logger.info(String.valueOf(data.size()));
             for (int i = 0; i < data.size(); i++) {
 
-                UserReviews.logger.info(String.valueOf(i));
                 var review = data.get(i);
-                if (review.user == null) {
+                if (cache.isCached(review.getSenderDiscordID()))
+                    review.user = cache.getCached(review.getSenderDiscordID());
+                if (review.user == null || review.user.getImageURL() == null) {
 
-                    review.user = UserReviews.cachedUsers.get(review.getSenderDiscordID());
-                    if (review.user!=null) UserReviews.logger.info(review.user.toString());
+                    var discordUser = StoreStream.getUsers().getUsers().get(review.getSenderDiscordID());
+                    if (discordUser != null) {
+                        review.discordUser = discordUser;
+                        review.user = new com.aliucord.plugins.dataclasses.User(discordUser.getId(), discordUser.getAvatar(), discordUser.getUsername() + "#" + discordUser.getDiscriminator());
+                    }
+
                     data.set(i, review);
                 }
             }
             reviews.addAll(data);
-            //fetchUsersAndUpdateRecyclerView();
+            fetchUsersAndUpdateRecyclerView();
         } else {
             reviews.clear();
             reviews.add(new Review("There was an error while getting reviews", 0L, 0L, -1, ""));
@@ -147,15 +150,22 @@ public class UserReviewsView extends LinearLayout {
             for (int i = 0; i < reviews.size(); i++) {
                 //fetching users that are not cached and updating recyclerview
                 var review = reviews.get(i);
-                if (review.user == null) {
-                    new Logger("info").info("Fetching user");
+                if (review.user == null || review.user.getImageURL() == null) {
                     int index = i;
+
                     RxUtils.subscribe(RestAPI.getApi().userGet(review.getSenderDiscordID()), user1 -> {
+
                         StoreStream.access$getDispatcher$p(StoreStream.getNotices().getStream()).schedule(() -> {
-                            StoreStream.access$handleUserUpdated(StoreStream.getNotices().getStream(),user1);
+                            StoreStream.getUsers().handleUserUpdated(user1);
                             return null;
                         });
-                        review.user = new CoreUser(user1);
+                        var user = new CoreUser(user1);
+
+                        review.discordUser = user;
+                        review.user = new com.aliucord.plugins.dataclasses.User(user.getId(), user.getAvatar(), user.getUsername() + "#" + user.getDiscriminator());
+
+                        cache.setUserCache(user.getId(), review.user);
+
                         reviews.set(index, review);
 
                         Utils.mainThread.post(() -> {
@@ -175,7 +185,7 @@ public class UserReviewsView extends LinearLayout {
     }
 
     public void onSubmit(View v) {
-        var message = et.getText().toString();
+        var message = et.getText().toString().trim();
 
         if (UserReviews.staticSettings.getString("token", "").equals("")) {
             Utils.showToast("You need to authorazite to send comment");
@@ -185,6 +195,11 @@ public class UserReviewsView extends LinearLayout {
                 Utils.showToast("Enter some comment and try again");
                 return;
             }
+            else if(message.length()>1000) {
+                Utils.showToast("Comment Too Long");
+                return;
+            }
+
             submit.setClickable(false);
             et.clearFocus();
             Utils.threadPool.execute(() -> {

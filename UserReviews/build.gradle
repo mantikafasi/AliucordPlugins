@@ -1,6 +1,14 @@
-version = "1.0.1"
+version = "1.0.2"
 description = "UserReviews Plugin"
 aliucord {
     author("Ven",343383572805058560)
 }
-aliucord.changelog.set("Removed Profile Pictures for now")
+aliucord.changelog.set("""
+# 1.0.1 
+* Removed profile photos temporarily
+
+# 1.0.2
+* Added profile photos back
+* Some fix
+
+""")

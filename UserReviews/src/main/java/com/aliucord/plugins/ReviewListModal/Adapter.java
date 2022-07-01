@@ -18,9 +18,12 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.aliucord.Utils;
+import com.aliucord.plugins.UserReviews;
 import com.aliucord.plugins.dataclasses.Review;
 import com.aliucord.utils.RxUtils;
+import com.discord.stores.StoreStream;
 import com.discord.utilities.icon.IconUtils;
+import com.discord.utilities.images.MGImages;
 import com.discord.utilities.rest.RestAPI;
 import com.discord.widgets.user.usersheet.WidgetUserSheet;
 
@@ -51,8 +54,27 @@ public class Adapter extends RecyclerView.Adapter<ViewHolder> {
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         var review = reviews.get(position);
 
-        if (review.user != null) {
-            IconUtils.setIcon(holder.icon, review.user);
+        /* doesnt wanna work
+        holder.layout.setOnClickListener(v -> {
+            var user =StoreStream.getUsers().getUsers().get(review.getSenderDiscordID());
+            if (user == null) {
+                RxUtils.subscribe(RestAPI.getApi().userGet(review.getSenderDiscordID()),user1 -> {
+                    StoreStream.access$getDispatcher$p(StoreStream.getNotices().getStream()).schedule(() -> {
+                        StoreStream.getUsers().handleUserUpdated(user1);
+
+                        WidgetUserSheet.Companion.show(review.getSenderDiscordID(),UserReviews.fragmentManager);
+
+                        return null;
+                    });
+                    return null;
+                });
+            }
+        });
+
+         */
+
+        if (review.user != null && review.user.getImageURL() != null) {
+            MGImages.setImage(holder.icon,IconUtils.getForUser(review.user.getUserID(),review.user.getImageURL()));
         }
 
         holder.serverNick.setText(review.getComment());

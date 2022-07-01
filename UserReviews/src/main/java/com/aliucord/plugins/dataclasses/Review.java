@@ -2,7 +2,6 @@ package com.aliucord.plugins.dataclasses;
 
 import androidx.annotation.NonNull;
 
-import com.discord.api.user.User;
 import com.discord.stores.StoreStream;
 
 public class Review {
@@ -11,18 +10,21 @@ public class Review {
     private Long senderUserID;
     private int star;
     private Long senderDiscordID;
-    public com.discord.models.user.User user;
+    public User user;
+    public com.discord.models.user.User discordUser;
 
-    public Review(String comment, Long senderUserID,Long senderDiscordID, int star, String username) {
+    public Review(String comment, Long senderUserID, Long senderDiscordID, int star, String username) {
         this.comment = comment;
         this.senderDiscordID = senderDiscordID;
         this.senderUserID = senderUserID;
         this.star = star;
         this.username = username;
-        this.user = StoreStream.getUsers().getUsers().get(senderDiscordID);
+        this.discordUser = StoreStream.getUsers().getUsers().get(senderDiscordID);
     }
 
-    public com.discord.models.user.User getUser() {  return user; }
+    public User getUser() {
+        return user;
+    }
 
     public Long getSenderDiscordID() { return senderDiscordID; }
 

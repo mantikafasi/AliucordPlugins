@@ -6,6 +6,7 @@ import android.view.View;
 import android.widget.LinearLayout;
 
 import androidx.core.widget.NestedScrollView;
+import androidx.fragment.app.FragmentManager;
 
 import com.aliucord.Logger;
 import com.aliucord.Utils;
@@ -13,15 +14,8 @@ import com.aliucord.annotations.AliucordPlugin;
 import com.aliucord.api.SettingsAPI;
 import com.aliucord.entities.Plugin;
 import com.aliucord.patcher.Hook;
-import com.aliucord.utils.RxUtils;
-import com.discord.models.user.User;
-import com.discord.stores.StoreStream;
-import com.discord.stores.StoreUser;
 import com.discord.widgets.user.usersheet.WidgetUserSheet;
 import com.discord.widgets.user.usersheet.WidgetUserSheetViewModel;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @SuppressWarnings("unused")
 @AliucordPlugin
@@ -29,8 +23,7 @@ public class UserReviews extends Plugin {
     public static SettingsAPI staticSettings;
     public static Logger logger = new Logger("UserReviews");
     int viewID = View.generateViewId();
-    public static Map<Long, User> cachedUsers = new HashMap<>();
-
+    public static FragmentManager fragmentManager;
     @SuppressLint("SetTextI18n")
     @Override
     public void start(Context context) {
@@ -40,7 +33,7 @@ public class UserReviews extends Plugin {
         try {
             patcher.patch(WidgetUserSheet.class.getDeclaredMethod("configureAboutMe", WidgetUserSheetViewModel.ViewState.Loaded.class), new Hook(cf -> {
                 var viewstate = (WidgetUserSheetViewModel.ViewState.Loaded) cf.args[0];
-
+                fragmentManager = ((WidgetUserSheet) cf.thisObject).getParentFragmentManager();
                 var scrollView = (NestedScrollView) (WidgetUserSheet.access$getBinding$p((WidgetUserSheet) cf.thisObject)).getRoot();
                 var ctx = scrollView.getContext();
                 if (scrollView.findViewById(viewID) == null) {

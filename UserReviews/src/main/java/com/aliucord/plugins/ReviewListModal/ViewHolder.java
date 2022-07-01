@@ -10,6 +10,7 @@
 
 package com.aliucord.plugins.ReviewListModal;
 
+import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -29,7 +30,6 @@ public class ViewHolder extends RecyclerView.ViewHolder {
     private static final int serverAvatarId = Utils.getResId("guild_member_avatar", "id");
     private static final int serverNickId = Utils.getResId("user_profile_adapter_item_user_display_name", "id");
     public final SimpleDraweeView icon;
-    public final TextView iconText;
     public final TextView name;
     public final TextView serverNick;
     private final Adapter adapter;
@@ -40,9 +40,11 @@ public class ViewHolder extends RecyclerView.ViewHolder {
         this.adapter = adapter;
         layout.setPadding(0, 0, DimenUtils.getDefaultPadding(), DimenUtils.getDefaultPadding());
         icon = layout.findViewById(iconId);
-        iconText = layout.findViewById(iconTextId);
         name = layout.findViewById(serverNameId);
         serverNick = layout.findViewById(serverNickId);
+        serverNick.setSingleLine(false);
+        serverNick.setMaxWidth(DimenUtils.dpToPx(280));
+        //serverNick.setEllipsize(TextUtils.TruncateAt.END);
         this.layout = layout;
 
 
