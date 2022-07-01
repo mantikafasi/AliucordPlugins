@@ -33,6 +33,7 @@ public class ViewHolder extends RecyclerView.ViewHolder {
     public final TextView name;
     public final TextView serverNick;
     private final Adapter adapter;
+    public final ViewGroup layout;
 
     public ViewHolder(Adapter adapter, @NonNull ViewGroup layout) {
         super(layout);
@@ -42,6 +43,7 @@ public class ViewHolder extends RecyclerView.ViewHolder {
         iconText = layout.findViewById(iconTextId);
         name = layout.findViewById(serverNameId);
         serverNick = layout.findViewById(serverNickId);
+        this.layout = layout;
 
 
         // Hide server profile stuff

@@ -13,8 +13,15 @@ import com.aliucord.annotations.AliucordPlugin;
 import com.aliucord.api.SettingsAPI;
 import com.aliucord.entities.Plugin;
 import com.aliucord.patcher.Hook;
+import com.aliucord.utils.RxUtils;
+import com.discord.models.user.User;
+import com.discord.stores.StoreStream;
+import com.discord.stores.StoreUser;
 import com.discord.widgets.user.usersheet.WidgetUserSheet;
 import com.discord.widgets.user.usersheet.WidgetUserSheetViewModel;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @SuppressWarnings("unused")
 @AliucordPlugin
@@ -22,10 +29,12 @@ public class UserReviews extends Plugin {
     public static SettingsAPI staticSettings;
     public static Logger logger = new Logger("UserReviews");
     int viewID = View.generateViewId();
+    public static Map<Long, User> cachedUsers = new HashMap<>();
 
     @SuppressLint("SetTextI18n")
     @Override
     public void start(Context context) {
+
         staticSettings = settings;
         settingsTab = new SettingsTab(BottomShit.class, SettingsTab.Type.BOTTOM_SHEET).withArgs(settings);
         try {

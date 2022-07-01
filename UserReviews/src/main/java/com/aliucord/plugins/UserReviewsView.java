@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.aliucord.CollectionUtils;
+import com.aliucord.Logger;
 import com.aliucord.Utils;
 import com.aliucord.plugins.ReviewListModal.Adapter;
 import com.aliucord.plugins.ReviewListModal.CustomEditText;
@@ -22,6 +23,7 @@ import com.aliucord.widgets.LinearLayout;
 import com.discord.models.user.CoreUser;
 import com.discord.models.user.User;
 import com.discord.stores.StoreStream;
+import com.discord.stores.StoreUser;
 import com.discord.utilities.color.ColorCompat;
 import com.discord.utilities.rest.RestAPI;
 
@@ -45,15 +47,20 @@ public class UserReviewsView extends LinearLayout {
         var data = UserReviewsAPI.getReviews(user.getId());
 
         if (data != null) {
-            for (int i = 0; i < reviews.size(); i++) {
+            UserReviews.logger.info(String.valueOf(data.size()));
+            for (int i = 0; i < data.size(); i++) {
+
+                UserReviews.logger.info(String.valueOf(i));
                 var review = data.get(i);
                 if (review.user == null) {
-                    review.user = StoreStream.getUsers().getUsers().get(review.getSenderDiscordID());
+
+                    review.user = UserReviews.cachedUsers.get(review.getSenderDiscordID());
+                    if (review.user!=null) UserReviews.logger.info(review.user.toString());
                     data.set(i, review);
                 }
             }
             reviews.addAll(data);
-            fetchUsersAndUpdateRecyclerView();
+            //fetchUsersAndUpdateRecyclerView();
         } else {
             reviews.clear();
             reviews.add(new Review("There was an error while getting reviews", 0L, 0L, -1, ""));
@@ -119,7 +126,7 @@ public class UserReviewsView extends LinearLayout {
         adapter = new com.aliucord.plugins.ReviewListModal.Adapter(reviews);
         recycler.setAdapter(adapter);
 
-        new Thread(loadData).start();
+        Utils.threadPool.execute(loadData);
 
         et.setHint("Enter Your Comment ");
         et.setBackgroundResource(android.R.color.transparent);
@@ -136,22 +143,35 @@ public class UserReviewsView extends LinearLayout {
     }
 
     public void fetchUsersAndUpdateRecyclerView() {
-        for (int i = 0; i < reviews.size(); i++) {
-            //fetching users that are not cached and updating recyclerview
-            var review = reviews.get(i);
-            if (review.user == null) {
-                int index = i;
-                RxUtils.subscribe(RestAPI.getApi().userGet(review.getSenderDiscordID()), user1 -> {
-                    review.user = new CoreUser(user1);
-                    reviews.set(index, review);
+        Utils.threadPool.execute(()->{
+            for (int i = 0; i < reviews.size(); i++) {
+                //fetching users that are not cached and updating recyclerview
+                var review = reviews.get(i);
+                if (review.user == null) {
+                    new Logger("info").info("Fetching user");
+                    int index = i;
+                    RxUtils.subscribe(RestAPI.getApi().userGet(review.getSenderDiscordID()), user1 -> {
+                        StoreStream.access$getDispatcher$p(StoreStream.getNotices().getStream()).schedule(() -> {
+                            StoreStream.access$handleUserUpdated(StoreStream.getNotices().getStream(),user1);
+                            return null;
+                        });
+                        review.user = new CoreUser(user1);
+                        reviews.set(index, review);
 
-                    Utils.mainThread.post(() -> {
-                        adapter.notifyItemChanged(index);
+                        Utils.mainThread.post(() -> {
+                            adapter.notifyItemChanged(index);
+                        });
+                        return null;
                     });
-                    return null;
-                });
+                    try {
+                        Thread.sleep(300);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
-        }
+        });
+
     }
 
     public void onSubmit(View v) {

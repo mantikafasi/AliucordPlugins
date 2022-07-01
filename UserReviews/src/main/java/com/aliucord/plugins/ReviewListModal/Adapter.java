@@ -11,6 +11,7 @@
 package com.aliucord.plugins.ReviewListModal;
 
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
@@ -18,7 +19,10 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.aliucord.Utils;
 import com.aliucord.plugins.dataclasses.Review;
+import com.aliucord.utils.RxUtils;
 import com.discord.utilities.icon.IconUtils;
+import com.discord.utilities.rest.RestAPI;
+import com.discord.widgets.user.usersheet.WidgetUserSheet;
 
 import java.util.List;
 
@@ -46,12 +50,12 @@ public class Adapter extends RecyclerView.Adapter<ViewHolder> {
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         var review = reviews.get(position);
+
         if (review.user != null) {
             IconUtils.setIcon(holder.icon, review.user);
         }
+
         holder.serverNick.setText(review.getComment());
         holder.name.setText(review.getUsername());
     }
-
-
 }
