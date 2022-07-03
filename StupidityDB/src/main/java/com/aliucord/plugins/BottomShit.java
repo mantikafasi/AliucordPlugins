@@ -68,7 +68,7 @@ public class BottomShit extends BottomSheet {
             dialog.show(getParentFragmentManager(),"uga");
         });
         enterTokenManually.setOnLongClickListener(v -> {
-            Utils.launchUrl("https://discord.com/api/oauth2/authorize?client_id=915703782174752809&redirect_uri=https%3A%2F%2Fmantikralligi1.pythonanywhere.com%2Fauth&response_type=code&scope=identify");
+            Utils.launchUrl(AuthorazationPage.authURL);
             return true;
         });
 
