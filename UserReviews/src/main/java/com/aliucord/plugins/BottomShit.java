@@ -56,7 +56,7 @@ public class BottomShit extends BottomSheet {
         });
 
         Button enterTokenManually = new Button(context);
-        enterTokenManually.setText("Enter Token Manually");
+        enterTokenManually.setText("Enter OAUTH Token Manually");
         enterTokenManually.setOnClickListener(oc -> {
             var dialog = new InputDialog().setTitle("Enter Token").setDescription("Long Click To Button to get token (discord sometimes ratelimiting api so if youre getting error thats probably why)");
             dialog.setOnOkListener(v -> {

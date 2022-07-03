@@ -1,14 +1,16 @@
-version = "1.0.2"
+version = "1.0.3"
 description = "UserReviews Plugin"
 aliucord {
     author("Ven",343383572805058560)
 }
 aliucord.changelog.set("""
-# 1.0.1 
-* Removed profile photos temporarily
+# 1.0.3
+* Changed API URL
 
 # 1.0.2
 * Added profile photos back
 * Some fix
 
+# 1.0.1 
+* Removed profile photos temporarily
 """)

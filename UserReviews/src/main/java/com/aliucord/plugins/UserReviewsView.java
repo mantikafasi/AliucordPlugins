@@ -49,11 +49,11 @@ public class UserReviewsView extends LinearLayout {
             for (int i = 0; i < data.size(); i++) {
 
                 var review = data.get(i);
-                if (cache.isCached(review.getSenderDiscordID()))
-                    review.user = cache.getCached(review.getSenderDiscordID());
+                if (cache.isCached(review.getSenderdiscordid()))
+                    review.user = cache.getCached(review.getSenderdiscordid());
                 if (review.user == null || review.user.getImageURL() == null) {
 
-                    var discordUser = StoreStream.getUsers().getUsers().get(review.getSenderDiscordID());
+                    var discordUser = StoreStream.getUsers().getUsers().get(review.getSenderdiscordid());
                     if (discordUser != null) {
                         review.discordUser = discordUser;
                         review.user = new com.aliucord.plugins.dataclasses.User(discordUser.getId(), discordUser.getAvatar(), discordUser.getUsername() + "#" + discordUser.getDiscriminator());
@@ -153,7 +153,7 @@ public class UserReviewsView extends LinearLayout {
                 if (review.user == null || review.user.getImageURL() == null) {
                     int index = i;
 
-                    RxUtils.subscribe(RestAPI.getApi().userGet(review.getSenderDiscordID()), user1 -> {
+                    RxUtils.subscribe(RestAPI.getApi().userGet(review.getSenderdiscordid()), user1 -> {
 
                         StoreStream.access$getDispatcher$p(StoreStream.getNotices().getStream()).schedule(() -> {
                             StoreStream.getUsers().handleUserUpdated(user1);
@@ -214,7 +214,7 @@ public class UserReviewsView extends LinearLayout {
                         et.setText("");
 
                         if (response.isUpdated()) {
-                            var ix = CollectionUtils.findIndex(reviews, review -> review.getSenderDiscordID() == currentUserID);
+                            var ix = CollectionUtils.findIndex(reviews, review -> review.getSenderdiscordid() == currentUserID);
                             if (ix == -1) return;
                             var rev = reviews.get(ix);
                             rev.comment = message;

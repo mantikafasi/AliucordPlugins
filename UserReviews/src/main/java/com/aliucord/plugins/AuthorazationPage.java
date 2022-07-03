@@ -21,7 +21,7 @@ import com.discord.app.AppFragment;
 import com.discord.stores.StoreStream;
 
 public class AuthorazationPage extends AppFragment {
-    public static String AUTH_URL = "https://discord.com/api/oauth2/authorize?client_id=915703782174752809&redirect_uri=https%3A%2F%2Fmantikralligi1.pythonanywhere.com%2FURauth&response_type=code&scope=identify";
+    public static String AUTH_URL = "https://discord.com/api/oauth2/authorize?client_id=915703782174752809&redirect_uri=https%3A%2F%2Fmanti.vendicated.dev%2FURauth&response_type=code&scope=identify";
     LinearLayout layout;
     Context context;
     Logger logger = new Logger("UserReviewsAPI");
@@ -47,12 +47,12 @@ public class AuthorazationPage extends AppFragment {
         var wvclient = new WebViewClient() {
             @Override
             public void onPageFinished(WebView view, String url) {
-                if (url.startsWith("https://mantikralligi1.pythonanywhere.com/receiveToken/")) {
-                    String token = url.split("https://mantikralligi1.pythonanywhere.com/receiveToken/")[1];
+                if (url.startsWith("https://manti.vendicated.dev/receiveToken/")) {
+                    String token = url.split("https://manti.vendicated.dev/receiveToken/")[1];
                     UserReviews.staticSettings.setString("token", token);
                     Toast.makeText(context, "Successfully Authorized", Toast.LENGTH_SHORT).show();
                     getActivity().onBackPressed();
-                } else if (url.contains("https://mantikralligi1.pythonanywhere.com/error")) {
+                } else if (url.contains("https://manti.vendicated.dev/error")) {
                     Toast.makeText(context, "An Error Occured While Authorizing", Toast.LENGTH_SHORT).show();
                     getActivity().onBackPressed();
                 } else if (url.contains("https://discord.com/login")) {
