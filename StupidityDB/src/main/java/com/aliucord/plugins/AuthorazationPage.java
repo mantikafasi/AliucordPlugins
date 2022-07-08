@@ -46,7 +46,7 @@ public class AuthorazationPage extends AppFragment {
             @Override
             public void onPageFinished(WebView view, String url) {
                 if (url.startsWith("https://manti.vendicated.dev/receiveToken/")) {
-                    String token = url.split("https://manti.vendicated.dev/receiveToken/")[1];
+                    String token =  url.substring("https://manti.vendicated.dev/receiveToken/".length());
                     StupidityDB.staticSettings.setString("token", token);
                     Toast.makeText(context, "Successfully Authorized", Toast.LENGTH_SHORT).show();
                     getActivity().onBackPressed();

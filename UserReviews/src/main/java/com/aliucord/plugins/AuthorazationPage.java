@@ -47,12 +47,12 @@ public class AuthorazationPage extends AppFragment {
         var wvclient = new WebViewClient() {
             @Override
             public void onPageFinished(WebView view, String url) {
-                if (url.startsWith("https://manti.vendicated.dev/receiveToken/")) {
-                    String token = url.split("https://manti.vendicated.dev/receiveToken/")[1];
+                if (url.startsWith(UserReviewsAPI.API_URL +"/receiveToken/")) {
+                    String token = url.substring((UserReviewsAPI.API_URL +"/receiveToken/").length());
                     UserReviews.staticSettings.setString("token", token);
                     Toast.makeText(context, "Successfully Authorized", Toast.LENGTH_SHORT).show();
                     getActivity().onBackPressed();
-                } else if (url.contains("https://manti.vendicated.dev/error")) {
+                } else if (url.contains(UserReviewsAPI.API_URL + "/error")) {
                     Toast.makeText(context, "An Error Occured While Authorizing", Toast.LENGTH_SHORT).show();
                     getActivity().onBackPressed();
                 } else if (url.contains("https://discord.com/login")) {

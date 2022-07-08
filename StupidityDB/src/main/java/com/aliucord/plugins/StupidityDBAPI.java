@@ -23,7 +23,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 
 public class StupidityDBAPI {
-    //static String serverip="http://192.168.1.35"; local ip used for testing
+    //static String serverip="http://192.168.1.35"; // local ip used for testing
     static String serverip = "https://manti.vendicated.dev";
     static long botid = Long.parseLong("915703782174752809");
     public static Cache cache = new Cache();
