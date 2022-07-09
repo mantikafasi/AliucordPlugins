@@ -15,6 +15,7 @@ import com.aliucord.api.SettingsAPI;
 import com.aliucord.fragments.InputDialog;
 import com.aliucord.views.Button;
 import com.aliucord.widgets.BottomSheet;
+import com.discord.views.CheckedSetting;
 
 public class BottomShit extends BottomSheet {
     SettingsAPI settings;
@@ -72,10 +73,20 @@ public class BottomShit extends BottomSheet {
             return true;
         });
 
+        var notifyNewReviews = Utils.createCheckedSetting(context, CheckedSetting.ViewType.CHECK, "Notify new reviews", "");
+        notifyNewReviews.setChecked(settings.getBool("notifyNewReviews", true));
+
+        notifyNewReviews.setOnCheckedListener(aBoolean -> {
+            settings.setBool("notifyNewReviews", aBoolean);
+
+        });
+
+
         addView(title);
         addView(crashing);
         addView(authorizate);
         addView(enterTokenManually);
+        addView(notifyNewReviews);
 
 
     }

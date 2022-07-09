@@ -1,9 +1,12 @@
-version = "1.0.3"
-description = "UserReviews Plugin"
+version = "1.0.4"
+description = "User Reviews Plugin"
 aliucord {
     author("Ven",343383572805058560)
 }
 aliucord.changelog.set("""
+# 1.0.4
+* Added option to notify you when someone leaves review to your profile (can be closed from settings)
+
 # 1.0.3
 * Changed API URL
 

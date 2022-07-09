@@ -4,6 +4,7 @@ import com.aliucord.Http;
 import com.aliucord.Logger;
 import com.aliucord.plugins.dataclasses.Response;
 import com.aliucord.plugins.dataclasses.Review;
+import com.aliucord.plugins.dataclasses.User;
 import com.aliucord.utils.GsonUtils;
 import com.google.gson.reflect.TypeToken;
 
@@ -11,6 +12,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.text.NumberFormat;
 import java.util.List;
 
 public class UserReviewsAPI {
@@ -18,13 +20,21 @@ public class UserReviewsAPI {
     public static final String API_URL = "https://manti.vendicated.dev";
 
     public static List<Review> getReviews(long userid) {
-
         try {
             String response = Http.simpleGet(API_URL + "/getUserReviews?discordid=" + userid);
             return GsonUtils.fromJson(response, TypeToken.getParameterized(List.class, Review.class).type);
         } catch (IOException e) {
             UserReviews.logger.error(e);
             return null;
+        }
+    }
+
+    public static int getLastReviewID(long userid) {
+        try {
+            return Integer.parseInt(Http.simpleGet(API_URL +"/getLastReviewID?discordid=" + userid));
+        } catch (IOException | NumberFormatException e) {
+            UserReviews.logger.error(e);
+            return 0;
         }
     }
 
