@@ -10,7 +10,6 @@
 
 package com.aliucord.plugins.ReviewListModal;
 
-import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -20,18 +19,18 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.aliucord.Utils;
 import com.aliucord.utils.DimenUtils;
+import com.discord.utilities.color.ColorCompat;
 import com.facebook.drawee.view.SimpleDraweeView;
 
 public class ViewHolder extends RecyclerView.ViewHolder {
-    private static final int iconId = Utils.getResId("user_profile_adapter_item_server_image", "id");
-    private static final int iconTextId = Utils.getResId("user_profile_adapter_item_server_text", "id");
-    private static final int serverNameId = Utils.getResId("user_profile_adapter_item_server_name", "id");
-    private static final int identityBarrierId = Utils.getResId("guild_member_identity_barrier", "id");
-    private static final int serverAvatarId = Utils.getResId("guild_member_avatar", "id");
-    private static final int serverNickId = Utils.getResId("user_profile_adapter_item_user_display_name", "id");
+    private static final int iconId = Utils.getResId("chat_list_adapter_item_text_avatar", "id");
+    private static final int serverNameId = Utils.getResId("chat_list_adapter_item_text_name", "id");
+    private static final int timeoutIconId = Utils.getResId("chat_list_adapter_item_communication_disabled_icon", "id");
+    private static final int tagIconID = Utils.getResId("chat_list_adapter_item_text_tag", "id");
+    private static final int serverNickId = Utils.getResId("chat_list_adapter_item_text", "id");
     public final SimpleDraweeView icon;
-    public final TextView name;
-    public final TextView serverNick;
+    public final TextView username;
+    public final TextView message;
     private final Adapter adapter;
     public final ViewGroup layout;
 
@@ -40,18 +39,17 @@ public class ViewHolder extends RecyclerView.ViewHolder {
         this.adapter = adapter;
         layout.setPadding(0, 0, DimenUtils.getDefaultPadding(), DimenUtils.getDefaultPadding());
         icon = layout.findViewById(iconId);
-        name = layout.findViewById(serverNameId);
-        serverNick = layout.findViewById(serverNickId);
-        serverNick.setSingleLine(false);
-        serverNick.setMaxWidth(DimenUtils.dpToPx(280));
-        //serverNick.setEllipsize(TextUtils.TruncateAt.END);
+        username = layout.findViewById(serverNameId);
+        message = layout.findViewById(serverNickId);
+        message.setSingleLine(false);
+        message.setTextColor(ColorCompat.getColor(layout.getContext(),com.lytefast.flexinput.R.c.primary_300));
+
+
         this.layout = layout;
 
+        layout.findViewById(timeoutIconId).setVisibility(View.GONE);
+        layout.findViewById(tagIconID).setVisibility(View.GONE);
 
-        // Hide server profile stuff
-        layout.findViewById(iconTextId).setVisibility(View.GONE);
-        layout.findViewById(identityBarrierId).setVisibility(View.GONE);
-        layout.findViewById(serverAvatarId).setVisibility(View.GONE);
 
     }
 

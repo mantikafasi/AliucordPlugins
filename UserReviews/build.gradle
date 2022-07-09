@@ -1,9 +1,13 @@
-version = "1.0.4"
+version = "1.0.5"
 description = "User Reviews Plugin"
 aliucord {
     author("Ven",343383572805058560)
 }
 aliucord.changelog.set("""
+# 1.0.5 
+* Updated UI
+// I know loading profiles with tons of reviews (I mean more than 30-40) cause it load way slower, I will fix it soon
+
 # 1.0.4
 * Added option to notify you when someone leaves review to your profile (can be closed from settings)
 

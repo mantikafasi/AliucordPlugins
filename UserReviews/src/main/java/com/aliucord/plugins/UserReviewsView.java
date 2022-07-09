@@ -97,10 +97,11 @@ public class UserReviewsView extends LinearLayout {
         sendCommentLayout.addView(et);
         sendCommentLayout.addView(buttonFrameLayout);
         sendCommentLayout.setOrientation(HORIZONTAL);
+        sendCommentLayout.setPadding(padding/3*2,0,padding,0);
 
         nobodyReviewed.setText("Looks like nobody reviewed this user, You can be first");
         nobodyReviewed.setVisibility(GONE);
-        nobodyReviewed.setPadding(0, 0, 0, padding);
+        nobodyReviewed.setPadding(padding, 0, padding, padding);
         nobodyReviewed.setTypeface(null, Typeface.BOLD_ITALIC);
         nobodyReviewed.setTextSize(20f);
 
@@ -108,7 +109,6 @@ public class UserReviewsView extends LinearLayout {
         addView(recycler);
         addView(nobodyReviewed);
         addView(sendCommentLayout);
-        setPadding(padding, padding, padding, padding);
 
         var etLayoutParams = (android.widget.LinearLayout.LayoutParams) et.getLayoutParams();
         etLayoutParams.width = 0;
@@ -123,10 +123,11 @@ public class UserReviewsView extends LinearLayout {
         buttonFrameLayout.setLayoutParams(buttonLayoutParams);
 
         title.setText("User Reviews");
-        title.setPadding(0, padding, 0, padding);
+        title.setPadding(padding, padding, 0, padding);
 
         recycler.setLayoutManager(new LinearLayoutManager(ctx, RecyclerView.VERTICAL, false));
         adapter = new com.aliucord.plugins.ReviewListModal.Adapter(reviews);
+        recycler.setPadding(padding/2,0,0,0);
         recycler.setAdapter(adapter);
 
         Utils.threadPool.execute(loadData);

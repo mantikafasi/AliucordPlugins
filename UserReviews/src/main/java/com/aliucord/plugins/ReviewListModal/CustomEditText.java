@@ -29,7 +29,7 @@ public class CustomEditText extends CardView {
         shapeDrawable.setFillColor(ColorStateList.valueOf(ColorCompat.getColor(context, com.lytefast.flexinput.R.c.mtrl_textinput_default_box_stroke_color)));
         et.setBackgroundDrawable(shapeDrawable);
         et.setTextSize(16f);
-        et.setPadding(DimenUtils.getDefaultPadding() / 2, 0, 0, 0);
+        et.setPadding(DimenUtils.getDefaultPadding() / 2 , 0, 0, 0);
         addView(et);
     }
 

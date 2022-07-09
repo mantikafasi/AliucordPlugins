@@ -11,7 +11,6 @@
 package com.aliucord.plugins.ReviewListModal;
 
 import android.view.LayoutInflater;
-import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
@@ -19,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.aliucord.Utils;
 import com.aliucord.plugins.UserReviews;
+import com.aliucord.plugins.UserReviewsView;
 import com.aliucord.plugins.dataclasses.Review;
 import com.aliucord.utils.RxUtils;
 import com.discord.stores.StoreStream;
@@ -30,7 +30,7 @@ import com.discord.widgets.user.usersheet.WidgetUserSheet;
 import java.util.List;
 
 public class Adapter extends RecyclerView.Adapter<ViewHolder> {
-    private static final int layoutId = Utils.getResId("widget_user_profile_adapter_item_server", "layout");
+    private static final int layoutId = Utils.getResId("widget_chat_list_adapter_item_text", "layout");
 
     private final List<Review> reviews;
 
@@ -54,30 +54,37 @@ public class Adapter extends RecyclerView.Adapter<ViewHolder> {
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         var review = reviews.get(position);
 
-        /* doesnt wanna work
+
         holder.layout.setOnClickListener(v -> {
-            var user =StoreStream.getUsers().getUsers().get(review.getSenderDiscordID());
-            if (user == null) {
-                RxUtils.subscribe(RestAPI.getApi().userGet(review.getSenderDiscordID()),user1 -> {
+            var user = StoreStream.getUsers().getUsers().get(review.getSenderdiscordid());
+            if (user != null) {
+                WidgetUserSheet.Companion.show(review.getSenderdiscordid(),Utils.widgetChatList.getChildFragmentManager());
+
+                // FOR SOME WEIRD REASON IT DOESNT WORK ON UNCACHED USERS
+            } /* else {
+
+                RxUtils.subscribe(RestAPI.getApi().userGet(review.getSenderdiscordid()), user1 -> {
                     StoreStream.access$getDispatcher$p(StoreStream.getNotices().getStream()).schedule(() -> {
-                        StoreStream.getUsers().handleUserUpdated(user1);
-
-                        WidgetUserSheet.Companion.show(review.getSenderDiscordID(),UserReviews.fragmentManager);
-
                         return null;
+                    });
+                    StoreStream.getUsers().handleUserUpdated(user1);
+
+                    Utils.mainThread.post(() -> {
+                        WidgetUserSheet.Companion.show(review.getSenderdiscordid(), Utils.widgetChatList.getChildFragmentManager());
                     });
                     return null;
                 });
-            }
+                }*/
+
         });
 
-         */
+
 
         if (review.user != null && review.user.getImageURL() != null) {
             MGImages.setImage(holder.icon,IconUtils.getForUser(review.user.getUserID(),review.user.getImageURL()));
         }
 
-        holder.serverNick.setText(review.getComment());
-        holder.name.setText(review.getUsername());
+        holder.message.setText(review.getComment());
+        holder.username.setText(review.getUsername());
     }
 }
