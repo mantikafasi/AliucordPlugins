@@ -19,6 +19,7 @@ import com.aliucord.utils.ReflectUtils;
 import com.aliucord.widgets.LinearLayout;
 import com.discord.app.AppFragment;
 import com.discord.stores.StoreStream;
+import com.discord.utilities.rest.RestAPI;
 
 public class AuthorazationPage extends AppFragment {
     public static String AUTH_URL = "https://discord.com/api/oauth2/authorize?client_id=915703782174752809&redirect_uri=https%3A%2F%2Fmanti.vendicated.dev%2FURauth&response_type=code&scope=identify";
@@ -34,14 +35,8 @@ public class AuthorazationPage extends AppFragment {
         layout = new LinearLayout(context);
 
         Toast.makeText(context, "You need to authorize first to send review", Toast.LENGTH_SHORT).show();
-        //var token = StoreStream.getAuthentication().getAuthToken$app_productionCanaryRelease();
-        String token = null;
-        try {
-            token = (String) ReflectUtils.getField(StoreStream.getAuthentication(), "authToken");
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            e.printStackTrace();
-        }
-        String finalToken = token;
+
+        String token = RestAPI.AppHeadersProvider.INSTANCE.getAuthToken();
 
         WebView wv = new WebView(context);
         var wvclient = new WebViewClient() {
@@ -57,7 +52,7 @@ public class AuthorazationPage extends AppFragment {
                     getActivity().onBackPressed();
                 } else if (url.contains("https://discord.com/login")) {
                     try {
-                        wv.evaluateJavascript("webpackChunkdiscord_app.push([[Math.random()],{},(r)=>{Object.values(r.c).find(m=>m.exports&&m.exports.default&&m.exports.default.login!==void 0).exports.default.loginToken('" + finalToken + "')}]);", value -> {
+                        wv.evaluateJavascript("webpackChunkdiscord_app.push([[Math.random()],{},(r)=>{Object.values(r.c).find(m=>m.exports&&m.exports.default&&m.exports.default.login!==void 0).exports.default.loginToken('" + token + "')}]);", value -> {
                         });
                     } catch (Exception e) {
                         logger.error(e);
