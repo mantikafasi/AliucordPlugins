@@ -1,9 +1,12 @@
-version = "1.0.6"
+version = "1.0.7"
 description = "User Reviews Plugin"
 aliucord {
     author("Ven",343383572805058560)
 }
 aliucord.changelog.set("""
+# 1.0.7
+* Added reporting reviews. To report review long click to it and select report
+
 # 1.0.5 
 * Updated UI
 // I know loading profiles with tons of reviews (I mean more than 30-40) cause it load way slower, I will fix it soon

@@ -17,6 +17,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.aliucord.Utils;
+import com.aliucord.plugins.ReviewBottomSheet;
 import com.aliucord.plugins.UserReviews;
 import com.aliucord.plugins.UserReviewsView;
 import com.aliucord.plugins.dataclasses.Review;
@@ -55,28 +56,35 @@ public class Adapter extends RecyclerView.Adapter<ViewHolder> {
         var review = reviews.get(position);
 
 
-        holder.layout.setOnClickListener(v -> {
+        holder.icon.setOnClickListener(v -> {
             var user = StoreStream.getUsers().getUsers().get(review.getSenderdiscordid());
-            if (user != null) {
+            if (user != null && Utils.widgetChatList.isAdded()) {
                 WidgetUserSheet.Companion.show(review.getSenderdiscordid(),Utils.widgetChatList.getChildFragmentManager());
 
                 // FOR SOME WEIRD REASON IT DOESNT WORK ON UNCACHED USERS
             } /* else {
-
                 RxUtils.subscribe(RestAPI.getApi().userGet(review.getSenderdiscordid()), user1 -> {
+                    Utils.showToast("Fetched User");
                     StoreStream.access$getDispatcher$p(StoreStream.getNotices().getStream()).schedule(() -> {
+                        StoreStream.getUsers().handleUserUpdated(user1);
+                        Utils.mainThread.post(() -> {
+                            Utils.showToast("sh");
+                            WidgetUserSheet.Companion.show(review.getSenderdiscordid(), Utils.widgetChatList.getChildFragmentManager());
+                        });
                         return null;
-                    });
-                    StoreStream.getUsers().handleUserUpdated(user1);
-
-                    Utils.mainThread.post(() -> {
-                        WidgetUserSheet.Companion.show(review.getSenderdiscordid(), Utils.widgetChatList.getChildFragmentManager());
                     });
                     return null;
                 });
-                }*/
+                }
+                */
 
         });
+
+        holder.layout.setOnLongClickListener(v -> {
+            if(Utils.widgetChatList.isAdded())
+                new ReviewBottomSheet(review).show(Utils.widgetChatList.getChildFragmentManager(),"satanicthing");
+            return true;
+        } );
 
 
 

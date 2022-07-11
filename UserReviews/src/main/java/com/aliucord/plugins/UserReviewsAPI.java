@@ -38,6 +38,18 @@ public class UserReviewsAPI {
         }
     }
 
+    public static String reportReview(String token,int reviewID) {
+        JSONObject json = new JSONObject();
+        try {
+            json.put("token",token);
+            json.put("reviewid",reviewID);
+            return Http.simplePost(API_URL +"/reportReview",json.toString());
+        } catch (JSONException | IOException e) {
+            UserReviews.logger.error(e);
+            return "An Error Occured";
+        }
+    }
+
     public static Response addReview(String comment, Long userid, String token) {
         try {
             JSONObject json = new JSONObject();

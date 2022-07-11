@@ -22,6 +22,7 @@ import com.aliucord.widgets.LinearLayout;
 import com.discord.models.user.CoreUser;
 import com.discord.models.user.User;
 import com.discord.stores.StoreStream;
+import com.discord.stores.StoreUserProfile;
 import com.discord.utilities.color.ColorCompat;
 import com.discord.utilities.rest.RestAPI;
 
@@ -90,9 +91,13 @@ public class UserReviewsView extends LinearLayout {
         submit = new ImageView(ctx);
         nobodyReviewed = new TextView(ctx);
         padding = DimenUtils.getDefaultPadding();
+        var reporting = new TextView(ctx);
         var buttonFrameLayout = new FrameLayout(ctx);
 
         //etLayout.setGravity(Gravity.CENTER_VERTICAL);
+        reporting.setText("Small Note: To Report someones review long click to review and click 'Report Review'");
+        reporting.setTextSize(9f);
+        reporting.setPadding(padding,padding/3,padding,padding);
 
         sendCommentLayout.addView(et);
         sendCommentLayout.addView(buttonFrameLayout);
@@ -106,6 +111,7 @@ public class UserReviewsView extends LinearLayout {
         nobodyReviewed.setTextSize(20f);
 
         addView(title);
+        addView(reporting);
         addView(recycler);
         addView(nobodyReviewed);
         addView(sendCommentLayout);
@@ -123,7 +129,7 @@ public class UserReviewsView extends LinearLayout {
         buttonFrameLayout.setLayoutParams(buttonLayoutParams);
 
         title.setText("User Reviews");
-        title.setPadding(padding, padding, 0, padding);
+        title.setPadding(padding, padding, 0, 0);
 
         recycler.setLayoutManager(new LinearLayoutManager(ctx, RecyclerView.VERTICAL, false));
         adapter = new com.aliucord.plugins.ReviewListModal.Adapter(reviews);
@@ -153,13 +159,13 @@ public class UserReviewsView extends LinearLayout {
                 var review = reviews.get(i);
                 if (review.user == null || review.user.getImageURL() == null) {
                     int index = i;
-
                     RxUtils.subscribe(RestAPI.getApi().userGet(review.getSenderdiscordid()), user1 -> {
-
                         StoreStream.access$getDispatcher$p(StoreStream.getNotices().getStream()).schedule(() -> {
+                            StoreStream.getUserProfile().updateUser(user1);
                             StoreStream.getUsers().handleUserUpdated(user1);
                             return null;
                         });
+
                         var user = new CoreUser(user1);
 
                         review.discordUser = user;
@@ -196,7 +202,7 @@ public class UserReviewsView extends LinearLayout {
                 Utils.showToast("Enter some comment and try again");
                 return;
             }
-            else if(message.length()>1000) {
+            else if(message.length()>500) {
                 Utils.showToast("Comment Too Long");
                 return;
             }

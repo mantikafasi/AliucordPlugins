@@ -12,6 +12,7 @@ public class Review {
     private Long senderdiscordid;
     public User user;
     public com.discord.models.user.User discordUser;
+    private int id;
 
     public Review(String comment, Long senderUserID, Long senderDiscordID, int star, String username) {
         this.comment = comment;
@@ -31,6 +32,8 @@ public class Review {
     public String getComment() {
         return comment;
     }
+
+    public int getId() { return id; }
 
     public Long getSenderuserid() {
         return senderuserid;
