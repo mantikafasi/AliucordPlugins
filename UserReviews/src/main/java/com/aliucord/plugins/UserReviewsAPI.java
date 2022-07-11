@@ -50,6 +50,21 @@ public class UserReviewsAPI {
         }
     }
 
+    public static Response deleteReview(String token,int reviewid) {
+        try{
+            var json = new JSONObject();
+            json.put("token",token);
+            json.put("reviewid",reviewid);
+            var response = new JSONObject(Http.simplePost(API_URL +"/deleteReview",json.toString()));
+
+            return new Response(false,response.getBoolean("successful"),response.getString("message"));
+
+        } catch (JSONException | IOException e) {
+            UserReviews.logger.error(e);
+            return new Response(false,false,"An Error Occured");
+        }
+    }
+
     public static Response addReview(String comment, Long userid, String token) {
         try {
             JSONObject json = new JSONObject();

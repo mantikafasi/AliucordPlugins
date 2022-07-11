@@ -22,7 +22,6 @@ import com.aliucord.widgets.LinearLayout;
 import com.discord.models.user.CoreUser;
 import com.discord.models.user.User;
 import com.discord.stores.StoreStream;
-import com.discord.stores.StoreUserProfile;
 import com.discord.utilities.color.ColorCompat;
 import com.discord.utilities.rest.RestAPI;
 
@@ -211,7 +210,7 @@ public class UserReviewsView extends LinearLayout {
             et.clearFocus();
             Utils.threadPool.execute(() -> {
                 var response = UserReviewsAPI.addReview(message, user.getId(), UserReviews.staticSettings.getString("token", ""));
-                Utils.showToast(response.getText());
+                Utils.showToast(response.getMessage());
                 Utils.mainThread.post(() -> submit.setClickable(true));
 
                 if (response.isSuccessful()) {

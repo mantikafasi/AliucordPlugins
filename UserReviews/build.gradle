@@ -1,9 +1,12 @@
-version = "1.0.7"
+version = "1.0.8"
 description = "User Reviews Plugin"
 aliucord {
     author("Ven",343383572805058560)
 }
 aliucord.changelog.set("""
+# 1.0.8
+* Added Delete Review feature, To delete your own review long click to review and click "Delete Review"
+
 # 1.0.7
 * Added reporting reviews. To report review long click to it and select report
 

@@ -16,6 +16,7 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.aliucord.CollectionUtils;
 import com.aliucord.Utils;
 import com.aliucord.plugins.ReviewBottomSheet;
 import com.aliucord.plugins.UserReviews;
@@ -33,7 +34,7 @@ import java.util.List;
 public class Adapter extends RecyclerView.Adapter<ViewHolder> {
     private static final int layoutId = Utils.getResId("widget_chat_list_adapter_item_text", "layout");
 
-    private final List<Review> reviews;
+    public final List<Review> reviews;
 
     public Adapter(List<Review> reviews) {
         this.reviews = reviews;
@@ -82,7 +83,7 @@ public class Adapter extends RecyclerView.Adapter<ViewHolder> {
 
         holder.layout.setOnLongClickListener(v -> {
             if(Utils.widgetChatList.isAdded())
-                new ReviewBottomSheet(review).show(Utils.widgetChatList.getChildFragmentManager(),"satanicthing");
+                new ReviewBottomSheet(review,this).show(Utils.widgetChatList.getChildFragmentManager(),"satanicthing");
             return true;
         } );
 
@@ -94,5 +95,8 @@ public class Adapter extends RecyclerView.Adapter<ViewHolder> {
 
         holder.message.setText(review.getComment());
         holder.username.setText(review.getUsername());
+    }
+    public int getReviewID(Review review) {
+        return CollectionUtils.findIndex(reviews,review1 -> review==review1);
     }
 }

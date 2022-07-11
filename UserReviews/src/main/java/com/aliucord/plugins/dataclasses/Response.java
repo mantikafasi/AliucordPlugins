@@ -3,12 +3,12 @@ package com.aliucord.plugins.dataclasses;
 public class Response {
     boolean isUpdated;
     boolean successful;
-    String text;
+    String message;
 
-    public Response( boolean isUpdated, boolean successful, String text) {
+    public Response( boolean isUpdated, boolean successful, String message) {
         this.isUpdated = isUpdated;
         this.successful = successful;
-        this.text = text;
+        this.message = message;
     }
 
     public boolean isUpdated() {
@@ -19,8 +19,8 @@ public class Response {
         return successful;
     }
 
-    public String getText() {
-        return text;
+    public String getMessage() {
+        return message;
     }
 
 
