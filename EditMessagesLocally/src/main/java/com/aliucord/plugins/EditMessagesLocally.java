@@ -39,6 +39,7 @@ public class EditMessagesLocally extends Plugin {
 
     @Override
     public void start(Context context) throws NoSuchMethodException {
+        return;
         patcher.patch(MessageQueue.class.getDeclaredMethod("doEdit", MessageRequest.Edit.class, MessageQueue.DrainListener.class), new InsteadHook((cf) -> {
             var edit = (MessageRequest.Edit) cf.args[0];
             var listener = (MessageQueue.DrainListener) cf.args[1];
@@ -102,6 +103,5 @@ public class EditMessagesLocally extends Plugin {
     @Override
     public void stop(Context context) {
         patcher.unpatchAll();
-        commands.unregisterAll();
     }
 }
