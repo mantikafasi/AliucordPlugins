@@ -126,7 +126,7 @@ public class ServerReviewsView extends LinearLayout {
         buttonLayoutParams.height = DimenUtils.dpToPx(40);
         buttonFrameLayout.setLayoutParams(buttonLayoutParams);
 
-        title.setText("User Reviews");
+        title.setText("Server Reviews");
         title.setPadding(0,padding,0,0);
 
         recycler.setLayoutManager(new LinearLayoutManager(ctx, RecyclerView.VERTICAL, false));
