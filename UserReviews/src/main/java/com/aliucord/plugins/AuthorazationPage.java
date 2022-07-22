@@ -34,7 +34,7 @@ public class AuthorazationPage extends AppFragment {
         context = inflater.getContext();
         layout = new LinearLayout(context);
 
-        Toast.makeText(context, "You need to authorize first to send review", Toast.LENGTH_SHORT).show();
+        Toast.makeText(context, "You need to authorize before you can send a review", Toast.LENGTH_SHORT).show();
 
         String token = RestAPI.AppHeadersProvider.INSTANCE.getAuthToken();
 
