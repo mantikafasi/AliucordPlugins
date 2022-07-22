@@ -94,7 +94,7 @@ public class UserReviewsView extends LinearLayout {
         var buttonFrameLayout = new FrameLayout(ctx);
 
         //etLayout.setGravity(Gravity.CENTER_VERTICAL);
-        reporting.setText("Small Note: To Report someones review long click to review and click 'Report Review'");
+        reporting.setText("Note: To report someone's review, long click the review and click 'Report Review'");
         reporting.setTextSize(9f);
         reporting.setPadding(padding,padding/3,padding,padding);
 
@@ -103,7 +103,7 @@ public class UserReviewsView extends LinearLayout {
         sendCommentLayout.setOrientation(HORIZONTAL);
         sendCommentLayout.setPadding(padding/3*2,0,padding,0);
 
-        nobodyReviewed.setText("Looks like nobody reviewed this user, You can be first");
+        nobodyReviewed.setText("Looks like nobody has reviewed this user: you can be first");
         nobodyReviewed.setVisibility(GONE);
         nobodyReviewed.setPadding(padding, 0, padding, padding);
         nobodyReviewed.setTypeface(null, Typeface.BOLD_ITALIC);
@@ -194,11 +194,11 @@ public class UserReviewsView extends LinearLayout {
         var message = et.getText().toString().trim();
 
         if (UserReviews.staticSettings.getString("token", "").equals("")) {
-            Utils.showToast("You need to authorazite to send comment");
+            Utils.showToast("You need to authorize to send a comment");
             Utils.openPageWithProxy(Utils.getAppActivity(), new AuthorazationPage());
         } else {
             if (message.isEmpty()) {
-                Utils.showToast("Enter some comment and try again");
+                Utils.showToast("Enter a comment and try again");
                 return;
             }
             else if(message.length()>500) {
