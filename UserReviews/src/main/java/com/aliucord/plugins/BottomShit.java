@@ -73,7 +73,7 @@ public class BottomShit extends BottomSheet {
             return true;
         });
 
-        var notifyNewReviews = Utils.createCheckedSetting(context, CheckedSetting.ViewType.CHECK, "Notify new reviews", "");
+        var notifyNewReviews = Utils.createCheckedSetting(context, CheckedSetting.ViewType.CHECK, "Notify for new reviews", "");
         notifyNewReviews.setChecked(settings.getBool("notifyNewReviews", true));
 
         notifyNewReviews.setOnCheckedListener(aBoolean -> {
