@@ -42,7 +42,7 @@ public class BottomShit extends BottomSheet {
             var dialog = new InputDialog();
             dialog.setOnDialogShownListener(view1 -> {
                 dialog.setTitle("WARNING");
-                dialog.getBody().setText("If your aliucord is crashing while authorization long click to 'Enter Token Manually' button in settings, it will redirtect you to api for getting token. After you get your token click to 'Enter Token Manually' button again and paste it in there");
+                dialog.getBody().setText("If your aliucord is crashing during authorization, long click the 'Enter Token Manually' button in settings and it will redirect you to the API to get a token. After you get your token click the 'Enter Token Manually' button again and paste it in there.");
                 dialog.getInputLayout().setVisibility(View.GONE);
             });
 
@@ -59,7 +59,7 @@ public class BottomShit extends BottomSheet {
         Button enterTokenManually = new Button(context);
         enterTokenManually.setText("Enter OAUTH Token Manually");
         enterTokenManually.setOnClickListener(oc -> {
-            var dialog = new InputDialog().setTitle("Enter Token").setDescription("Long Click To Button to get token (discord sometimes ratelimiting api so if youre getting error thats probably why)");
+            var dialog = new InputDialog().setTitle("Enter Token").setDescription("Long click to get token (Discord sometimes ratelimits API requests so if you're getting an error that's probably why)");
             dialog.setOnOkListener(v -> {
                 var token = dialog.getInput();
                 if (!token.equals("")) settings.setString("token", token);
