@@ -21,5 +21,6 @@ include(":StupitCase")
 include(":Amog\u200C\u200Dus")
 include(":UserReviews")
 include(":ServerReviews")
+include(":EditEverything")
 
 rootProject.name = "AliucordPlugins"
