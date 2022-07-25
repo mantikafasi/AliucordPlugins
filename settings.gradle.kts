@@ -22,5 +22,6 @@ include(":Amog\u200C\u200Dus")
 include(":UserReviews")
 include(":ServerReviews")
 include(":EditEverything")
+include(":DisableVerifyScreen")
 
 rootProject.name = "AliucordPlugins"
