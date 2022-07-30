@@ -27,15 +27,6 @@ public class ServerReviewsAPI {
         }
     }
 
-    public static int getLastReviewID(long userid) {
-        try {
-            return Integer.parseInt(Http.simpleGet(API_URL +"/getLastReviewID?discordid=" + userid));
-        } catch (IOException | NumberFormatException e) {
-            ServerReviews.logger.error(e);
-            return 0;
-        }
-    }
-
     public static String reportReview(String token,int reviewID) {
         JSONObject json = new JSONObject();
         try {

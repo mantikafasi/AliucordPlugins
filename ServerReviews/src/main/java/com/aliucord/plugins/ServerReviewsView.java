@@ -46,24 +46,7 @@ public class ServerReviewsView extends LinearLayout {
         var data = ServerReviewsAPI.getReviews(guildID);
 
         if (data != null) {
-            for (int i = 0; i < data.size(); i++) {
-
-                var review = data.get(i);
-                if (cache.isCached(review.getSenderdiscordid()))
-                    review.user = cache.getCached(review.getSenderdiscordid());
-                if (review.user == null || review.user.getImageURL() == null) {
-
-                    var discordUser = StoreStream.getUsers().getUsers().get(review.getSenderdiscordid());
-                    if (discordUser != null) {
-                        review.discordUser = discordUser;
-                        review.user = new com.aliucord.plugins.dataclasses.User(discordUser.getId(), discordUser.getAvatar(), discordUser.getUsername() + "#" + discordUser.getDiscriminator());
-                    }
-
-                    data.set(i, review);
-                }
-            }
             reviews.addAll(data);
-            fetchUsersAndUpdateRecyclerView();
         } else {
             reviews.clear();
             reviews.add(new Review("There was an error while getting reviews", 0L, 0L, -1, ""));
@@ -146,47 +129,6 @@ public class ServerReviewsView extends LinearLayout {
         buttonFrameLayout.setOnClickListener(this::onSubmit);
         submit.setImageResource(Utils.getResId("ic_send_24dp", "drawable"));
         submit.setPadding(padding / 3 * 2, 0, padding / 2, 0);
-
-
-    }
-
-    public void fetchUsersAndUpdateRecyclerView() {
-        Utils.threadPool.execute(()->{
-            for (int i = 0; i < reviews.size(); i++) {
-                //fetching users that are not cached and updating recyclerview
-                var review = reviews.get(i);
-                if (review.user == null || review.user.getImageURL() == null) {
-                    int index = i;
-                    RxUtils.subscribe(RestAPI.getApi().userGet(review.getSenderdiscordid()), user1 -> {
-                        StoreStream.access$getDispatcher$p(StoreStream.getNotices().getStream()).schedule(() -> {
-                            StoreStream.getUserProfile().updateUser(user1);
-                            StoreStream.getUsers().handleUserUpdated(user1);
-                            return null;
-                        });
-
-                        var user = new CoreUser(user1);
-
-                        review.discordUser = user;
-                        review.user = new com.aliucord.plugins.dataclasses.User(user.getId(), user.getAvatar(), user.getUsername() + "#" + user.getDiscriminator());
-
-                        cache.setUserCache(user.getId(), review.user);
-
-                        reviews.set(index, review);
-
-                        Utils.mainThread.post(() -> {
-                            adapter.notifyItemChanged(index);
-                        });
-                        return null;
-                    });
-                    try {
-                        Thread.sleep(300);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        });
-
     }
 
     public void onSubmit(View v) {

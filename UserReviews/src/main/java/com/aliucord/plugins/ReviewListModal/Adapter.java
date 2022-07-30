@@ -28,6 +28,7 @@ import com.discord.utilities.icon.IconUtils;
 import com.discord.utilities.images.MGImages;
 import com.discord.utilities.rest.RestAPI;
 import com.discord.widgets.user.usersheet.WidgetUserSheet;
+import com.facebook.imagepipeline.request.ImageRequest;
 
 import java.util.List;
 
@@ -87,10 +88,14 @@ public class Adapter extends RecyclerView.Adapter<ViewHolder> {
             return true;
         } );
 
+        if (review.getProfilePhoto() != null) {
+            var pfp = review.getProfilePhoto();
+            try {
+                pfp = pfp.substring(0,pfp.lastIndexOf(".")) + ".png?size=128";
 
+                MGImages.setImage(holder.icon,pfp);
 
-        if (review.user != null && review.user.getImageURL() != null) {
-            MGImages.setImage(holder.icon,IconUtils.getForUser(review.user.getUserID(),review.user.getImageURL()));
+            } catch (Exception e) {UserReviews.logger.error(e);}
         }
 
         holder.message.setText(review.getComment());

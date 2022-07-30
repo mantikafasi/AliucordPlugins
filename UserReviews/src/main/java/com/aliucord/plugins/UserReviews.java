@@ -17,6 +17,8 @@ import com.aliucord.entities.NotificationData;
 import com.aliucord.entities.Plugin;
 import com.aliucord.patcher.Hook;
 import com.discord.stores.StoreStream;
+import com.discord.widgets.guilds.profile.WidgetGuildProfileSheet;
+import com.discord.widgets.guilds.profile.WidgetGuildProfileSheetViewModel;
 import com.discord.widgets.user.usersheet.WidgetUserSheet;
 import com.discord.widgets.user.usersheet.WidgetUserSheetViewModel;
 
@@ -31,6 +33,8 @@ public class UserReviews extends Plugin {
     public void start(Context context) {
         staticSettings = settings;
         settingsTab = new SettingsTab(BottomShit.class, SettingsTab.Type.BOTTOM_SHEET).withArgs(settings);
+
+        new SettingsAPI("UserReviewsCache").resetSettings();
 
         if (settings.getBool("notifyNewReviews",true)) {
             Utils.threadPool.execute(() -> {
@@ -62,7 +66,7 @@ public class UserReviews extends Plugin {
                 var ctx = scrollView.getContext();
                 if (scrollView.findViewById(viewID) == null) {
 
-                    var root = new UserReviewsView(ctx, viewstate.getUser());
+                    var root = new UserReviewsView(ctx, viewstate.getUser().getId());
                     root.setId(viewID);
                     ((LinearLayout) scrollView.findViewById(Utils.getResId("user_sheet_content", "id"))).addView(root);
                 }

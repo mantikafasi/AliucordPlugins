@@ -23,6 +23,8 @@ public class ServerReviews extends Plugin {
     @SuppressLint("SetTextI18n")
     @Override
     public void start(Context context) {
+        new SettingsAPI("UserReviewsCache").resetSettings();
+
         staticSettings = new SettingsAPI("UserReviews");
 
         settingsTab = new SettingsTab(BottomShit.class, SettingsTab.Type.BOTTOM_SHEET).withArgs(staticSettings);

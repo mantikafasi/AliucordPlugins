@@ -10,9 +10,8 @@ public class Review {
     private Long senderuserid;
     private int star;
     private Long senderdiscordid;
-    public User user;
-    public com.discord.models.user.User discordUser;
-    private int id;
+    public String profile_photo;
+    public int id;
 
     public Review(String comment, Long senderUserID, Long senderDiscordID, int star, String username) {
         this.comment = comment;
@@ -20,11 +19,6 @@ public class Review {
         this.senderuserid = senderUserID;
         this.star = star;
         this.username = username;
-        this.discordUser = StoreStream.getUsers().getUsers().get(senderDiscordID);
-    }
-
-    public User getUser() {
-        return user;
     }
 
     public Long getSenderdiscordid() { return senderdiscordid; }
@@ -46,6 +40,8 @@ public class Review {
     public String getUsername() {
         return username;
     }
+
+    public String getProfilePhoto() { return profile_photo; }
 
     @NonNull
     @Override

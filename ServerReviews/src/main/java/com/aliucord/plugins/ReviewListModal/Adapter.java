@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.aliucord.CollectionUtils;
 import com.aliucord.Utils;
 import com.aliucord.plugins.ReviewBottomSheet;
+import com.aliucord.plugins.ServerReviews;
 import com.aliucord.plugins.dataclasses.Review;
 import com.discord.stores.StoreStream;
 import com.discord.utilities.icon.IconUtils;
@@ -83,10 +84,14 @@ public class Adapter extends RecyclerView.Adapter<ViewHolder> {
             return true;
         } );
 
+        if (review.getProfilePhoto() != null) {
+            var pfp = review.getProfilePhoto();
+            try {
+                pfp = pfp.substring(0,pfp.lastIndexOf(".")) + ".png?size=128";
 
+                MGImages.setImage(holder.icon,pfp);
 
-        if (review.user != null && review.user.getImageURL() != null) {
-            MGImages.setImage(holder.icon,IconUtils.getForUser(review.user.getUserID(),review.user.getImageURL()));
+            } catch (Exception e) { ServerReviews.logger.error(e); }
         }
 
         holder.message.setText(review.getComment());

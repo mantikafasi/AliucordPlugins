@@ -4,7 +4,6 @@ import com.aliucord.Http;
 import com.aliucord.Logger;
 import com.aliucord.plugins.dataclasses.Response;
 import com.aliucord.plugins.dataclasses.Review;
-import com.aliucord.plugins.dataclasses.User;
 import com.aliucord.utils.GsonUtils;
 import com.google.gson.reflect.TypeToken;
 
@@ -12,7 +11,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.text.NumberFormat;
 import java.util.List;
 
 public class UserReviewsAPI {

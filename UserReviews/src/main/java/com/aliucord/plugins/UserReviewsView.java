@@ -23,6 +23,8 @@ import com.discord.models.user.CoreUser;
 import com.discord.models.user.User;
 import com.discord.stores.StoreStream;
 import com.discord.utilities.color.ColorCompat;
+import com.discord.utilities.icon.IconUtils;
+import com.discord.utilities.images.MGImages;
 import com.discord.utilities.rest.RestAPI;
 
 import java.util.ArrayList;
@@ -38,32 +40,15 @@ public class UserReviewsView extends LinearLayout {
     RecyclerView recycler;
     TextView title;
     TextView nobodyReviewed;
-    User user;
-    Cache cache = new Cache();
+    Long id;
+
     Runnable loadData = (() -> {
 
         reviews.clear();
-        var data = UserReviewsAPI.getReviews(user.getId());
+        var data = UserReviewsAPI.getReviews(id);
 
         if (data != null) {
-            for (int i = 0; i < data.size(); i++) {
-
-                var review = data.get(i);
-                if (cache.isCached(review.getSenderdiscordid()))
-                    review.user = cache.getCached(review.getSenderdiscordid());
-                if (review.user == null || review.user.getImageURL() == null) {
-
-                    var discordUser = StoreStream.getUsers().getUsers().get(review.getSenderdiscordid());
-                    if (discordUser != null) {
-                        review.discordUser = discordUser;
-                        review.user = new com.aliucord.plugins.dataclasses.User(discordUser.getId(), discordUser.getAvatar(), discordUser.getUsername() + "#" + discordUser.getDiscriminator());
-                    }
-
-                    data.set(i, review);
-                }
-            }
             reviews.addAll(data);
-            fetchUsersAndUpdateRecyclerView();
         } else {
             reviews.clear();
             reviews.add(new Review("There was an error while getting reviews", 0L, 0L, -1, ""));
@@ -78,10 +63,10 @@ public class UserReviewsView extends LinearLayout {
 
     });
 
-    public UserReviewsView(Context ctx, User user) {
+    public UserReviewsView(Context ctx, Long id) {
         super(ctx);
         setOrientation(android.widget.LinearLayout.VERTICAL);
-        this.user = user;
+        this.id = id;
 
         title = new TextView(ctx, null, 0, com.lytefast.flexinput.R.i.UserProfile_Section_Header);
         recycler = new RecyclerView(ctx);
@@ -151,45 +136,6 @@ public class UserReviewsView extends LinearLayout {
 
     }
 
-    public void fetchUsersAndUpdateRecyclerView() {
-        Utils.threadPool.execute(()->{
-            for (int i = 0; i < reviews.size(); i++) {
-                //fetching users that are not cached and updating recyclerview
-                var review = reviews.get(i);
-                if (review.user == null || review.user.getImageURL() == null) {
-                    int index = i;
-                    RxUtils.subscribe(RestAPI.getApi().userGet(review.getSenderdiscordid()), user1 -> {
-                        StoreStream.access$getDispatcher$p(StoreStream.getNotices().getStream()).schedule(() -> {
-                            StoreStream.getUserProfile().updateUser(user1);
-                            StoreStream.getUsers().handleUserUpdated(user1);
-                            return null;
-                        });
-
-                        var user = new CoreUser(user1);
-
-                        review.discordUser = user;
-                        review.user = new com.aliucord.plugins.dataclasses.User(user.getId(), user.getAvatar(), user.getUsername() + "#" + user.getDiscriminator());
-
-                        cache.setUserCache(user.getId(), review.user);
-
-                        reviews.set(index, review);
-
-                        Utils.mainThread.post(() -> {
-                            adapter.notifyItemChanged(index);
-                        });
-                        return null;
-                    });
-                    try {
-                        Thread.sleep(300);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        });
-
-    }
-
     public void onSubmit(View v) {
         var message = et.getText().toString().trim();
 
@@ -209,7 +155,7 @@ public class UserReviewsView extends LinearLayout {
             submit.setClickable(false);
             et.clearFocus();
             Utils.threadPool.execute(() -> {
-                var response = UserReviewsAPI.addReview(message, user.getId(), UserReviews.staticSettings.getString("token", ""));
+                var response = UserReviewsAPI.addReview(message, id, UserReviews.staticSettings.getString("token", ""));
                 Utils.showToast(response.getMessage());
                 Utils.mainThread.post(() -> submit.setClickable(true));
 

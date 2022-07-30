@@ -1,9 +1,12 @@
-version = "1.0.8"
+version = "1.2.0"
 description = "User Reviews Plugin"
 aliucord {
     author("Ven",343383572805058560)
 }
 aliucord.changelog.set("""
+# 1.2.0
+* Removed caching and fetching users completly. Now plugin gets all data from api
+
 # 1.0.8
 * Added Delete Review feature, To delete your own review long click to review and click "Delete Review"
 
