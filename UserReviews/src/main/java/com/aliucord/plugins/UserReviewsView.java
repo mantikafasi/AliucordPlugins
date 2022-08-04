@@ -152,12 +152,10 @@ public class UserReviewsView extends LinearLayout {
                 return;
             }
 
-            submit.setClickable(false);
             et.clearFocus();
             Utils.threadPool.execute(() -> {
                 var response = UserReviewsAPI.addReview(message, id, UserReviews.staticSettings.getString("token", ""));
                 Utils.showToast(response.getMessage());
-                Utils.mainThread.post(() -> submit.setClickable(true));
 
                 if (response.isSuccessful()) {
                     var currentUsername = StoreStream.getUsers().getMe().getUsername() + "#" + StoreStream.getUsers().getMe().getDiscriminator();

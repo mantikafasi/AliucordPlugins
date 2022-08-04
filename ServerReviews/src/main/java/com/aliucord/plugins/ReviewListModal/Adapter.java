@@ -52,8 +52,6 @@ public class Adapter extends RecyclerView.Adapter<ViewHolder> {
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         var review = reviews.get(position);
-
-
         holder.icon.setOnClickListener(v -> {
             var user = StoreStream.getUsers().getUsers().get(review.getSenderdiscordid());
             if (user != null && Utils.widgetChatList.isAdded()) {
@@ -88,9 +86,7 @@ public class Adapter extends RecyclerView.Adapter<ViewHolder> {
             var pfp = review.getProfilePhoto();
             try {
                 pfp = pfp.substring(0,pfp.lastIndexOf(".")) + ".png?size=128";
-
                 MGImages.setImage(holder.icon,pfp);
-
             } catch (Exception e) { ServerReviews.logger.error(e); }
         }
 

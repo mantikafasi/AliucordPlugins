@@ -91,7 +91,7 @@ public class Adapter extends RecyclerView.Adapter<ViewHolder> {
         if (review.getProfilePhoto() != null) {
             var pfp = review.getProfilePhoto();
             try {
-                pfp = pfp.substring(0,pfp.lastIndexOf(".")) + ".png?size=128";
+                pfp = pfp.substring(0,pfp.lastIndexOf(".")) + ".webp?size=128";
 
                 MGImages.setImage(holder.icon,pfp);
 
