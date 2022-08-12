@@ -23,5 +23,6 @@ include(":UserReviews")
 include(":ServerReviews")
 include(":EditEverything")
 include(":DisableVerifyScreen")
+include(":Huskbot")
 
 rootProject.name = "AliucordPlugins"

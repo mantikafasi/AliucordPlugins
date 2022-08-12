@@ -51,11 +51,8 @@ public class EditEverything extends Plugin {
         Handler handler = new Handler();
 
         patcher.patch(View.class.getDeclaredMethod("performClick"), new InsteadHook(cf -> {
-
-
             if (cf.thisObject instanceof TextView || cf.thisObject instanceof ViewGroup) {
                 clicks++;
-
                 handler.postDelayed(() -> {
                     if (clicks >= 2) {
                         if (cf.thisObject instanceof ViewGroup) {
