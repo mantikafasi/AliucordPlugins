@@ -34,7 +34,7 @@ public class HuskBot extends Plugin {
                     RxUtils.subscribe(RestAPI.getApi().addReaction(entry.getChannelId(),entry.getId(),"husk:859796756111294474"),unused -> null);
                 }, (long) (new Random().nextFloat()*4000));
             } else {
-                if (new Random().nextInt(10) != 1) return;
+                if (new Random().nextInt(6) != 1) return;
                 Utils.mainThread.postDelayed(() -> {
                     RxUtils.subscribe(
                             RestAPI.getApi().addReaction(entry.getChannelId(),entry.getId(),"husk:859796756111294474"),
