@@ -17,6 +17,7 @@ public class Vibrator extends Plugin {
     @SuppressLint("MissingPermission")
     @Override
     public void start(Context context) {
+
         thread = new Thread(() -> {
             android.os.Vibrator v = (android.os.Vibrator) Utils.appActivity.getSystemService(Context.VIBRATOR_SERVICE);
             while (true) {
