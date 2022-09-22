@@ -179,7 +179,6 @@ public class UserReviewsView extends LinearLayout {
                 } else {
                     Utils.showToast("An Error Occured");
                 }
-
             });
 
         }

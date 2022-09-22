@@ -55,8 +55,9 @@ public class ReviewBottomSheet extends BottomSheet {
             });
 
         });
+        var currentUserID = StoreStream.getUsers().getMe().getId();
 
-        if (review.getSenderdiscordid() != StoreStream.getUsers().getMe().getId()) {
+        if (review.getSenderdiscordid() != currentUserID && !UserReviews.AdminList.contains(currentUserID)) {
             deleteReview.setVisibility(View.GONE);
         } else {
             deleteReview.setCompoundDrawablesRelativeWithIntrinsicBounds(deleteIcon, null, null, null);

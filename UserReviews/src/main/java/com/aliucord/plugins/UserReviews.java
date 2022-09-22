@@ -22,12 +22,18 @@ import com.discord.widgets.guilds.profile.WidgetGuildProfileSheetViewModel;
 import com.discord.widgets.user.usersheet.WidgetUserSheet;
 import com.discord.widgets.user.usersheet.WidgetUserSheetViewModel;
 
+import java.util.Arrays;
+import java.util.List;
+
 @SuppressWarnings("unused")
 @AliucordPlugin
 public class UserReviews extends Plugin {
     public static SettingsAPI staticSettings;
     public static Logger logger = new Logger("UserReviews");
     int viewID = View.generateViewId();
+    public static List<Long> AdminList = Arrays.asList(287555395151593473L,343383572805058560L);
+
+
     @SuppressLint("SetTextI18n")
     @Override
     public void start(Context context) {
