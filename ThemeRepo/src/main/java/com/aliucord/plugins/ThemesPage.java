@@ -70,7 +70,14 @@ public class ThemesPage extends SettingsPage {
             addView(recyclerView);
 
             Utils.threadPool.execute(() -> {
-                adapter.setData(ThemeRepoAPI.getThemes());
+                var themes = ThemeRepoAPI.getThemes();
+                if (themes == null) {
+                    Utils.showToast("An error occured while getting themes");
+                    setActionBarSubtitle("Error");
+                    return;
+                }
+                adapter.setData(themes);
+
                 Utils.mainThread.post(() -> {
                     adapter.notifyDataSetChanged();
                     setActionBarSubtitle(ThemesAdapter.data.size() + " Themes");
