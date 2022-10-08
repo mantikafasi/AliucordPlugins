@@ -10,6 +10,9 @@
 
 package com.aliucord.plugins.ReviewListModal;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
@@ -100,6 +103,15 @@ public class Adapter extends RecyclerView.Adapter<ViewHolder> {
 
         holder.message.setText(review.getComment());
         holder.username.setText(review.getUsername());
+        holder.username.setOnLongClickListener(view -> {
+
+            ClipboardManager clipboard = (ClipboardManager) Utils.getAppActivity().getSystemService(Context.CLIPBOARD_SERVICE);
+            ClipData clip = ClipData.newPlainText("text", review.getSenderdiscordid().toString());
+            clipboard.setPrimaryClip(clip);
+
+            Utils.showToast("User ID Copied to clipboard");
+            return true;
+        });
     }
     public int getReviewID(Review review) {
         return CollectionUtils.findIndex(reviews,review1 -> review==review1);

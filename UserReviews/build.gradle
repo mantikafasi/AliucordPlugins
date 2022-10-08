@@ -4,6 +4,9 @@ aliucord {
     author("Ven",343383572805058560)
 }
 aliucord.changelog.set("""
+# 1.2.2
+* Added feature to copy user ID's by long clicking to username
+
 # 1.2.1
 * Fixed a small bug
 
