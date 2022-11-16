@@ -45,6 +45,7 @@ public class ViewHolder extends RecyclerView.ViewHolder {
         message = layout.findViewById(serverNickId);
         message.setSingleLine(false);
         message.setTextColor(ColorCompat.getColor(layout.getContext(),com.lytefast.flexinput.R.c.primary_300));
+        tagIcon = layout.findViewById(tagIconID);
 
 
         this.layout = layout;
@@ -52,7 +53,6 @@ public class ViewHolder extends RecyclerView.ViewHolder {
 
         layout.findViewById(timeoutIconId).setVisibility(View.GONE);
         tagIcon.setVisibility(View.GONE);
-        tagIcon = layout.findViewById(tagIconID);
         tagIcon.setText("SYSTEM");
 
         layout.findViewById(Utils.getResId("chat_list_adapter_item_text_role_icon", "id")).setVisibility(View.GONE);
@@ -60,7 +60,8 @@ public class ViewHolder extends RecyclerView.ViewHolder {
     }
 
     public void showTag() {
-        tagIcon.setVisibility(View.VISIBLE);
+        if (tagIcon != null)
+            tagIcon.setVisibility(View.VISIBLE);
     }
 
 }
