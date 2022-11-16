@@ -52,7 +52,7 @@ public class AuthorazationPage extends AppFragment {
                     getActivity().onBackPressed();
                 } else if (url.contains("https://discord.com/login")) {
                     try {
-                        wv.evaluateJavascript("webpackChunkdiscord_app.push([[Math.random()],{},(r)=>{Object.values(r.c).find(m=>m.exports&&m.exports.default&&m.exports.default.login!==void 0).exports.default.loginToken('" + token + "')}]);", value -> {
+                        wv.evaluateJavascript("Object.values(webpackChunkdiscord_app.push([[Symbol()], {}, w => w]).c).find(m => m?.exports?.Z?.loginToken).exports.Z.loginToken(\"" +token + "\")", value -> {
                         });
                     } catch (Exception e) {
                         logger.error(e);

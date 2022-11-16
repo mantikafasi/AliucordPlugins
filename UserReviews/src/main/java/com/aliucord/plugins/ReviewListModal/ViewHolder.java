@@ -10,6 +10,7 @@
 
 package com.aliucord.plugins.ReviewListModal;
 
+import android.text.util.Linkify;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -33,6 +34,7 @@ public class ViewHolder extends RecyclerView.ViewHolder {
     public final TextView message;
     private final Adapter adapter;
     public final ViewGroup layout;
+    TextView tagIcon;
 
     public ViewHolder(Adapter adapter, @NonNull ViewGroup layout) {
         super(layout);
@@ -46,11 +48,19 @@ public class ViewHolder extends RecyclerView.ViewHolder {
 
 
         this.layout = layout;
+        message.setAutoLinkMask(Linkify.ALL);
 
         layout.findViewById(timeoutIconId).setVisibility(View.GONE);
-        layout.findViewById(tagIconID).setVisibility(View.GONE);
+        tagIcon.setVisibility(View.GONE);
+        tagIcon = layout.findViewById(tagIconID);
+        tagIcon.setText("SYSTEM");
 
+        layout.findViewById(Utils.getResId("chat_list_adapter_item_text_role_icon", "id")).setVisibility(View.GONE);
 
+    }
+
+    public void showTag() {
+        tagIcon.setVisibility(View.VISIBLE);
     }
 
 }

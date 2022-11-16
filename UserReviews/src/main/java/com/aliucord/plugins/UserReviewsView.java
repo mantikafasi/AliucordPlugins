@@ -17,16 +17,9 @@ import com.aliucord.plugins.ReviewListModal.Adapter;
 import com.aliucord.plugins.ReviewListModal.CustomEditText;
 import com.aliucord.plugins.dataclasses.Review;
 import com.aliucord.utils.DimenUtils;
-import com.aliucord.utils.RxUtils;
 import com.aliucord.widgets.LinearLayout;
-import com.discord.models.user.CoreUser;
-import com.discord.models.user.User;
 import com.discord.stores.StoreStream;
 import com.discord.utilities.color.ColorCompat;
-import com.discord.utilities.icon.IconUtils;
-import com.discord.utilities.images.MGImages;
-import com.discord.utilities.rest.RestAPI;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,7 +39,6 @@ public class UserReviewsView extends LinearLayout {
 
         reviews.clear();
         var data = UserReviewsAPI.getReviews(id);
-
         if (data != null) {
             reviews.addAll(data);
         } else {

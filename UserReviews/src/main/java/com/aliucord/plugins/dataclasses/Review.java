@@ -12,6 +12,7 @@ public class Review {
     private Long senderdiscordid;
     public String profile_photo;
     public int id;
+    private boolean isSystemMessage;
 
     public Review(String comment, Long senderUserID, Long senderDiscordID, int star, String username) {
         this.comment = comment;
@@ -42,6 +43,8 @@ public class Review {
     }
 
     public String getProfilePhoto() { return profile_photo; }
+
+    public boolean getisSystemMessage() { return isSystemMessage; }
 
     @NonNull
     @Override

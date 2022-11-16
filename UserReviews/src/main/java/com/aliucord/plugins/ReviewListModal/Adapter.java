@@ -23,15 +23,10 @@ import com.aliucord.CollectionUtils;
 import com.aliucord.Utils;
 import com.aliucord.plugins.ReviewBottomSheet;
 import com.aliucord.plugins.UserReviews;
-import com.aliucord.plugins.UserReviewsView;
 import com.aliucord.plugins.dataclasses.Review;
-import com.aliucord.utils.RxUtils;
 import com.discord.stores.StoreStream;
-import com.discord.utilities.icon.IconUtils;
 import com.discord.utilities.images.MGImages;
-import com.discord.utilities.rest.RestAPI;
 import com.discord.widgets.user.usersheet.WidgetUserSheet;
-import com.facebook.imagepipeline.request.ImageRequest;
 
 import java.util.List;
 
@@ -60,6 +55,9 @@ public class Adapter extends RecyclerView.Adapter<ViewHolder> {
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         var review = reviews.get(position);
 
+        if (review.getisSystemMessage()) {
+            holder.showTag();
+        }
 
         holder.icon.setOnClickListener(v -> {
             var user = StoreStream.getUsers().getUsers().get(review.getSenderdiscordid());
