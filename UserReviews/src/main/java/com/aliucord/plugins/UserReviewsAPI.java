@@ -19,7 +19,7 @@ public class UserReviewsAPI {
 
     public static List<Review> getReviews(long userid) {
         try {
-            String response = Http.simpleGet(API_URL + "/getUserReviews?discordid=" + userid);
+            String response = Http.simpleGet(API_URL + "/getUserReviews?discordid=" + userid +"&noAds=" + UserReviews.staticSettings.getBool("disableAds",false));
             return GsonUtils.fromJson(response, TypeToken.getParameterized(List.class, Review.class).type);
         } catch (IOException e) {
             UserReviews.logger.error(e);

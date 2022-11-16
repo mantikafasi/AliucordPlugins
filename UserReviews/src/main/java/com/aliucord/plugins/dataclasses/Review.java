@@ -13,6 +13,11 @@ public class Review {
     public String profile_photo;
     public int id;
     private boolean isSystemMessage;
+    private Badge[] badges;
+
+    public Badge[] getBadges() {
+        return badges;
+    }
 
     public Review(String comment, Long senderUserID, Long senderDiscordID, int star, String username) {
         this.comment = comment;

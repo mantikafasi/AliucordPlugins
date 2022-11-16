@@ -81,12 +81,21 @@ public class BottomShit extends BottomSheet {
 
         });
 
+        var disableAds = Utils.createCheckedSetting(context, CheckedSetting.ViewType.CHECK, "Disables Ads in Reviews", "");
+        disableAds.setChecked(settings.getBool("disableAds", false));
+
+        disableAds.setOnCheckedListener(aBoolean -> {
+            settings.setBool("disableAds", aBoolean);
+        });
+
+
 
         addView(title);
         addView(crashing);
         addView(authorizate);
         addView(enterTokenManually);
         addView(notifyNewReviews);
+        addView(disableAds);
 
 
     }

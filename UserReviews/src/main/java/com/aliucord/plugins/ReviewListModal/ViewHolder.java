@@ -16,11 +16,13 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.aliucord.Utils;
 import com.aliucord.utils.DimenUtils;
 import com.discord.utilities.color.ColorCompat;
+import com.discord.widgets.roles.RoleIconView;
 import com.facebook.drawee.view.SimpleDraweeView;
 
 public class ViewHolder extends RecyclerView.ViewHolder {
@@ -35,6 +37,7 @@ public class ViewHolder extends RecyclerView.ViewHolder {
     private final Adapter adapter;
     public final ViewGroup layout;
     TextView tagIcon;
+    ConstraintLayout headerLayout;
 
     public ViewHolder(Adapter adapter, @NonNull ViewGroup layout) {
         super(layout);
@@ -46,6 +49,8 @@ public class ViewHolder extends RecyclerView.ViewHolder {
         message.setSingleLine(false);
         message.setTextColor(ColorCompat.getColor(layout.getContext(),com.lytefast.flexinput.R.c.primary_300));
         tagIcon = layout.findViewById(tagIconID);
+        headerLayout = layout.findViewById(Utils.getResId("chat_list_adapter_item_text_header","id"));
+
 
 
         this.layout = layout;
@@ -54,6 +59,7 @@ public class ViewHolder extends RecyclerView.ViewHolder {
         layout.findViewById(timeoutIconId).setVisibility(View.GONE);
         tagIcon.setVisibility(View.GONE);
         tagIcon.setText("SYSTEM");
+
 
         layout.findViewById(Utils.getResId("chat_list_adapter_item_text_role_icon", "id")).setVisibility(View.GONE);
 

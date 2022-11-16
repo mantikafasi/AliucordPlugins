@@ -16,6 +16,7 @@ import com.aliucord.api.SettingsAPI;
 import com.aliucord.entities.NotificationData;
 import com.aliucord.entities.Plugin;
 import com.aliucord.patcher.Hook;
+import com.aliucord.utils.ReflectUtils;
 import com.discord.stores.StoreStream;
 import com.discord.widgets.guilds.profile.WidgetGuildProfileSheet;
 import com.discord.widgets.guilds.profile.WidgetGuildProfileSheetViewModel;
@@ -37,6 +38,7 @@ public class UserReviews extends Plugin {
     @SuppressLint("SetTextI18n")
     @Override
     public void start(Context context) {
+
         staticSettings = settings;
         settingsTab = new SettingsTab(BottomShit.class, SettingsTab.Type.BOTTOM_SHEET).withArgs(settings);
 
