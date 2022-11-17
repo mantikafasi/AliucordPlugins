@@ -13,6 +13,7 @@ package com.aliucord.plugins.ReviewListModal;
 import android.text.util.Linkify;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -38,6 +39,7 @@ public class ViewHolder extends RecyclerView.ViewHolder {
     public final ViewGroup layout;
     TextView tagIcon;
     ConstraintLayout headerLayout;
+    LinearLayout badgeLayout;
 
     public ViewHolder(Adapter adapter, @NonNull ViewGroup layout) {
         super(layout);
@@ -52,6 +54,13 @@ public class ViewHolder extends RecyclerView.ViewHolder {
         headerLayout = layout.findViewById(Utils.getResId("chat_list_adapter_item_text_header","id"));
 
 
+        badgeLayout = new LinearLayout(layout.getContext());
+        badgeLayout.setPadding(DimenUtils.dpToPx(4),0,0,0);
+        headerLayout.addView(badgeLayout);
+
+        var badgeLayoutLayoutParams = (ConstraintLayout.LayoutParams)badgeLayout.getLayoutParams();
+        badgeLayoutLayoutParams.startToEnd = Utils.getResId("chat_list_adapter_item_text_name","id");
+        badgeLayout.setLayoutParams(badgeLayoutLayoutParams);
 
         this.layout = layout;
         message.setAutoLinkMask(Linkify.ALL);

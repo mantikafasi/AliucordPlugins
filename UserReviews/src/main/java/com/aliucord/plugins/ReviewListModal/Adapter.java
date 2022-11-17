@@ -117,18 +117,11 @@ public class Adapter extends RecyclerView.Adapter<ViewHolder> {
         });
 
         if (review.getBadges() != null) {
-            var badgeLayout = new LinearLayout(holder.layout.getContext());
-
-            badgeLayout.setPadding(DimenUtils.dpToPx(4),0,0,0);
-            holder.headerLayout.addView(badgeLayout);
-
-            var badgeLayoutLayoutParams = (ConstraintLayout.LayoutParams)badgeLayout.getLayoutParams();
-            badgeLayoutLayoutParams.startToEnd = Utils.getResId("chat_list_adapter_item_text_name","id");
-            badgeLayout.setLayoutParams(badgeLayoutLayoutParams);
+            holder.badgeLayout.removeAllViews();
 
             for (Badge badge : review.getBadges()) {
                 var view = new RoleIconView(holder.layout.getContext(), badge);
-                badgeLayout.addView(view);
+                holder.badgeLayout.addView(view);
                 var params = view.getLayoutParams();
                 params.height = DimenUtils.dpToPx(18);
                 params.width = DimenUtils.dpToPx(18);
