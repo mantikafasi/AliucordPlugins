@@ -1,9 +1,13 @@
-version = "1.2.6"
+version = "1.2.7"
 description = "User Reviews Plugin"
 aliucord {
     author("Ven",343383572805058560)
 }
 aliucord.changelog.set("""
+# 1.2.7
+* Make profile photos and badges animateable
+* Add description menu for badges
+
 # 1.2.6
 * Small bug fix
 

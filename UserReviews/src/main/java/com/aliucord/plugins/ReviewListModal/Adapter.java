@@ -97,9 +97,14 @@ public class Adapter extends RecyclerView.Adapter<ViewHolder> {
         if (review.getProfilePhoto() != null) {
             var pfp = review.getProfilePhoto();
             try {
-                pfp = pfp.substring(0,pfp.lastIndexOf(".")) + ".webp?size=128";
+                if (pfp.endsWith(".png?size=128"))
+                    pfp = pfp.substring(0,pfp.lastIndexOf(".")) + ".webp?size=128";
 
-                MGImages.setImage(holder.icon,pfp);
+                holder.icon.setImageURI(pfp);
+                var builder = holder.icon.getControllerBuilder();
+                builder.m = true;
+
+                holder.icon.setController(builder.a());
 
             } catch (Exception e) {UserReviews.logger.error(e);}
         }

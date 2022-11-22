@@ -4,6 +4,7 @@ public class Badge {
     private long discordid;
     private String badge_name;
     private String badge_icon;
+    private String badge_description;
 
     public long getDiscordid() {
         return discordid;
@@ -16,6 +17,8 @@ public class Badge {
     public String getBadge_icon() {
         return badge_icon;
     }
+
+    public String getBadge_description() { return badge_description; }
 
     public String getRedirect_url() {
         return redirect_url;
