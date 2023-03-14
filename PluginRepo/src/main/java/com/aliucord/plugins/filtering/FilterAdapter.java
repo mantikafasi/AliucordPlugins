@@ -11,6 +11,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.aliucord.CollectionUtils;
 import com.aliucord.Utils;
 import com.aliucord.plugins.PluginRepoAPI;
 import com.aliucord.plugins.PluginsPage;
@@ -84,6 +85,7 @@ public class FilterAdapter extends RecyclerView.Adapter<FilterAdapter.ViewHolder
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             item = (AdapterItem) itemView;
+
 
 
             switch (item.viewType) {

@@ -42,9 +42,9 @@ public class BadgeBottomShit extends BottomSheet {
 
         badgeIcon.setOnClickListener(v -> Utils.launchUrl(badge.getRedirect_url()));
 
-        badgeIcon.setImageURI(badge.getBadge_icon());
-        nameTW.setText(badge.getBadge_name());
-        infoTW.setText(badge.getBadge_description());
+        badgeIcon.setImageURI(badge.getIcon());
+        nameTW.setText(badge.getName());
+        infoTW.setText(badge.getDescription());
 
     }
 }
