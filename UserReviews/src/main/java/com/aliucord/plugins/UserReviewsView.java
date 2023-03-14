@@ -156,7 +156,7 @@ public class UserReviewsView extends LinearLayout {
                         et.setText("");
 
                         if (response.isUpdated()) {
-                            var ix = CollectionUtils.findIndex(reviews, review -> review.getSenderdiscordid() == currentUserID);
+                            var ix = CollectionUtils.findIndex(reviews, review -> review.getSenderDiscordID() == currentUserID);
                             if (ix == -1) return;
                             var rev = reviews.get(ix);
                             rev.comment = message;

@@ -88,7 +88,12 @@ public class BottomShit extends BottomSheet {
             settings.setBool("disableAds", aBoolean);
         });
 
+        var disableWarnings = Utils.createCheckedSetting(context, CheckedSetting.ViewType.CHECK, "Disables Warnings in Reviews", "You will still get banned if you do stupit");
+        disableWarnings.setChecked(settings.getBool("disableWarnings", false));
 
+        disableWarnings.setOnCheckedListener(aBoolean -> {
+            settings.setBool("disableWarnings", aBoolean);
+        });
 
         addView(title);
         addView(crashing);
@@ -96,6 +101,7 @@ public class BottomShit extends BottomSheet {
         addView(enterTokenManually);
         addView(notifyNewReviews);
         addView(disableAds);
+        addView(disableWarnings);
 
 
     }

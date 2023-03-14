@@ -1,65 +1,44 @@
 package com.aliucord.plugins.dataclasses;
 
-import androidx.annotation.NonNull;
-
-import com.discord.stores.StoreStream;
-
 public class Review {
-    private String username;
     public String comment;
-    private Long senderuserid;
     private int star;
-    private Long senderdiscordid;
-    public String profile_photo;
     public int id;
-    private boolean isSystemMessage;
-    private Badge[] badges;
+    public int type;
+    public Sender sender;
 
     public Badge[] getBadges() {
-        return badges;
+        return sender.badges;
     }
 
     public Review(String comment, Long senderUserID, Long senderDiscordID, int star, String username) {
         this.comment = comment;
-        this.senderdiscordid = senderDiscordID;
-        this.senderuserid = senderUserID;
+        this.sender = new Sender(0, username, null, senderDiscordID);
         this.star = star;
-        this.username = username;
     }
 
-    public Long getSenderdiscordid() { return senderdiscordid; }
+    public Long getSenderDiscordID() {
+        return sender.getDiscordID();
+    }
 
     public String getComment() {
         return comment;
     }
 
-    public int getId() { return id; }
-
-    public Long getSenderuserid() {
-        return senderuserid;
-    }
-
-    public int getStar() {
-        return star;
+    public int getId() {
+        return id;
     }
 
     public String getUsername() {
-        return username;
+        return sender.username;
     }
 
-    public String getProfilePhoto() { return profile_photo; }
+    public String getProfilePhoto() {
+        return sender.profilePhoto;
+    }
 
-    public boolean getisSystemMessage() { return isSystemMessage; }
-
-    @NonNull
-    @Override
-    public String toString() {
-        return "Review{" +
-                "username='" + username + '\'' +
-                ", comment='" + comment + '\'' +
-                ", senderUserID=" + senderuserid +
-                ", star=" + star +
-                '}';
+    public boolean getSystemMessage() {
+        return type == 3;
     }
 
 }

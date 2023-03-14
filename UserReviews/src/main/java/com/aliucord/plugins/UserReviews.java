@@ -1,5 +1,7 @@
 package com.aliucord.plugins;
 
+import static com.aliucord.plugins.UserReviewsAPI.API_URL;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.view.View;
@@ -8,6 +10,7 @@ import android.widget.LinearLayout;
 import androidx.core.widget.NestedScrollView;
 import androidx.fragment.app.FragmentManager;
 
+import com.aliucord.Http;
 import com.aliucord.Logger;
 import com.aliucord.Utils;
 import com.aliucord.annotations.AliucordPlugin;
@@ -22,7 +25,10 @@ import com.discord.widgets.guilds.profile.WidgetGuildProfileSheet;
 import com.discord.widgets.guilds.profile.WidgetGuildProfileSheetViewModel;
 import com.discord.widgets.user.usersheet.WidgetUserSheet;
 import com.discord.widgets.user.usersheet.WidgetUserSheetViewModel;
+import com.google.gson.reflect.TypeToken;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -32,8 +38,8 @@ public class UserReviews extends Plugin {
     public static SettingsAPI staticSettings;
     public static Logger logger = new Logger("UserReviews");
     int viewID = View.generateViewId();
-    public static List<Long> AdminList = Arrays.asList(287555395151593473L,343383572805058560L);
-
+    public static List<Long> AdminList = new ArrayList<>();
+    public static WidgetUserSheet userSheet;
 
     @SuppressLint("SetTextI18n")
     @Override
@@ -46,6 +52,12 @@ public class UserReviews extends Plugin {
 
         if (settings.getBool("notifyNewReviews",true)) {
             Utils.threadPool.execute(() -> {
+                try {
+                    AdminList = new Http.Request(API_URL + "/admins").execute().json(TypeToken.getParameterized(List.class,Long.class).type);
+                } catch (IOException e) {
+                    logger.error(e);
+                }
+
                 var userid = StoreStream.getUsers().getMe().getId();
                 try { Thread.sleep(6000); } catch (InterruptedException e) { e.printStackTrace(); }
                 int id = UserReviewsAPI.getLastReviewID(userid);
@@ -72,6 +84,8 @@ public class UserReviews extends Plugin {
 
                 var scrollView = (NestedScrollView) (WidgetUserSheet.access$getBinding$p((WidgetUserSheet) cf.thisObject)).getRoot();
                 var ctx = scrollView.getContext();
+                userSheet = (WidgetUserSheet)cf.thisObject;
+
                 if (scrollView.findViewById(viewID) == null) {
 
                     var root = new UserReviewsView(ctx, viewstate.getUser().getId());

@@ -50,14 +50,14 @@ public class ReviewBottomSheet extends BottomSheet {
         reportReview.setOnClickListener(v -> {
             Utils.threadPool.execute(() -> {
                 var res = UserReviewsAPI.reportReview(UserReviews.staticSettings.getString("token", ""), review.getId());
-                Utils.showToast(res);
+                Utils.showToast(res.getMessage());
                 dismiss();
             });
 
         });
         var currentUserID = StoreStream.getUsers().getMe().getId();
 
-        if (review.getSenderdiscordid() != currentUserID && !UserReviews.AdminList.contains(currentUserID)) {
+        if (review.getSenderDiscordID() != currentUserID && !UserReviews.AdminList.contains(currentUserID)) {
             deleteReview.setVisibility(View.GONE);
         } else {
             deleteReview.setCompoundDrawablesRelativeWithIntrinsicBounds(deleteIcon, null, null, null);

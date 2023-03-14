@@ -15,10 +15,8 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
-import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.aliucord.CollectionUtils;
@@ -30,7 +28,6 @@ import com.aliucord.plugins.dataclasses.Badge;
 import com.aliucord.plugins.dataclasses.Review;
 import com.aliucord.utils.DimenUtils;
 import com.discord.stores.StoreStream;
-import com.discord.utilities.images.MGImages;
 import com.discord.widgets.user.usersheet.WidgetUserSheet;
 
 import java.util.List;
@@ -60,14 +57,14 @@ public class Adapter extends RecyclerView.Adapter<ViewHolder> {
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         var review = reviews.get(position);
 
-        if (review.getisSystemMessage()) {
+        if (review.getSystemMessage()) {
             holder.showTag();
         }
 
         holder.icon.setOnClickListener(v -> {
-            var user = StoreStream.getUsers().getUsers().get(review.getSenderdiscordid());
+            var user = StoreStream.getUsers().getUsers().get(review.getSenderDiscordID());
             if (user != null && Utils.widgetChatList.isAdded()) {
-                WidgetUserSheet.Companion.show(review.getSenderdiscordid(),Utils.widgetChatList.getChildFragmentManager());
+                WidgetUserSheet.Companion.show(review.getSenderDiscordID(),Utils.widgetChatList.getChildFragmentManager());
 
                 // FOR SOME WEIRD REASON IT DOESNT WORK ON UNCACHED USERS
             } /* else {
@@ -114,7 +111,7 @@ public class Adapter extends RecyclerView.Adapter<ViewHolder> {
         holder.username.setOnLongClickListener(view -> {
 
             ClipboardManager clipboard = (ClipboardManager) Utils.getAppActivity().getSystemService(Context.CLIPBOARD_SERVICE);
-            ClipData clip = ClipData.newPlainText("text", review.getSenderdiscordid().toString());
+            ClipData clip = ClipData.newPlainText("text", review.getSenderDiscordID().toString());
             clipboard.setPrimaryClip(clip);
 
             Utils.showToast("User ID Copied to clipboard");

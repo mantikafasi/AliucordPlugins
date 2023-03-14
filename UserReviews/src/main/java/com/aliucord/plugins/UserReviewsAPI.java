@@ -4,8 +4,6 @@ import com.aliucord.Http;
 import com.aliucord.Logger;
 import com.aliucord.plugins.dataclasses.Response;
 import com.aliucord.plugins.dataclasses.Review;
-import com.aliucord.utils.GsonUtils;
-import com.google.gson.reflect.TypeToken;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -16,15 +14,41 @@ import java.util.List;
 public class UserReviewsAPI {
 
     public static final String API_URL = "https://manti.vendicated.dev";
+    public static final int AdFlag = 0b00000001;
+    public static final int Warning = 0b00000010;
 
-    public static List<Review> getReviews(long userid) {
+    public static Response simpleRequest(String endpoint,String method, JSONObject body) {
         try {
-            String response = Http.simpleGet(API_URL + "/getUserReviews?discordid=" + userid +"&noAds=" + UserReviews.staticSettings.getBool("disableAds",false));
-            return GsonUtils.fromJson(response, TypeToken.getParameterized(List.class, Review.class).type);
+            Http.Response response;
+
+            if (body == null)
+                response = new Http.Request(API_URL + endpoint, method).execute();
+            else
+                response = new Http.Request(API_URL + endpoint, method).setFollowRedirects(false).executeWithBody(body.toString());
+
+
+            var json = response.json(Response.class);
+            UserReviews.logger.info(json.toString());
+            return json;
+
         } catch (IOException e) {
             UserReviews.logger.error(e);
-            return null;
+            e.printStackTrace();
         }
+        return null;
+    }
+
+    public static List<Review> getReviews(long userid) {
+            int flags = 0;
+            if (UserReviews.staticSettings.getBool("disableAds",false))
+                flags |= AdFlag;
+            if (UserReviews.staticSettings.getBool("disableWarnings",false))
+                flags |= Warning;
+            var response = simpleRequest("/api/reviewdb/?discordid=" + userid +"&flags=" + flags,"GET", null);
+            if (!response.isSuccessful()) {
+                return null;
+            }
+            return response.getReviews() ;
     }
 
     public static int getLastReviewID(long userid) {
@@ -36,15 +60,16 @@ public class UserReviewsAPI {
         }
     }
 
-    public static String reportReview(String token,int reviewID) {
+    public static Response reportReview(String token,int reviewID) {
         JSONObject json = new JSONObject();
         try {
             json.put("token",token);
             json.put("reviewid",reviewID);
-            return Http.simplePost(API_URL +"/reportReview",json.toString());
-        } catch (JSONException | IOException e) {
+
+            return simpleRequest("/api/reviewdb/report","POST",json);
+        } catch (JSONException e) {
             UserReviews.logger.error(e);
-            return "An Error Occured";
+            return null;
         }
     }
 
@@ -53,11 +78,10 @@ public class UserReviewsAPI {
             var json = new JSONObject();
             json.put("token",token);
             json.put("reviewid",reviewid);
-            var response = new JSONObject(Http.simplePost(API_URL +"/deleteReview",json.toString()));
 
-            return new Response(false,response.getBoolean("successful"),response.getString("message"));
+            return simpleRequest("/api/reviewdb/","DELETE",json);
 
-        } catch (JSONException | IOException e) {
+        } catch (JSONException e) {
             UserReviews.logger.error(e);
             return new Response(false,false,"An Error Occured");
         }
@@ -67,19 +91,11 @@ public class UserReviewsAPI {
         try {
             JSONObject json = new JSONObject();
             json.put("comment", comment);
-            json.put("star", -1);
             json.put("token", token);
             json.put("userid", userid);
-            var response = Http.simplePost(API_URL + "/addUserReview", json.toString());
+            return simpleRequest("/api/reviewdb/","PUT",json);
 
-            if (response.equals("Updated your review")) {
-                return new Response(true, true, response);
-            } else if (response.equals("Added your review")) {
-                return new Response(false, true, response);
-            } else {
-                return new Response(false, false, response);
-            }
-        } catch (JSONException | IOException e) {
+        } catch (JSONException e) {
             e.printStackTrace();
             new Logger("guh").error(e);
             return new Response(false, false, "An Error Occured");
