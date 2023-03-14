@@ -16,7 +16,7 @@ public class RoleIconView extends SimpleDraweeView {
         var builder = getControllerBuilder();
         builder.m = true;
         setController(builder.a());
-        setImageURI(badge.getBadge_icon());
+        setImageURI(badge.getIcon());
 
         setOnClickListener(view -> {
             var sheet = new BadgeBottomShit(getContext(),badge);
