@@ -44,7 +44,7 @@ public class UserReviewsAPI {
                 flags |= AdFlag;
             if (UserReviews.staticSettings.getBool("disableWarnings",false))
                 flags |= Warning;
-            var response = simpleRequest("/api/reviewdb/?discordid=" + userid +"&flags=" + flags,"GET", null);
+            var response = simpleRequest("/api/reviewdb/users/" + userid +"/reviews?flags=" + flags,"GET", null);
             if (!response.isSuccessful()) {
                 return null;
             }
@@ -66,7 +66,7 @@ public class UserReviewsAPI {
             json.put("token",token);
             json.put("reviewid",reviewID);
 
-            return simpleRequest("/api/reviewdb/report","POST",json);
+            return simpleRequest("/api/reviewdb/reports","POST",json);
         } catch (JSONException e) {
             UserReviews.logger.error(e);
             return null;
@@ -79,7 +79,7 @@ public class UserReviewsAPI {
             json.put("token",token);
             json.put("reviewid",reviewid);
 
-            return simpleRequest("/api/reviewdb/","DELETE",json);
+            return simpleRequest("/api/reviewdb/users/0/reviews","DELETE",json);
 
         } catch (JSONException e) {
             UserReviews.logger.error(e);
@@ -92,8 +92,7 @@ public class UserReviewsAPI {
             JSONObject json = new JSONObject();
             json.put("comment", comment);
             json.put("token", token);
-            json.put("userid", userid);
-            return simpleRequest("/api/reviewdb/","PUT",json);
+            return simpleRequest("/api/reviewdb/users/" + userid + "/reviews","PUT",json);
 
         } catch (JSONException e) {
             e.printStackTrace();
