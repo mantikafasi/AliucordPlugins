@@ -73,11 +73,26 @@ public class BottomShit extends BottomSheet {
             return true;
         });
 
+        var disableAds = Utils.createCheckedSetting(context, CheckedSetting.ViewType.CHECK, "Disables Ads in Reviews", "");
+        disableAds.setChecked(settings.getBool("disableAds", false));
+
+        disableAds.setOnCheckedListener(aBoolean -> {
+            settings.setBool("disableAds", aBoolean);
+        });
+
+        var disableWarnings = Utils.createCheckedSetting(context, CheckedSetting.ViewType.CHECK, "Disables Warnings in Reviews", "You will still get banned if you do stupit");
+        disableWarnings.setChecked(settings.getBool("disableWarnings", false));
+
+        disableWarnings.setOnCheckedListener(aBoolean -> {
+            settings.setBool("disableWarnings", aBoolean);
+        });
+
         addView(title);
         addView(crashing);
         addView(authorizate);
         addView(enterTokenManually);
-
+        addView(disableAds);
+        addView(disableWarnings);
 
     }
 }

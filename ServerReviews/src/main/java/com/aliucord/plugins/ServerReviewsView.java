@@ -17,13 +17,9 @@ import com.aliucord.plugins.ReviewListModal.Adapter;
 import com.aliucord.plugins.ReviewListModal.CustomEditText;
 import com.aliucord.plugins.dataclasses.Review;
 import com.aliucord.utils.DimenUtils;
-import com.aliucord.utils.RxUtils;
 import com.aliucord.widgets.LinearLayout;
-import com.discord.models.user.CoreUser;
-import com.discord.models.user.User;
 import com.discord.stores.StoreStream;
 import com.discord.utilities.color.ColorCompat;
-import com.discord.utilities.rest.RestAPI;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -161,7 +157,7 @@ public class ServerReviewsView extends LinearLayout {
                         et.setText("");
 
                         if (response.isUpdated()) {
-                            var ix = CollectionUtils.findIndex(reviews, review -> review.getSenderdiscordid() == currentUserID);
+                            var ix = CollectionUtils.findIndex(reviews, review -> review.getSenderDiscordID() == currentUserID);
                             if (ix == -1) return;
                             var rev = reviews.get(ix);
                             rev.comment = message;

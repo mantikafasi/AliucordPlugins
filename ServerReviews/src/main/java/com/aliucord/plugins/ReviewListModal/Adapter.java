@@ -22,7 +22,6 @@ import com.aliucord.plugins.ReviewBottomSheet;
 import com.aliucord.plugins.ServerReviews;
 import com.aliucord.plugins.dataclasses.Review;
 import com.discord.stores.StoreStream;
-import com.discord.utilities.icon.IconUtils;
 import com.discord.utilities.images.MGImages;
 import com.discord.widgets.user.usersheet.WidgetUserSheet;
 
@@ -53,9 +52,9 @@ public class Adapter extends RecyclerView.Adapter<ViewHolder> {
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         var review = reviews.get(position);
         holder.icon.setOnClickListener(v -> {
-            var user = StoreStream.getUsers().getUsers().get(review.getSenderdiscordid());
+            var user = StoreStream.getUsers().getUsers().get(review.getSenderDiscordID());
             if (user != null && Utils.widgetChatList.isAdded()) {
-                WidgetUserSheet.Companion.show(review.getSenderdiscordid(),Utils.widgetChatList.getChildFragmentManager());
+                WidgetUserSheet.Companion.show(review.getSenderDiscordID(),Utils.widgetChatList.getChildFragmentManager());
 
                 // FOR SOME WEIRD REASON IT DOESNT WORK ON UNCACHED USERS
             } /* else {

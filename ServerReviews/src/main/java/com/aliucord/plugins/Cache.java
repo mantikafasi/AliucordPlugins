@@ -3,7 +3,7 @@ package com.aliucord.plugins;
 import android.util.Pair;
 
 import com.aliucord.api.SettingsAPI;
-import com.aliucord.plugins.dataclasses.User;
+import com.discord.api.user.User;
 import com.google.gson.reflect.TypeToken;
 
 import java.util.Calendar;

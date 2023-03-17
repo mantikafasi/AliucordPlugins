@@ -16,26 +16,53 @@ import java.util.List;
 public class ServerReviewsAPI {
 
     public static final String API_URL = "https://manti.vendicated.dev";
+    public static final int AdFlag = 0b00000001;
+    public static final int Warning = 0b00000010;
 
-    public static List<Review> getReviews(long userid) {
+    public static Response simpleRequest(String endpoint, String method, JSONObject body) {
         try {
-            String response = Http.simpleGet(API_URL + "/getUserReviews?discordid=" + userid);
-            return GsonUtils.fromJson(response, TypeToken.getParameterized(List.class, Review.class).type);
+            Http.Response response;
+
+            if (body == null)
+                response = new Http.Request(API_URL + endpoint, method).execute();
+            else
+                response = new Http.Request(API_URL + endpoint, method).setFollowRedirects(false).executeWithBody(body.toString());
+
+
+            var json = response.json(Response.class);
+            ServerReviews.logger.info(json.toString());
+            return json;
+
         } catch (IOException e) {
             ServerReviews.logger.error(e);
-            return null;
+            e.printStackTrace();
         }
+        return null;
     }
 
-    public static String reportReview(String token,int reviewID) {
+    public static List<Review> getReviews(long userid) {
+        int flags = 0;
+        if (ServerReviews.staticSettings.getBool("disableAds",false))
+            flags |= AdFlag;
+        if (ServerReviews.staticSettings.getBool("disableWarnings",false))
+            flags |= Warning;
+        var response = simpleRequest("/api/reviewdb/users/" + userid +"/reviews?flags=" + flags,"GET", null);
+        if (!response.isSuccessful()) {
+            return null;
+        }
+        return response.getReviews() ;
+    }
+
+    public static Response reportReview(String token,int reviewID) {
         JSONObject json = new JSONObject();
         try {
             json.put("token",token);
             json.put("reviewid",reviewID);
-            return Http.simplePost(API_URL +"/reportReview",json.toString());
-        } catch (JSONException | IOException e) {
+
+            return simpleRequest("/api/reviewdb/reports","POST",json);
+        } catch (JSONException e) {
             ServerReviews.logger.error(e);
-            return "An Error Occured";
+            return null;
         }
     }
 
@@ -44,11 +71,10 @@ public class ServerReviewsAPI {
             var json = new JSONObject();
             json.put("token",token);
             json.put("reviewid",reviewid);
-            var response = new JSONObject(Http.simplePost(API_URL +"/deleteReview",json.toString()));
 
-            return new Response(false,response.getBoolean("successful"),response.getString("message"));
+            return simpleRequest("/api/reviewdb/users/0/reviews","DELETE",json);
 
-        } catch (JSONException | IOException e) {
+        } catch (JSONException e) {
             ServerReviews.logger.error(e);
             return new Response(false,false,"An Error Occured");
         }
@@ -58,25 +84,15 @@ public class ServerReviewsAPI {
         try {
             JSONObject json = new JSONObject();
             json.put("comment", comment);
-            json.put("star", -1);
             json.put("token", token);
-            json.put("userid", userid);
             json.put("reviewtype",1);
-            var response = Http.simplePost(API_URL + "/addUserReview", json.toString());
 
-            if (response.equals("Updated your review")) {
-                return new Response(true, true, response);
-            } else if (response.equals("Added your review")) {
-                return new Response(false, true, response);
-            } else {
-                return new Response(false, false, response);
-            }
-        } catch (JSONException | IOException e) {
+            return simpleRequest("/api/reviewdb/users/" + userid + "/reviews","PUT",json);
+
+        } catch (JSONException e) {
             e.printStackTrace();
             new Logger("guh").error(e);
             return new Response(false, false, "An Error Occured");
         }
     }
-
-
 }
