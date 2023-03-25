@@ -1,3 +1,3 @@
-# Hello World
+# ShuffleUser
 
-Adds a simple /hello slash command that will respond with "Hello World!"
+Makes discord basically impossible to use by shuffling usernames and profile pictures with whatever it can find.
