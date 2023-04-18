@@ -54,7 +54,9 @@ public class DiscordAPI {
 
             request.setHeader("x-super-properties", String.valueOf(android.util.Base64.encodeToString(GsonUtils.toJson(superprops).getBytes(StandardCharsets.UTF_8), 2)));
             request.conn.setRequestMethod("POST");
-            request.setHeader("content-type", "application/json");
+            request.setHeader("content-type", "application/json")
+                    .setHeader("user-agent", "Discord-Android/175207;RNA");
+
             VoiceMessageBody body = new VoiceMessageBody(channelID, new VoiceMessageBody.Attachment(
                     "voice-message.ogg",
                     fileName,

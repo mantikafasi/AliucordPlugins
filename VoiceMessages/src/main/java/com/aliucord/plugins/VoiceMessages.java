@@ -24,15 +24,25 @@ import com.aliucord.Utils;
 import com.aliucord.annotations.AliucordPlugin;
 import com.aliucord.entities.Plugin;
 import com.aliucord.utils.DimenUtils;
+import com.aliucord.utils.ReflectUtils;
 import com.aliucord.wrappers.ChannelWrapper;
+import com.aliucord.wrappers.GuildRoleWrapper;
+import com.aliucord.wrappers.GuildWrapper;
+import com.discord.models.user.User;
+import com.discord.stores.Store;
+import com.discord.stores.StorePermissions;
 import com.discord.stores.StoreStream;
+import com.discord.utilities.PermissionOverwriteUtilsKt;
 import com.discord.utilities.color.ColorCompat;
+import com.discord.utilities.guilds.GuildUtilsKt;
+import com.discord.utilities.permissions.PermissionUtils;
 import com.discord.widgets.chat.input.WidgetChatInputEditText$setOnTextChangedListener$1;
 import com.lytefast.flexinput.fragment.FlexInputFragment;
 import com.lytefast.flexinput.widget.FlexEditText;
 
 import java.io.File;
 import java.io.IOException;
+import java.security.Permission;
 
 @SuppressWarnings("unused")
 @AliucordPlugin
@@ -87,6 +97,8 @@ public class VoiceMessages extends Plugin {
             return false;
         });
 
+        recordButton.setVisibility(StoreStream.getChannelsSelected().getSelectedChannel().i() == 0L ? View.VISIBLE : View.GONE);
+
         patcher.patch(FlexInputFragment.class.getDeclaredMethod("onViewCreated", View.class, Bundle.class), cf -> {
             var input = (FlexInputFragment) cf.thisObject;
 
@@ -105,7 +117,7 @@ public class VoiceMessages extends Plugin {
         });
 
         patcher.patch(WidgetChatInputEditText$setOnTextChangedListener$1.class.getDeclaredMethod("afterTextChanged", Editable.class), cf -> {
-            if (editText.getText() == null || editText.getText().toString().equals("")) {
+            if (editText.getText() == null || editText.getText().toString().equals("") && new ChannelWrapper(StoreStream.getChannelsSelected().getSelectedChannel()).isDM() ) {
                 recordButton.setVisibility(View.VISIBLE);
             } else {
                 recordButton.setVisibility(View.GONE);
@@ -113,12 +125,41 @@ public class VoiceMessages extends Plugin {
         });
 
         patcher.patch(StoreStream.class.getDeclaredMethod("handleChannelSelected", long.class), cf -> {
-            var channel = new ChannelWrapper(StoreStream.getChannels().getChannel((long) cf.args[0]));
-            if (channel.isDM()) {
+            var id = (long) cf.args[0];
+            var hasPerms = false;
+            var channel = new ChannelWrapper(StoreStream.getChannels().getChannel(id));
+
+            if (id != 0L) {
+
+                var guild = StoreStream.getGuildSelected();
+                if (channel.getPermissionOverwrites() != null) {
+                    Utils.showToast(String.valueOf(channel.getPermissionOverwrites().size()));
+                    for (var overwrite: channel.getPermissionOverwrites()) {
+                        if (PermissionOverwriteUtilsKt.allows(overwrite, 0x0000400000000000L)) {
+                            hasPerms = true;
+                            break;
+                        }
+                    }
+                }
+
+                var guildd = StoreStream.getGuilds().getGuild(id);
+                var roles = guildd.getRoles();
+
+
+                for (var role: roles) {
+                    GuildRoleWrapper guildRoleWrapper = new GuildRoleWrapper(role);
+                    var perms = guildRoleWrapper.getPermissions();
+                    // I was planning to loop over all roles and check permissions but couldnt figure out how to check if user has role
+                }
+
+            }
+
+            if (channel.isDM()  || hasPerms) {
                 recordButton.setVisibility(View.VISIBLE);
             } else {
                 recordButton.setVisibility(View.GONE);
             }
+
         });
 
 
@@ -167,32 +208,32 @@ public class VoiceMessages extends Plugin {
     public void onRecordStop() {
         try {
             mediaRecorder.stop();
+
+            Utils.threadPool.execute(() -> {
+                var waveform = waveFormView.getWaveForm();
+                var filename = DiscordAPI.uploadFile(outputFile, StoreStream.getChannelsSelected().getId());
+
+                // extract duration
+                Uri uri = Uri.parse(outputFile.getAbsolutePath());
+                MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+                mmr.setDataSource(Utils.getAppContext(), uri);
+                String durationStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+                float seconds = (Integer.parseInt(durationStr) / 1000.0f + 1); // idk why but discord thinks its 1 second longer
+
+                DiscordAPI.sendVoiceMessage(filename, seconds, waveform, StoreStream.getChannelsSelected().getId());
+            });
+
         } catch (RuntimeException e) {
             // if you instantly stop recording it causes crash
             logger.error(e);
         }
+
         mediaRecorder.reset();
-
-
-        Utils.threadPool.execute(() -> {
-            var waveform = waveFormView.getWaveForm();
-            var filename = DiscordAPI.uploadFile(outputFile, StoreStream.getChannelsSelected().getId());
-
-            // extract duration
-            Uri uri = Uri.parse(outputFile.getAbsolutePath());
-            MediaMetadataRetriever mmr = new MediaMetadataRetriever();
-            mmr.setDataSource(Utils.getAppContext(), uri);
-            String durationStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
-            float seconds = (Integer.parseInt(durationStr) / 1000.0f + 1); // idk why but discord thinks its 1 second longer
-
-            DiscordAPI.sendVoiceMessage(filename, seconds, waveform, StoreStream.getChannelsSelected().getId());
-        });
-
 
         waveFormView.setVisibility(View.GONE);
         editText.setVisibility(View.VISIBLE);
 
-        if (updateWaveformThread.isAlive()) {
+        if (updateWaveformThread != null && updateWaveformThread.isAlive()) {
             updateWaveformThread.interrupt();
         }
     }
