@@ -26,15 +26,11 @@ import com.aliucord.entities.Plugin;
 import com.aliucord.utils.DimenUtils;
 import com.aliucord.utils.ReflectUtils;
 import com.aliucord.wrappers.ChannelWrapper;
-import com.aliucord.wrappers.GuildRoleWrapper;
-import com.aliucord.wrappers.GuildWrapper;
-import com.discord.models.user.User;
-import com.discord.stores.Store;
-import com.discord.stores.StorePermissions;
+import com.discord.stores.StoreChannels;
+import com.discord.stores.StoreStageInstances;
 import com.discord.stores.StoreStream;
-import com.discord.utilities.PermissionOverwriteUtilsKt;
+import com.discord.stores.StoreThreadsJoined;
 import com.discord.utilities.color.ColorCompat;
-import com.discord.utilities.guilds.GuildUtilsKt;
 import com.discord.utilities.permissions.PermissionUtils;
 import com.discord.widgets.chat.input.WidgetChatInputEditText$setOnTextChangedListener$1;
 import com.lytefast.flexinput.fragment.FlexInputFragment;
@@ -42,8 +38,6 @@ import com.lytefast.flexinput.widget.FlexEditText;
 
 import java.io.File;
 import java.io.IOException;
-import java.security.Permission;
-
 @SuppressWarnings("unused")
 @AliucordPlugin
 public class VoiceMessages extends Plugin {
@@ -67,7 +61,6 @@ public class VoiceMessages extends Plugin {
         }
     };
     private Thread updateWaveformThread;
-
     @SuppressLint("ClickableViewAccessibility")
     @Override
     public void start(Context context) throws NoSuchMethodException {
@@ -130,31 +123,31 @@ public class VoiceMessages extends Plugin {
             var channel = new ChannelWrapper(StoreStream.getChannels().getChannel(id));
 
             if (id != 0L) {
+                var meID = StoreStream.getUsers().getMe().getId();
 
-                var guild = StoreStream.getGuildSelected();
-                if (channel.getPermissionOverwrites() != null) {
-                    Utils.showToast(String.valueOf(channel.getPermissionOverwrites().size()));
-                    for (var overwrite: channel.getPermissionOverwrites()) {
-                        if (PermissionOverwriteUtilsKt.allows(overwrite, 0x0000400000000000L)) {
-                            hasPerms = true;
-                            break;
-                        }
-                    }
+                var guild = StoreStream.getGuilds().getGuild(StoreStream.getGuildSelected().getSelectedGuildId());
+                try {
+                    var stageInstances = (StoreStageInstances)ReflectUtils.getField(StoreStream.getPermissions(), "storeStageInstances");
+                    var storeThreadsJoined = (StoreThreadsJoined)ReflectUtils.getField(StoreStream.getPermissions(), "storeThreadsJoined");
+                    var storeChannels = (StoreChannels)ReflectUtils.getField(StoreStream.getPermissions(), "storeChannels");
+                    var hasJoined = storeThreadsJoined.hasJoinedInternal(channel.getId());
+                    var member = StoreStream.getGuilds().getMember(guild.getId(), meID);
+                    var parentId = channel.getParentId();
+                    var parentChannel = storeChannels.getGuildChannelInternal$app_productionGoogleRelease(guild.getId(), parentId);
+                    //computePermissions(long meID, Channel channel, Channel parentChannel, long ownerId, GuildMember member, Map<Long, GuildRole> roles, Map<Long, StageInstance> stageInstances, boolean hasJoined)
+                    var permissions = PermissionUtils.computePermissions(meID, StoreStream.getChannels().getChannel(id), parentChannel, guild.getOwnerId(), member, StoreStream.getGuilds().getRoles().get(guild.getId()), stageInstances.getStageInstancesForGuild(guild.getId()), hasJoined);
+                    var mask = (1L << 46);
+                    if((permissions & mask) != mask)
+                        hasPerms = true;
+                    Utils.showToast(String.valueOf(permissions));
+                    logger.info(String.valueOf(permissions));
+
+                } catch (NoSuchFieldException | IllegalAccessException e) {
+                    throw new RuntimeException(e);
                 }
-
-                var guildd = StoreStream.getGuilds().getGuild(id);
-                var roles = guildd.getRoles();
-
-
-                for (var role: roles) {
-                    GuildRoleWrapper guildRoleWrapper = new GuildRoleWrapper(role);
-                    var perms = guildRoleWrapper.getPermissions();
-                    // I was planning to loop over all roles and check permissions but couldnt figure out how to check if user has role
-                }
-
             }
 
-            if (channel.isDM()  || hasPerms) {
+            if (channel.isDM() || hasPerms) {
                 recordButton.setVisibility(View.VISIBLE);
             } else {
                 recordButton.setVisibility(View.GONE);
