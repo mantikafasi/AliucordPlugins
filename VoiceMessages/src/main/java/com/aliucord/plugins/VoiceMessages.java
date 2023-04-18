@@ -85,7 +85,11 @@ public class VoiceMessages extends Plugin {
             return false;
         });
 
-        recordButton.setVisibility(StoreStream.getChannelsSelected().getSelectedChannel().i() == 0L ? View.VISIBLE : View.GONE);
+        try {
+            recordButton.setVisibility(StoreStream.getChannelsSelected().getSelectedChannel().i() == 0L ? View.VISIBLE : View.GONE);
+        } catch (NullPointerException ignored) {
+            // if no channel is selected plugin will throw error
+        }
 
         patcher.patch(FlexInputFragment.class.getDeclaredMethod("onViewCreated", View.class, Bundle.class), cf -> {
             var input = (FlexInputFragment) cf.thisObject;
