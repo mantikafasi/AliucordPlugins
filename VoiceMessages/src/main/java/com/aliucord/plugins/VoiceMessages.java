@@ -24,14 +24,9 @@ import com.aliucord.Utils;
 import com.aliucord.annotations.AliucordPlugin;
 import com.aliucord.entities.Plugin;
 import com.aliucord.utils.DimenUtils;
-import com.aliucord.utils.ReflectUtils;
 import com.aliucord.wrappers.ChannelWrapper;
-import com.discord.stores.StoreChannels;
-import com.discord.stores.StoreStageInstances;
 import com.discord.stores.StoreStream;
-import com.discord.stores.StoreThreadsJoined;
 import com.discord.utilities.color.ColorCompat;
-import com.discord.utilities.permissions.PermissionUtils;
 import com.discord.widgets.chat.input.WidgetChatInputEditText$setOnTextChangedListener$1;
 import com.lytefast.flexinput.fragment.FlexInputFragment;
 import com.lytefast.flexinput.widget.FlexEditText;
@@ -119,14 +114,14 @@ public class VoiceMessages extends Plugin {
 
         patcher.patch(StoreStream.class.getDeclaredMethod("handleChannelSelected", long.class), cf -> {
             var id = (long) cf.args[0];
-            var hasPerms = false;
             var channel = new ChannelWrapper(StoreStream.getChannels().getChannel(id));
-
+            /*
             if (id != 0L) {
                 var meID = StoreStream.getUsers().getMe().getId();
 
                 var guild = StoreStream.getGuilds().getGuild(StoreStream.getGuildSelected().getSelectedGuildId());
                 try {
+
                     var stageInstances = (StoreStageInstances)ReflectUtils.getField(StoreStream.getPermissions(), "storeStageInstances");
                     var storeThreadsJoined = (StoreThreadsJoined)ReflectUtils.getField(StoreStream.getPermissions(), "storeThreadsJoined");
                     var storeChannels = (StoreChannels)ReflectUtils.getField(StoreStream.getPermissions(), "storeChannels");
@@ -146,8 +141,9 @@ public class VoiceMessages extends Plugin {
                     throw new RuntimeException(e);
                 }
             }
+             */
 
-            if (channel.isDM() || hasPerms) {
+            if (channel.isDM()) {
                 recordButton.setVisibility(View.VISIBLE);
             } else {
                 recordButton.setVisibility(View.GONE);
