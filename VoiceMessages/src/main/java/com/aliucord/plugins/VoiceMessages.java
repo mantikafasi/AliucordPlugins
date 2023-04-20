@@ -9,6 +9,7 @@ import android.media.AudioRecord;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaRecorder;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
 import android.view.MotionEvent;
@@ -33,6 +34,7 @@ import com.lytefast.flexinput.widget.FlexEditText;
 
 import java.io.File;
 import java.io.IOException;
+
 @SuppressWarnings("unused")
 @AliucordPlugin
 public class VoiceMessages extends Plugin {
@@ -56,9 +58,16 @@ public class VoiceMessages extends Plugin {
         }
     };
     private Thread updateWaveformThread;
+
     @SuppressLint("ClickableViewAccessibility")
     @Override
-    public void start(Context context) throws NoSuchMethodException {
+    public void start(Context context) throws NoSuchMethodException, NoSuchFieldException, IllegalAccessException {
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            Utils.showToast("This plugin requires Android 10 or higher");
+            return;
+        }
+
         waveFormView = new WaveFormView(context);
         recordButton = new ImageButton(context);
 
@@ -154,7 +163,15 @@ public class VoiceMessages extends Plugin {
             }
 
         });
+        /*
+        patcher.patch(AnalyticSuperProperties.class.getDeclaredMethod("getSuperProperties"), cf -> {
+            var map = (Map<String, Object>) cf.getResult();
+            map.put("client_version", "175.6 - rn");
+            map.put("client_build_number", 175206);
+            cf.setResult(map);
+        });
 
+         */
 
     }
 
@@ -182,6 +199,9 @@ public class VoiceMessages extends Plugin {
         mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
         mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.OGG);
         mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.OPUS);
+        //mediaRecorder.setAudioEncodingBitRate(16*44100);
+        //mediaRecorder.setAudioSamplingRate(44100);
+
         outputFile = File.createTempFile("audio_record", ".ogg", new File(Constants.BASE_PATH));
         outputFile.deleteOnExit();
         mediaRecorder.setOutputFile(outputFile.getAbsolutePath());
@@ -209,9 +229,10 @@ public class VoiceMessages extends Plugin {
                 // extract duration
                 Uri uri = Uri.parse(outputFile.getAbsolutePath());
                 MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+
                 mmr.setDataSource(Utils.getAppContext(), uri);
                 String durationStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
-                float seconds = (Integer.parseInt(durationStr) / 1000.0f + 1); // idk why but discord thinks its 1 second longer
+                float seconds = (Integer.parseInt(durationStr) / 1000.0f);
 
                 DiscordAPI.sendVoiceMessage(filename, seconds, waveform, StoreStream.getChannelsSelected().getId());
             });

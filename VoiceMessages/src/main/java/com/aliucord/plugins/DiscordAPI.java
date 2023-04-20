@@ -2,6 +2,7 @@ package com.aliucord.plugins;
 
 import com.aliucord.Http;
 import com.aliucord.utils.GsonUtils;
+import com.discord.BuildConfig;
 import com.discord.utilities.analytics.AnalyticSuperProperties;
 
 import org.json.JSONException;
@@ -17,7 +18,12 @@ public class DiscordAPI {
 
     public static String uploadFile(File file, long channel) {
         try {
-            var req = Http.Request.newDiscordRequest("/channels/" + channel + "/attachments").setHeader("content-type", "application/json");
+            var req = Http.Request.newDiscordRequest("/channels/" + channel + "/attachments")
+                    .setHeader("content-type", "application/json")
+                    .setHeader("accept-language", "en-US")
+                    .setHeader("user-agent","Discord-Android/175207;RNA")
+                    .setHeader("x-discord-locale","en-US");
+
             req.conn.setRequestMethod("POST");
 
             var body = new AttachmentBody(file.getName(), (int) file.length());
@@ -34,6 +40,7 @@ public class DiscordAPI {
             var uploadReq = new Http.Request(attachment.getString("upload_url")).setHeader("Content-Type", "audio/ogg")
                     .setHeader("Content-Length", file.length() + "")
                     .setHeader("user-agent", "Discord-Android/175207;RNA");
+
             uploadReq.conn.setRequestMethod("PUT");
             var upload = uploadReq.executeWithBody(FilesKt.readBytes(file));
             if (upload.statusCode != 200) {
@@ -52,10 +59,12 @@ public class DiscordAPI {
             superprops.put("client_version", "175.6 - rn");
             superprops.put("client_build_number", "175206");
 
+
             request.setHeader("x-super-properties", String.valueOf(android.util.Base64.encodeToString(GsonUtils.toJson(superprops).getBytes(StandardCharsets.UTF_8), 2)));
             request.conn.setRequestMethod("POST");
             request.setHeader("content-type", "application/json")
-                    .setHeader("user-agent", "Discord-Android/175207;RNA");
+                    .setHeader("user-agent", "Discord-Android/175207;RNA")
+                    .setHeader("accept-language", "en-US");
 
             VoiceMessageBody body = new VoiceMessageBody(channelID, new VoiceMessageBody.Attachment(
                     "voice-message.ogg",
