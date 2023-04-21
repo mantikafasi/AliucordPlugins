@@ -68,6 +68,7 @@ public class VoiceMessages extends Plugin {
             return;
         }
 
+        settingsTab = new SettingsTab(BottomShit.class, SettingsTab.Type.BOTTOM_SHEET).withArgs(settings);
         waveFormView = new WaveFormView(context);
         recordButton = new ImageButton(context);
 
@@ -199,8 +200,9 @@ public class VoiceMessages extends Plugin {
         mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
         mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.OGG);
         mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.OPUS);
-        //mediaRecorder.setAudioEncodingBitRate(16*44100);
-        //mediaRecorder.setAudioSamplingRate(44100);
+
+        mediaRecorder.setAudioEncodingBitRate(settings.getInt("audioQuality", 128) * 1024);
+        mediaRecorder.setAudioSamplingRate(44100);
 
         outputFile = File.createTempFile("audio_record", ".ogg", new File(Constants.BASE_PATH));
         outputFile.deleteOnExit();
