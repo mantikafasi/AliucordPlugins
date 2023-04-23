@@ -98,11 +98,19 @@ public class VoiceMessages extends Plugin {
                     }
                     return true;
                 case MotionEvent.ACTION_UP:
-                    onRecordStop();
+                    onRecordStop(true);
+                    return true;
+                case (MotionEvent.ACTION_MOVE):
+                    // check if user moved finger out of button
+                    if ( motionEvent.getY() < 0 || motionEvent.getY() > view.getHeight()) {
+                        onRecordStop(false);
+                        Utils.showToast("Cancelled recording");
+                    }
                     return true;
             }
             return false;
         });
+
 
         try {
             recordButton.setVisibility(StoreStream.getChannelsSelected().getSelectedChannel().i() == 0L ? View.VISIBLE : View.GONE);
@@ -229,24 +237,27 @@ public class VoiceMessages extends Plugin {
 
     }
 
-    public void onRecordStop() {
+    public void onRecordStop(boolean send) {
         try {
             mediaRecorder.stop();
 
-            Utils.threadPool.execute(() -> {
-                var waveform = waveFormView.getWaveForm();
-                var filename = DiscordAPI.uploadFile(outputFile, StoreStream.getChannelsSelected().getId());
+            if (send) {
+                Utils.threadPool.execute(() -> {
+                    var waveform = waveFormView.getWaveForm();
+                    var filename = DiscordAPI.uploadFile(outputFile, StoreStream.getChannelsSelected().getId());
 
-                // extract duration
-                Uri uri = Uri.parse(outputFile.getAbsolutePath());
-                MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+                    // extract duration
+                    Uri uri = Uri.parse(outputFile.getAbsolutePath());
+                    MediaMetadataRetriever mmr = new MediaMetadataRetriever();
 
-                mmr.setDataSource(Utils.getAppContext(), uri);
-                String durationStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
-                float seconds = (Integer.parseInt(durationStr) / 1000.0f);
+                    mmr.setDataSource(Utils.getAppContext(), uri);
+                    String durationStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+                    float seconds = (Integer.parseInt(durationStr) / 1000.0f);
 
-                DiscordAPI.sendVoiceMessage(filename, seconds, waveform, StoreStream.getChannelsSelected().getId());
-            });
+                    DiscordAPI.sendVoiceMessage(filename, seconds, waveform, StoreStream.getChannelsSelected().getId());
+                });
+            }
+
 
         } catch (RuntimeException e) {
             // if you instantly stop recording it causes crash
