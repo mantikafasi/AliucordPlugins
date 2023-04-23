@@ -1,8 +1,9 @@
 package com.aliucord.plugins;
 
+import android.os.Build;
+
 import com.aliucord.Http;
 import com.aliucord.utils.GsonUtils;
-import com.discord.BuildConfig;
 import com.discord.utilities.analytics.AnalyticSuperProperties;
 
 import org.json.JSONException;
@@ -56,11 +57,28 @@ public class DiscordAPI {
         try {
             var request = Http.Request.newDiscordRequest("/channels/" + channelID + "/messages");
             var superprops = AnalyticSuperProperties.INSTANCE.getSuperProperties();
-            superprops.put("client_version", "175.6 - rn");
-            superprops.put("client_build_number", "175206");
 
+            superprops.remove("client_performance_cpu");
+            superprops.remove("client_performance_memory");
+            superprops.remove("cpu_core_count");
+            superprops.remove("accessibility_features");
+            superprops.remove("os_sdk_version");
+            superprops.remove("accessibility_support_enabled");
 
-            request.setHeader("x-super-properties", String.valueOf(android.util.Base64.encodeToString(GsonUtils.toJson(superprops).getBytes(StandardCharsets.UTF_8), 2)));
+            var json = new JSONObject(superprops);
+
+            json.put("device", Build.DEVICE);
+            json.put("client_version", "175.6 - rn");
+            json.put("release_channel", "canaryRelease");
+            json.put("device-vendor-id", VoiceMessages.staticSettings.getString("vendorId", null)); // generate random id
+            json.put("browser_user_agent", ""); // rn sends empty string idk why
+            json.put("browser_version", "");
+            json.put("os_version", String.valueOf(Build.VERSION.SDK_INT));
+            json.put("client_build_number", 175206);
+            json.put("client_event_source", JSONObject.NULL);
+            json.put("design_id", 0);
+
+            request.setHeader("x-super-properties", String.valueOf(android.util.Base64.encodeToString(json.toString().getBytes(StandardCharsets.UTF_8), 2)));
             request.conn.setRequestMethod("POST");
             request.setHeader("content-type", "application/json")
                     .setHeader("user-agent", "Discord-Android/175207;RNA")
@@ -74,7 +92,7 @@ public class DiscordAPI {
             ));
             request.executeWithBody(GsonUtils.toJson(body));
             return "Success";
-        } catch (IOException e) {
+        } catch (IOException | JSONException e) {
             throw new RuntimeException(e);
         }
     }

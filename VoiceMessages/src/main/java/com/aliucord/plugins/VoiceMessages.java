@@ -23,6 +23,7 @@ import androidx.core.content.ContextCompat;
 import com.aliucord.Constants;
 import com.aliucord.Utils;
 import com.aliucord.annotations.AliucordPlugin;
+import com.aliucord.api.SettingsAPI;
 import com.aliucord.entities.Plugin;
 import com.aliucord.utils.DimenUtils;
 import com.aliucord.wrappers.ChannelWrapper;
@@ -34,6 +35,7 @@ import com.lytefast.flexinput.widget.FlexEditText;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.UUID;
 
 @SuppressWarnings("unused")
 @AliucordPlugin
@@ -58,6 +60,7 @@ public class VoiceMessages extends Plugin {
         }
     };
     private Thread updateWaveformThread;
+    public static SettingsAPI staticSettings;
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -66,6 +69,12 @@ public class VoiceMessages extends Plugin {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             Utils.showToast("This plugin requires Android 10 or higher");
             return;
+        }
+
+        staticSettings = settings;
+
+        if (settings.getString("vendorId", null) == null) {
+            settings.setString("vendorId", UUID.randomUUID().toString());
         }
 
         settingsTab = new SettingsTab(BottomShit.class, SettingsTab.Type.BOTTOM_SHEET).withArgs(settings);
