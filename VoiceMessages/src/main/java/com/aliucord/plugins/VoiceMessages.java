@@ -98,12 +98,12 @@ public class VoiceMessages extends Plugin {
                     }
                     return true;
                 case MotionEvent.ACTION_UP:
-                    onRecordStop(true);
+                    onRecordStop(true,StoreStream.getChannelsSelected().getId());
                     return true;
                 case (MotionEvent.ACTION_MOVE):
                     // check if user moved finger out of button
                     if ( motionEvent.getY() < 0 || motionEvent.getY() > view.getHeight()) {
-                        onRecordStop(false);
+                        onRecordStop(false,0L);
                         Utils.showToast("Cancelled recording");
                     }
                     return true;
@@ -237,7 +237,7 @@ public class VoiceMessages extends Plugin {
 
     }
 
-    public void onRecordStop(boolean send) {
+    public void onRecordStop(boolean send, long discordid) {
         try {
             mediaRecorder.stop();
 
@@ -254,7 +254,7 @@ public class VoiceMessages extends Plugin {
                     String durationStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
                     float seconds = (Integer.parseInt(durationStr) / 1000.0f);
 
-                    DiscordAPI.sendVoiceMessage(filename, seconds, waveform, StoreStream.getChannelsSelected().getId());
+                    DiscordAPI.sendVoiceMessage(filename, seconds, waveform, discordid);
                 });
             }
 

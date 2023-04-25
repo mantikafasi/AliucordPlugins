@@ -1,7 +1,10 @@
-version = "1.0.4"
+version = "1.0.5"
 description = "Send Voice Messages"
 
 aliucord.changelog.set("""
+# 1.0.5
+* Fix voice messages getting sent in wrong channel if you switched channels before voice message is sent
+
 # 1.0.4
 * Made swiping up delete the voice recording
 
