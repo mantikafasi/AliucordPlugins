@@ -144,8 +144,16 @@ public class VoiceMessages extends Plugin {
         });
 
         patcher.patch(StoreStream.class.getDeclaredMethod("handleChannelSelected", long.class), cf -> {
-            var id = (long) cf.args[0];
-            var channel = new ChannelWrapper(StoreStream.getChannels().getChannel(id));
+            Utils.mainThread.post(()->{
+                var id = (long) cf.args[0];
+                var channel = new ChannelWrapper(StoreStream.getChannels().getChannel(id));
+
+                if (channel.isDM()) {
+                    recordButton.setVisibility(View.VISIBLE);
+                } else {
+                    recordButton.setVisibility(View.GONE);
+                }
+            });
             /*
             if (id != 0L) {
                 var meID = StoreStream.getUsers().getMe().getId();
@@ -173,12 +181,6 @@ public class VoiceMessages extends Plugin {
                 }
             }
              */
-
-            if (channel.isDM()) {
-                recordButton.setVisibility(View.VISIBLE);
-            } else {
-                recordButton.setVisibility(View.GONE);
-            }
 
         });
         /*
