@@ -49,7 +49,7 @@ public class ReviewBottomSheet extends BottomSheet {
         reportReview.setCompoundDrawablesRelativeWithIntrinsicBounds(reportIcon, null, null, null);
         reportReview.setOnClickListener(v -> {
             Utils.threadPool.execute(() -> {
-                var res = UserReviewsAPI.reportReview(UserReviews.staticSettings.getString("token", ""), review.getId());
+                var res = ReviewDBAPI.reportReview(ReviewDB.staticSettings.getString("token", ""), review.getId());
                 Utils.showToast(res.getMessage());
                 dismiss();
             });
@@ -57,14 +57,14 @@ public class ReviewBottomSheet extends BottomSheet {
         });
         var currentUserID = StoreStream.getUsers().getMe().getId();
 
-        if (review.getSenderDiscordID() != currentUserID && !UserReviews.AdminList.contains(currentUserID)) {
+        if (review.getSenderDiscordID() != currentUserID && !ReviewDB.AdminList.contains(currentUserID)) {
             deleteReview.setVisibility(View.GONE);
         } else {
             deleteReview.setCompoundDrawablesRelativeWithIntrinsicBounds(deleteIcon, null, null, null);
             deleteReview.setText("Delete Review");
             deleteReview.setOnClickListener(v -> {
                 Utils.threadPool.execute(() -> {
-                    var res = UserReviewsAPI.deleteReview(UserReviews.staticSettings.getString("token",""),review.getId());
+                    var res = ReviewDBAPI.deleteReview(ReviewDB.staticSettings.getString("token",""),review.getId());
                     if (res.isSuccessful()) {
                         int revID = adapter.getReviewID(review);
                         Utils.mainThread.post(() -> {

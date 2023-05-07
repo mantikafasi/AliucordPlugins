@@ -75,14 +75,13 @@ public class ServerReviewsView extends LinearLayout {
         //etLayout.setGravity(Gravity.CENTER_VERTICAL);
         reporting.setText("Small Note: To Report someones review long click to review and click 'Report Review'");
         reporting.setTextSize(9f);
-        reporting.setPadding(0,padding/3,0,0);
 
         sendCommentLayout.addView(et);
         sendCommentLayout.addView(buttonFrameLayout);
         sendCommentLayout.setOrientation(HORIZONTAL);
 
         nobodyReviewed.setText("Looks like nobody reviewed this server, You can be first");
-        nobodyReviewed.setPadding(0,padding/3,0,padding);
+
         nobodyReviewed.setVisibility(GONE);
         nobodyReviewed.setTypeface(null, Typeface.BOLD_ITALIC);
         nobodyReviewed.setTextSize(20f);
@@ -106,10 +105,8 @@ public class ServerReviewsView extends LinearLayout {
         buttonFrameLayout.setLayoutParams(buttonLayoutParams);
 
         title.setText("Server Reviews");
-        title.setPadding(0,padding,0,0);
 
         recycler.setLayoutManager(new LinearLayoutManager(ctx, RecyclerView.VERTICAL, false));
-        recycler.setPadding(0,padding,0,0);
         adapter = new com.aliucord.plugins.ReviewListModal.Adapter(reviews);
         recycler.setAdapter(adapter);
 
@@ -124,7 +121,7 @@ public class ServerReviewsView extends LinearLayout {
         buttonFrameLayout.addView(submit);
         buttonFrameLayout.setOnClickListener(this::onSubmit);
         submit.setImageResource(Utils.getResId("ic_send_24dp", "drawable"));
-        submit.setPadding(padding / 3 * 2, 0, padding / 2, 0);
+
     }
 
     public void onSubmit(View v) {

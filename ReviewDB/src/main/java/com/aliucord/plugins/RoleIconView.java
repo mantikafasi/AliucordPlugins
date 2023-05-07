@@ -20,8 +20,8 @@ public class RoleIconView extends SimpleDraweeView {
 
         setOnClickListener(view -> {
             var sheet = new BadgeBottomShit(getContext(),badge);
-            if (UserReviews.userSheet != null)
-                sheet.show(UserReviews.userSheet.getChildFragmentManager(), "sheet");
+            if (ReviewDB.userSheet != null)
+                sheet.show(ReviewDB.userSheet.getChildFragmentManager(), "sheet");
         });
 
         setOnLongClickListener(view -> {

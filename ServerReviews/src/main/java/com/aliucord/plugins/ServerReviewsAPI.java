@@ -53,6 +53,7 @@ public class ServerReviewsAPI {
         return null;
     }
 
+    static Runnable authPatch;
     public static void authorize() {
 
         var intent = new Intent("android.intent.action.VIEW");
@@ -62,7 +63,7 @@ public class ServerReviewsAPI {
         Utils.openPage(Utils.getAppContext(), WidgetOauth2Authorize.class, intent);
 
         try {
-            ServerReviews.staticPatcher.patch(WidgetOauth2Authorize$authorizeApplication$2.class.getDeclaredMethod("invoke", RestAPIParams.OAuth2Authorize.ResponsePost.class),
+            authPatch = ServerReviews.staticPatcher.patch(WidgetOauth2Authorize$authorizeApplication$2.class.getDeclaredMethod("invoke", RestAPIParams.OAuth2Authorize.ResponsePost.class),
                     new InsteadHook(cf -> {
                         var thisObject = (WidgetOauth2Authorize$authorizeApplication$2) cf.thisObject;
                         var clientID = thisObject.this$0.getOauth2ViewModel().oauthAuthorize.getClientId();
@@ -79,6 +80,7 @@ public class ServerReviewsAPI {
                                         ServerReviews.staticSettings.setString("token", response.getToken());
                                         Utils.showToast("Successfully Authorized", false);
                                     }
+                                    authPatch.run();
 
                                     var i = new Intent(Utils.appActivity, AppActivity.class);
                                     Utils.appActivity.startActivity(i);

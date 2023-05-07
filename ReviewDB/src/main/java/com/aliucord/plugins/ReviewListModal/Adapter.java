@@ -23,7 +23,7 @@ import com.aliucord.CollectionUtils;
 import com.aliucord.Utils;
 import com.aliucord.plugins.ReviewBottomSheet;
 import com.aliucord.plugins.RoleIconView;
-import com.aliucord.plugins.UserReviews;
+import com.aliucord.plugins.ReviewDB;
 import com.aliucord.plugins.dataclasses.Badge;
 import com.aliucord.plugins.dataclasses.Review;
 import com.aliucord.utils.DimenUtils;
@@ -103,7 +103,8 @@ public class Adapter extends RecyclerView.Adapter<ViewHolder> {
 
                 holder.icon.setController(builder.a());
 
-            } catch (Exception e) {UserReviews.logger.error(e);}
+            } catch (Exception e) {
+                ReviewDB.logger.error(e);}
         }
 
         holder.message.setText(review.getComment());

@@ -12,6 +12,7 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.aliucord.CollectionUtils;
 import com.aliucord.Constants;
 import com.aliucord.PluginManager;
 import com.aliucord.Utils;
@@ -22,6 +23,7 @@ import com.discord.app.AppFragment;
 import com.discord.widgets.user.usersheet.WidgetUserSheet;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -51,6 +53,9 @@ public class PluginsAdapter extends RecyclerView.Adapter<PluginsAdapter.ViewHold
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+
+        CollectionUtils.filter(data,plugin -> plugin.getName().toLowerCase().contains("pog"));
+
         Plugin p = data.get(position);
         Plugin.Manifest manifest = p.getManifest();
 

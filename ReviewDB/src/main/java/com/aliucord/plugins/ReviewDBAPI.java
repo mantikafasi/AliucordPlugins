@@ -6,11 +6,9 @@ import android.net.Uri;
 import com.aliucord.Http;
 import com.aliucord.Logger;
 import com.aliucord.Utils;
-import com.aliucord.patcher.InsteadHook;
 import com.aliucord.patcher.PreHook;
 import com.aliucord.plugins.dataclasses.Response;
 import com.aliucord.plugins.dataclasses.Review;
-import com.discord.app.AppActivity;
 import com.discord.restapi.RestAPIParams;
 import com.discord.widgets.auth.WidgetOauth2Authorize;
 import com.discord.widgets.auth.WidgetOauth2Authorize$authorizeApplication$2;
@@ -23,13 +21,13 @@ import java.util.List;
 
 import kotlin.Unit;
 
-public class UserReviewsAPI {
+public class ReviewDBAPI {
 
     public static final String API_URL = "https://manti.vendicated.dev";
     public static final int AdFlag = 0b00000001;
     public static final int Warning = 0b00000010;
     public static String AUTH_URL = "https://discord.com/oauth2/authorize?client_id=915703782174752809&redirect_uri=https%3A%2F%2Fmanti.vendicated.dev%2Fapi%2Freviewdb%2Fauth&response_type=code&scope=identify";
-    static Logger logger = new Logger("UserReviewsAPI");
+    static Logger logger = new Logger("ReviewDBAPI");
     static Long CLIENT_ID = 915703782174752809L;
 
     public static Response simpleRequest(String endpoint,String method, JSONObject body) {
@@ -43,11 +41,11 @@ public class UserReviewsAPI {
 
 
             var json = response.json(Response.class);
-            UserReviews.logger.info(json.toString());
+            ReviewDB.logger.info(json.toString());
             return json;
 
         } catch (IOException e) {
-            UserReviews.logger.error(e);
+            ReviewDB.logger.error(e);
             e.printStackTrace();
         }
         return null;
@@ -55,9 +53,9 @@ public class UserReviewsAPI {
 
     public static List<Review> getReviews(long userid) {
             int flags = 0;
-            if (UserReviews.staticSettings.getBool("disableAds",false))
+            if (ReviewDB.staticSettings.getBool("disableAds",false))
                 flags |= AdFlag;
-            if (UserReviews.staticSettings.getBool("disableWarnings",false))
+            if (ReviewDB.staticSettings.getBool("disableWarnings",false))
                 flags |= Warning;
             var response = simpleRequest("/api/reviewdb/users/" + userid +"/reviews?flags=" + flags,"GET", null);
             if (!response.isSuccessful()) {
@@ -70,7 +68,7 @@ public class UserReviewsAPI {
         try {
             return Integer.parseInt(Http.simpleGet(API_URL +"/getLastReviewID?discordid=" + userid));
         } catch (IOException | NumberFormatException e) {
-            UserReviews.logger.error(e);
+            ReviewDB.logger.error(e);
             return 0;
         }
     }
@@ -86,7 +84,7 @@ public class UserReviewsAPI {
         Utils.openPage(Utils.getAppContext(), WidgetOauth2Authorize.class, intent);
 
         try {
-            if (unpatch == null) unpatch = UserReviews.staticPatcher.patch(WidgetOauth2Authorize$authorizeApplication$2.class.getDeclaredMethod("invoke", RestAPIParams.OAuth2Authorize.ResponsePost.class),
+            if (unpatch == null) unpatch = ReviewDB.staticPatcher.patch(WidgetOauth2Authorize$authorizeApplication$2.class.getDeclaredMethod("invoke", RestAPIParams.OAuth2Authorize.ResponsePost.class),
                     new PreHook(cf -> {
                         var thisObject = (WidgetOauth2Authorize$authorizeApplication$2) cf.thisObject;
                         var clientID = thisObject.this$0.getOauth2ViewModel().oauthAuthorize.getClientId();
@@ -105,7 +103,7 @@ public class UserReviewsAPI {
                                     var response = new Http.Request(arg.getLocation()).execute().json(Response.class);
 
                                     if (response.isSuccessful()) {
-                                        UserReviews.staticSettings.setString("token", response.getToken());
+                                        ReviewDB.staticSettings.setString("token", response.getToken());
                                         Utils.showToast("Successfully Authorized", false);
                                     }
                                 } catch (IOException e) {
@@ -130,7 +128,7 @@ public class UserReviewsAPI {
 
             return simpleRequest("/api/reviewdb/reports","POST",json);
         } catch (JSONException e) {
-            UserReviews.logger.error(e);
+            ReviewDB.logger.error(e);
             return null;
         }
     }
@@ -144,7 +142,7 @@ public class UserReviewsAPI {
             return simpleRequest("/api/reviewdb/users/0/reviews","DELETE",json);
 
         } catch (JSONException e) {
-            UserReviews.logger.error(e);
+            ReviewDB.logger.error(e);
             return new Response(false,false,"An Error Occured");
         }
     }

@@ -23,7 +23,7 @@ import com.discord.utilities.color.ColorCompat;
 import java.util.ArrayList;
 import java.util.List;
 
-public class UserReviewsView extends LinearLayout {
+public class ReviewDBView extends LinearLayout {
     Adapter adapter;
     List<Review> reviews = new ArrayList<>();
     CustomEditText et;
@@ -38,7 +38,7 @@ public class UserReviewsView extends LinearLayout {
     Runnable loadData = (() -> {
 
         reviews.clear();
-        var data = UserReviewsAPI.getReviews(id);
+        var data = ReviewDBAPI.getReviews(id);
         if (data != null) {
             reviews.addAll(data);
         } else {
@@ -55,7 +55,15 @@ public class UserReviewsView extends LinearLayout {
 
     });
 
-    public UserReviewsView(Context ctx, Long id) {
+    public enum PaddingType {
+        User,
+        Server
+    }
+
+    public ReviewDBView(Context ctx, Long id) {
+        this(ctx, id, PaddingType.User);
+    }
+    public ReviewDBView(Context ctx, Long id, PaddingType paddingType) {
         super(ctx);
         setOrientation(android.widget.LinearLayout.VERTICAL);
         this.id = id;
@@ -73,18 +81,32 @@ public class UserReviewsView extends LinearLayout {
         //etLayout.setGravity(Gravity.CENTER_VERTICAL);
         reporting.setText("Note: To report someone's review, long click the review and click 'Report Review'");
         reporting.setTextSize(9f);
-        reporting.setPadding(padding,padding/3,padding,padding);
 
         sendCommentLayout.addView(et);
         sendCommentLayout.addView(buttonFrameLayout);
         sendCommentLayout.setOrientation(HORIZONTAL);
-        sendCommentLayout.setPadding(padding/3*2,0,padding,0);
 
         nobodyReviewed.setText("Looks like nobody has reviewed this user: you can be first");
         nobodyReviewed.setVisibility(GONE);
-        nobodyReviewed.setPadding(padding, 0, padding, padding);
         nobodyReviewed.setTypeface(null, Typeface.BOLD_ITALIC);
         nobodyReviewed.setTextSize(20f);
+
+        if (paddingType == PaddingType.User) {
+            submit.setPadding(padding / 2, 0, padding / 2, 0);
+            reporting.setPadding(padding,padding/3,padding,padding);
+            sendCommentLayout.setPadding(padding/3*2,0,padding,0);
+            nobodyReviewed.setPadding(padding, 0, padding, padding);
+            title.setPadding(padding, padding, 0, 0);
+            recycler.setPadding(padding/2,0,0,0);
+            title.setText("User Reviews");
+        } else {
+            submit.setPadding(padding / 3 * 2, 0, padding / 2, 0);
+            nobodyReviewed.setPadding(0,padding/3,0,padding);
+            reporting.setPadding(0,padding/3,0,0);
+            title.setPadding(0,padding,0,0);
+            recycler.setPadding(0,padding,0,0);
+            title.setText("Server Reviews");
+        }
 
         addView(title);
         addView(reporting);
@@ -104,12 +126,9 @@ public class UserReviewsView extends LinearLayout {
         buttonLayoutParams.height = DimenUtils.dpToPx(40);
         buttonFrameLayout.setLayoutParams(buttonLayoutParams);
 
-        title.setText("User Reviews");
-        title.setPadding(padding, padding, 0, 0);
 
         recycler.setLayoutManager(new LinearLayoutManager(ctx, RecyclerView.VERTICAL, false));
         adapter = new com.aliucord.plugins.ReviewListModal.Adapter(reviews);
-        recycler.setPadding(padding/2,0,0,0);
         recycler.setAdapter(adapter);
 
         Utils.threadPool.execute(loadData);
@@ -123,17 +142,14 @@ public class UserReviewsView extends LinearLayout {
         buttonFrameLayout.addView(submit);
         buttonFrameLayout.setOnClickListener(this::onSubmit);
         submit.setImageResource(Utils.getResId("ic_send_24dp", "drawable"));
-        submit.setPadding(padding / 2, 0, padding / 2, 0);
-
-
     }
 
     public void onSubmit(View v) {
         var message = et.getText().toString().trim();
 
-        if (UserReviews.staticSettings.getString("token", "").equals("")) {
+        if (ReviewDB.staticSettings.getString("token", "").equals("")) {
             Utils.showToast("You need to authorize to send a comment");
-            UserReviewsAPI.authorize();
+            ReviewDBAPI.authorize();
 
         } else {
             if (message.isEmpty()) {
@@ -147,7 +163,7 @@ public class UserReviewsView extends LinearLayout {
 
             et.clearFocus();
             Utils.threadPool.execute(() -> {
-                var response = UserReviewsAPI.addReview(message, id, UserReviews.staticSettings.getString("token", ""));
+                var response = ReviewDBAPI.addReview(message, id, ReviewDB.staticSettings.getString("token", ""));
                 Utils.showToast(response.getMessage());
 
                 if (response.isSuccessful()) {

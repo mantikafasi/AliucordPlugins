@@ -23,7 +23,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.aliucord.Utils;
 import com.aliucord.utils.DimenUtils;
 import com.discord.utilities.color.ColorCompat;
-import com.discord.widgets.roles.RoleIconView;
 import com.facebook.drawee.view.SimpleDraweeView;
 
 public class ViewHolder extends RecyclerView.ViewHolder {
@@ -52,7 +51,6 @@ public class ViewHolder extends RecyclerView.ViewHolder {
         message.setTextColor(ColorCompat.getColor(layout.getContext(),com.lytefast.flexinput.R.c.primary_300));
         tagIcon = layout.findViewById(tagIconID);
         headerLayout = layout.findViewById(Utils.getResId("chat_list_adapter_item_text_header","id"));
-
 
         badgeLayout = new LinearLayout(layout.getContext());
         badgeLayout.setPadding(DimenUtils.dpToPx(4),0,0,0);

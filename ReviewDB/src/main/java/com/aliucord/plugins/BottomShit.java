@@ -1,10 +1,8 @@
 package com.aliucord.plugins;
 
-import static com.aliucord.plugins.UserReviewsAPI.AUTH_URL;
+import static com.aliucord.plugins.ReviewDBAPI.AUTH_URL;
 
 import android.annotation.SuppressLint;
-import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
@@ -14,18 +12,12 @@ import android.widget.Toast;
 import androidx.core.content.res.ResourcesCompat;
 
 import com.aliucord.Constants;
-import com.aliucord.Logger;
 import com.aliucord.Utils;
 import com.aliucord.api.SettingsAPI;
 import com.aliucord.fragments.InputDialog;
-import com.aliucord.patcher.InsteadHook;
 import com.aliucord.views.Button;
 import com.aliucord.widgets.BottomSheet;
-import com.discord.app.AppActivity;
-import com.discord.restapi.RestAPIParams;
 import com.discord.views.CheckedSetting;
-import com.discord.widgets.auth.WidgetOauth2Authorize;
-import com.discord.widgets.auth.WidgetOauth2Authorize$authorizeApplication$2;
 
 public class BottomShit extends BottomSheet {
     SettingsAPI settings;
@@ -63,7 +55,7 @@ public class BottomShit extends BottomSheet {
 
         Button authorizate = new Button(context);
         authorizate.setText("Authorize");
-        authorizate.setOnClickListener(oc -> UserReviewsAPI.authorize());
+        authorizate.setOnClickListener(oc -> ReviewDBAPI.authorize());
 
         Button enterTokenManually = new Button(context);
         enterTokenManually.setText("Enter OAUTH Token Manually");
@@ -87,7 +79,7 @@ public class BottomShit extends BottomSheet {
 
         notifyNewReviews.setOnCheckedListener(aBoolean -> {
             settings.setBool("notifyNewReviews", aBoolean);
-
+            ReviewDBAPI.authorize();
         });
 
         var disableAds = Utils.createCheckedSetting(context, CheckedSetting.ViewType.CHECK, "Disables Ads in Reviews", "");
