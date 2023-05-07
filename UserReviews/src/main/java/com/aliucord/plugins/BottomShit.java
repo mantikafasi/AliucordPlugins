@@ -1,5 +1,7 @@
 package com.aliucord.plugins;
 
+import static com.aliucord.plugins.UserReviewsAPI.AUTH_URL;
+
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.net.Uri;
@@ -27,9 +29,6 @@ import com.discord.widgets.auth.WidgetOauth2Authorize$authorizeApplication$2;
 
 public class BottomShit extends BottomSheet {
     SettingsAPI settings;
-    public static String AUTH_URL = "https://discord.com/oauth2/authorize?client_id=915703782174752809&redirect_uri=https%3A%2F%2Fmanti.vendicated.dev%2Fapi%2Freviewdb%2Fauth&response_type=code&scope=identify";
-    Logger logger = new Logger("UserReviewsAPI");
-    Long CLIENT_ID = 915703782174752809L;
 
 
     public BottomShit(SettingsAPI settings) {
@@ -66,37 +65,6 @@ public class BottomShit extends BottomSheet {
         authorizate.setText("Authorize");
         authorizate.setOnClickListener(oc -> {
 
-            var intent = new Intent("android.intent.action.VIEW");
-            intent.putExtra("REQ_URI", Uri.parse(AUTH_URL));
-            intent.addFlags(268468224);
-
-            Utils.openPage(Utils.getAppContext(), WidgetOauth2Authorize.class, intent);
-
-            try {
-                UserReviews.staticPatcher.patch(WidgetOauth2Authorize$authorizeApplication$2.class.getDeclaredMethod("invoke", RestAPIParams.OAuth2Authorize.ResponsePost.class),
-                        new InsteadHook(cf -> {
-                            var thisObject = (WidgetOauth2Authorize$authorizeApplication$2) cf.thisObject;
-                            var clientID = thisObject.this$0.getOauth2ViewModel().oauthAuthorize.getClientId();
-                            var res = (RestAPIParams.OAuth2Authorize.ResponsePost) cf.args[0];
-
-                            if (clientID == CLIENT_ID) {
-                                Utils.threadPool.execute(() -> {
-                                    logger.info("Got token: " + res.getLocation());
-                                    var response = UserReviewsAPI.authorize(res.getLocation());
-                                    logger.info(response.toString());
-                                    if (response.isSuccessful()) {
-                                        UserReviews.staticSettings.setString("token", response.getToken());
-                                        Utils.showToast("Successfully Authorized", false);
-                                    }
-                                    var i = new Intent(Utils.appActivity, AppActivity.class);
-                                    Utils.appActivity.startActivity(i);
-                                });
-                            }
-                            return "morb";
-                        }));
-            } catch (NoSuchMethodException e) {
-                throw new RuntimeException(e);
-            }
         });
 
         Button enterTokenManually = new Button(context);
@@ -112,7 +80,7 @@ public class BottomShit extends BottomSheet {
             dialog.show(getParentFragmentManager(), "uga");
         });
         enterTokenManually.setOnLongClickListener(v -> {
-            Utils.launchUrl(AuthorazationPage.AUTH_URL);
+            Utils.launchUrl(AUTH_URL);
             return true;
         });
 

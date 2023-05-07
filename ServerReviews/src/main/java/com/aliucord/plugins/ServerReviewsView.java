@@ -132,7 +132,7 @@ public class ServerReviewsView extends LinearLayout {
 
         if (ServerReviews.staticSettings.getString("token", "").equals("")) {
             Utils.showToast("You need to authorazite to send comment");
-            Utils.openPageWithProxy(Utils.getAppActivity(), new AuthorazationPage());
+            ServerReviewsAPI.authorize();
         } else {
             if (message.isEmpty()) {
                 Utils.showToast("Enter some comment and try again");

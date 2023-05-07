@@ -133,7 +133,8 @@ public class UserReviewsView extends LinearLayout {
 
         if (UserReviews.staticSettings.getString("token", "").equals("")) {
             Utils.showToast("You need to authorize to send a comment");
-            Utils.openPageWithProxy(Utils.getAppActivity(), new AuthorazationPage());
+            UserReviewsAPI.authorize();
+
         } else {
             if (message.isEmpty()) {
                 Utils.showToast("Enter a comment and try again");
