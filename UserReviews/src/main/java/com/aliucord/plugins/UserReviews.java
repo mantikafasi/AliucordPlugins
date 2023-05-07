@@ -8,28 +8,24 @@ import android.view.View;
 import android.widget.LinearLayout;
 
 import androidx.core.widget.NestedScrollView;
-import androidx.fragment.app.FragmentManager;
 
 import com.aliucord.Http;
 import com.aliucord.Logger;
 import com.aliucord.Utils;
 import com.aliucord.annotations.AliucordPlugin;
 import com.aliucord.api.NotificationsAPI;
+import com.aliucord.api.PatcherAPI;
 import com.aliucord.api.SettingsAPI;
 import com.aliucord.entities.NotificationData;
 import com.aliucord.entities.Plugin;
 import com.aliucord.patcher.Hook;
-import com.aliucord.utils.ReflectUtils;
 import com.discord.stores.StoreStream;
-import com.discord.widgets.guilds.profile.WidgetGuildProfileSheet;
-import com.discord.widgets.guilds.profile.WidgetGuildProfileSheetViewModel;
 import com.discord.widgets.user.usersheet.WidgetUserSheet;
 import com.discord.widgets.user.usersheet.WidgetUserSheetViewModel;
 import com.google.gson.reflect.TypeToken;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 @SuppressWarnings("unused")
@@ -40,20 +36,23 @@ public class UserReviews extends Plugin {
     int viewID = View.generateViewId();
     public static List<Long> AdminList = new ArrayList<>();
     public static WidgetUserSheet userSheet;
+    public static PatcherAPI staticPatcher;
 
     @SuppressLint("SetTextI18n")
     @Override
     public void start(Context context) {
 
         staticSettings = settings;
+        staticPatcher = patcher;
+
         settingsTab = new SettingsTab(BottomShit.class, SettingsTab.Type.BOTTOM_SHEET).withArgs(settings);
 
         new SettingsAPI("UserReviewsCache").resetSettings();
 
-        if (settings.getBool("notifyNewReviews",true)) {
+        if (settings.getBool("notifyNewReviews", true)) {
             Utils.threadPool.execute(() -> {
                 try {
-                    AdminList = new Http.Request(API_URL + "/admins").execute().json(TypeToken.getParameterized(List.class,Long.class).type);
+                    AdminList = new Http.Request(API_URL + "/admins").execute().json(TypeToken.getParameterized(List.class, Long.class).type);
                 } catch (IOException e) {
                     logger.error(e);
                 }

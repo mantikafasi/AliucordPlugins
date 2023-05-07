@@ -60,6 +60,15 @@ public class UserReviewsAPI {
         }
     }
 
+    public static Response authorize(String url) {
+        try {
+            var res = new Http.Request(url).execute();
+            return res.json(Response.class);
+        } catch (IOException ignored) {
+            return new Response(false,false,"An Error Occured");
+        }
+    }
+
     public static Response reportReview(String token,int reviewID) {
         JSONObject json = new JSONObject();
         try {

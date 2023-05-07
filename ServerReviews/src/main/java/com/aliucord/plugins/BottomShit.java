@@ -1,6 +1,8 @@
 package com.aliucord.plugins;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
@@ -10,15 +12,25 @@ import android.widget.Toast;
 import androidx.core.content.res.ResourcesCompat;
 
 import com.aliucord.Constants;
+import com.aliucord.Logger;
 import com.aliucord.Utils;
 import com.aliucord.api.SettingsAPI;
 import com.aliucord.fragments.InputDialog;
+import com.aliucord.patcher.InsteadHook;
 import com.aliucord.views.Button;
 import com.aliucord.widgets.BottomSheet;
+import com.discord.app.AppActivity;
+import com.discord.restapi.RestAPIParams;
 import com.discord.views.CheckedSetting;
+import com.discord.widgets.auth.WidgetOauth2Authorize;
+import com.discord.widgets.auth.WidgetOauth2Authorize$authorizeApplication$2;
 
 public class BottomShit extends BottomSheet {
     SettingsAPI settings;
+    public static String AUTH_URL = "https://discord.com/oauth2/authorize?client_id=915703782174752809&redirect_uri=https%3A%2F%2Fmanti.vendicated.dev%2Fapi%2Freviewdb%2Fauth&response_type=code&scope=identify";
+    Logger logger = new Logger("ServerReviewsAPI");
+    Long CLIENT_ID = 915703782174752809L;
+
 
     public BottomShit(SettingsAPI settings) {
         this.settings = settings;
@@ -53,7 +65,38 @@ public class BottomShit extends BottomSheet {
         Button authorizate = new Button(context);
         authorizate.setText("Authorize");
         authorizate.setOnClickListener(oc -> {
-            Utils.openPageWithProxy(Utils.getAppActivity(), new AuthorazationPage());
+
+            var intent = new Intent("android.intent.action.VIEW");
+            intent.putExtra("REQ_URI", Uri.parse(AUTH_URL));
+            intent.addFlags(268468224);
+
+            Utils.openPage(Utils.getAppContext(), WidgetOauth2Authorize.class, intent);
+
+            try {
+                ServerReviews.staticPatcher.patch(WidgetOauth2Authorize$authorizeApplication$2.class.getDeclaredMethod("invoke", RestAPIParams.OAuth2Authorize.ResponsePost.class),
+                        new InsteadHook(cf -> {
+                            var thisObject = (WidgetOauth2Authorize$authorizeApplication$2) cf.thisObject;
+                            var clientID = thisObject.this$0.getOauth2ViewModel().oauthAuthorize.getClientId();
+                            var res = (RestAPIParams.OAuth2Authorize.ResponsePost) cf.args[0];
+
+                            if (clientID == CLIENT_ID) {
+                                Utils.threadPool.execute(() -> {
+                                    logger.info("Got token: " + res.getLocation());
+                                    var response = ServerReviewsAPI.authorize(res.getLocation());
+                                    logger.info(response.toString());
+                                    if (response.isSuccessful()) {
+                                        ServerReviews.staticSettings.setString("token", response.getToken());
+                                        Utils.showToast("Successfully Authorized", false);
+                                    }
+                                    var i = new Intent(Utils.appActivity, AppActivity.class);
+                                    Utils.appActivity.startActivity(i);
+                                });
+                            }
+                            return "morb";
+                        }));
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            }
         });
 
         Button enterTokenManually = new Button(context);

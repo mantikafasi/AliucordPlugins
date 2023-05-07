@@ -40,6 +40,15 @@ public class ServerReviewsAPI {
         return null;
     }
 
+    public static Response authorize(String url) {
+        try {
+            var res = new Http.Request(url).execute();
+            return res.json(Response.class);
+        } catch (IOException ignored) {
+            return new Response(false,false,"An Error Occured");
+        }
+    }
+
     public static List<Review> getReviews(long userid) {
         int flags = 0;
         if (ServerReviews.staticSettings.getBool("disableAds",false))

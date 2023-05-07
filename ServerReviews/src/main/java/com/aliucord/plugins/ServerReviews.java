@@ -7,6 +7,7 @@ import android.widget.LinearLayout;
 
 import com.aliucord.Logger;
 import com.aliucord.annotations.AliucordPlugin;
+import com.aliucord.api.PatcherAPI;
 import com.aliucord.api.SettingsAPI;
 import com.aliucord.entities.Plugin;
 import com.aliucord.patcher.Hook;
@@ -17,6 +18,7 @@ import com.discord.widgets.guilds.profile.WidgetGuildProfileSheetViewModel;
 @AliucordPlugin
 public class ServerReviews extends Plugin {
     public static SettingsAPI staticSettings;
+    public static PatcherAPI staticPatcher;
     public static Logger logger = new Logger("ServerReviews");
     int viewID = View.generateViewId();
 
@@ -26,6 +28,7 @@ public class ServerReviews extends Plugin {
         new SettingsAPI("UserReviewsCache").resetSettings();
 
         staticSettings = new SettingsAPI("UserReviews");
+        staticPatcher = patcher;
 
         settingsTab = new SettingsTab(BottomShit.class, SettingsTab.Type.BOTTOM_SHEET).withArgs(staticSettings);
 
