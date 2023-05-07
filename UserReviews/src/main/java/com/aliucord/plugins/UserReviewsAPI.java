@@ -7,6 +7,7 @@ import com.aliucord.Http;
 import com.aliucord.Logger;
 import com.aliucord.Utils;
 import com.aliucord.patcher.InsteadHook;
+import com.aliucord.patcher.PreHook;
 import com.aliucord.plugins.dataclasses.Response;
 import com.aliucord.plugins.dataclasses.Review;
 import com.discord.app.AppActivity;
@@ -19,6 +20,8 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.List;
+
+import kotlin.Unit;
 
 public class UserReviewsAPI {
 
@@ -72,22 +75,29 @@ public class UserReviewsAPI {
         }
     }
 
+    public static Runnable unpatch;
+
     public static void authorize() {
 
         var intent = new Intent("android.intent.action.VIEW");
         intent.putExtra("REQ_URI", Uri.parse(AUTH_URL));
-        intent.addFlags(268468224);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
         Utils.openPage(Utils.getAppContext(), WidgetOauth2Authorize.class, intent);
 
         try {
-            UserReviews.staticPatcher.patch(WidgetOauth2Authorize$authorizeApplication$2.class.getDeclaredMethod("invoke", RestAPIParams.OAuth2Authorize.ResponsePost.class),
-                    new InsteadHook(cf -> {
+            if (unpatch == null) unpatch = UserReviews.staticPatcher.patch(WidgetOauth2Authorize$authorizeApplication$2.class.getDeclaredMethod("invoke", RestAPIParams.OAuth2Authorize.ResponsePost.class),
+                    new PreHook(cf -> {
                         var thisObject = (WidgetOauth2Authorize$authorizeApplication$2) cf.thisObject;
                         var clientID = thisObject.this$0.getOauth2ViewModel().oauthAuthorize.getClientId();
                         var arg = (RestAPIParams.OAuth2Authorize.ResponsePost) cf.args[0];
 
                         if (clientID == CLIENT_ID) {
+                            if (unpatch != null) {
+                                unpatch.run();
+                                unpatch = null;
+                            }
+
                             Utils.threadPool.execute(() -> {
                                 logger.info("Got token: " + arg.getLocation());
 
@@ -98,15 +108,14 @@ public class UserReviewsAPI {
                                         UserReviews.staticSettings.setString("token", response.getToken());
                                         Utils.showToast("Successfully Authorized", false);
                                     }
-
-                                    var i = new Intent(Utils.appActivity, AppActivity.class);
-                                    Utils.appActivity.startActivity(i);
                                 } catch (IOException e) {
                                     logger.error(e);
                                 }
                             });
+                            thisObject.this$0.getAppActivity().onBackPressed();
+
+                            cf.setResult(Unit.a);
                         }
-                        return "morb";
                     }));
         } catch (NoSuchMethodException e) {
             logger.error(e);
