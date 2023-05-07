@@ -63,9 +63,7 @@ public class BottomShit extends BottomSheet {
 
         Button authorizate = new Button(context);
         authorizate.setText("Authorize");
-        authorizate.setOnClickListener(oc -> {
-
-        });
+        authorizate.setOnClickListener(oc -> UserReviewsAPI.authorize());
 
         Button enterTokenManually = new Button(context);
         enterTokenManually.setText("Enter OAUTH Token Manually");
