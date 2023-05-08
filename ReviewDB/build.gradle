@@ -1,4 +1,4 @@
-version = "1.0"
+version = "1.0.1"
 description = "Review other users and servers"
 aliucord {
     author("Ven",343383572805058560)

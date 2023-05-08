@@ -8,6 +8,7 @@ import android.view.View;
 import android.widget.LinearLayout;
 
 import androidx.core.widget.NestedScrollView;
+import androidx.fragment.app.FragmentManager;
 
 import com.aliucord.Constants;
 import com.aliucord.Http;
@@ -40,7 +41,7 @@ public class ReviewDB extends Plugin {
     public static Logger logger = new Logger("UserReviews");
     int viewID = View.generateViewId();
     public static List<Long> AdminList = new ArrayList<>();
-    public static WidgetUserSheet userSheet;
+    public static FragmentManager fragmentManager;
     public static PatcherAPI staticPatcher;
 
     @SuppressLint("SetTextI18n")
@@ -95,6 +96,7 @@ public class ReviewDB extends Plugin {
         try {
             patcher.patch(WidgetGuildProfileSheet.class.getDeclaredMethod("configureUI", WidgetGuildProfileSheetViewModel.ViewState.Loaded.class), new Hook(cf -> {
                 var viewstate = (WidgetGuildProfileSheetViewModel.ViewState.Loaded) cf.args[0];
+                fragmentManager = ((WidgetGuildProfileSheet) cf.thisObject).getChildFragmentManager();
 
                 var linearLayout = (LinearLayout) (WidgetGuildProfileSheet.access$getGuildActionBinding$p((WidgetGuildProfileSheet) cf.thisObject)).getRoot();
                 var ctx = linearLayout.getContext();
@@ -117,7 +119,7 @@ public class ReviewDB extends Plugin {
 
                 var scrollView = (NestedScrollView) (WidgetUserSheet.access$getBinding$p((WidgetUserSheet) cf.thisObject)).getRoot();
                 var ctx = scrollView.getContext();
-                userSheet = (WidgetUserSheet)cf.thisObject;
+                fragmentManager = ((WidgetUserSheet) cf.thisObject).getChildFragmentManager();
 
                 if (scrollView.findViewById(viewID) == null) {
 

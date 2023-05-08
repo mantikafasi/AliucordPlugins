@@ -54,8 +54,6 @@ public class PluginsAdapter extends RecyclerView.Adapter<PluginsAdapter.ViewHold
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
 
-        CollectionUtils.filter(data,plugin -> plugin.getName().toLowerCase().contains("pog"));
-
         Plugin p = data.get(position);
         Plugin.Manifest manifest = p.getManifest();
 

@@ -12,10 +12,12 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -130,9 +132,9 @@ public class VoiceMessages extends Plugin {
 
             var buttonViewGroup = ((ViewGroup) input.getView().findViewById(Utils.getResId("main_input_container", "id")));
             viewgroup.addView(recordButton);
-            var params = (ViewGroup.LayoutParams) waveFormView.getLayoutParams();
+            var params = (LinearLayout.LayoutParams) waveFormView.getLayoutParams();
             params.height = DimenUtils.dpToPx(30);
-
+            params.gravity = Gravity.CENTER;
         });
 
         patcher.patch(WidgetChatInputEditText$setOnTextChangedListener$1.class.getDeclaredMethod("afterTextChanged", Editable.class), cf -> {
