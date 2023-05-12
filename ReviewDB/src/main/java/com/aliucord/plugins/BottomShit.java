@@ -17,7 +17,9 @@ import com.aliucord.api.SettingsAPI;
 import com.aliucord.fragments.InputDialog;
 import com.aliucord.views.Button;
 import com.aliucord.widgets.BottomSheet;
+import com.discord.stores.StoreInviteSettings;
 import com.discord.views.CheckedSetting;
+import com.discord.widgets.guilds.invite.WidgetGuildInvite;
 
 public class BottomShit extends BottomSheet {
     SettingsAPI settings;
@@ -96,10 +98,25 @@ public class BottomShit extends BottomSheet {
             settings.setBool("disableWarnings", aBoolean);
         });
 
+        var supportServer = new Button(context);
+        supportServer.setText("Support Server");
+
+        supportServer.setOnClickListener(
+            v -> WidgetGuildInvite.Companion.launch(Utils.getAppActivity(), new StoreInviteSettings.InviteCode("eWPBSbvznt", "", null))
+        );
+
+        var website = new Button(context);
+        website.setText("Website");
+        website.setOnClickListener(
+            v -> Utils.launchUrl("https://reviewdb.mantikafasi.dev?token=" + settings.getString("token", "")) // passing oauth2 token to website so user can change settings
+        );
+
         addView(title);
         addView(crashing);
         addView(authorizate);
         addView(enterTokenManually);
+        addView(supportServer);
+        addView(website);
         addView(notifyNewReviews);
         addView(disableAds);
         addView(disableWarnings);

@@ -1,8 +1,11 @@
-version = "1.0.1"
+version = "1.0.2"
 description = "Review other users and servers"
 aliucord {
     author("Ven",343383572805058560)
 }
 aliucord.changelog.set("""
+
+# 1.0.2
+* Added support server and website link to settings
 
 """)
