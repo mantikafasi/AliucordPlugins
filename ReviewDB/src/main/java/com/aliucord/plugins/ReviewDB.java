@@ -53,14 +53,35 @@ public class ReviewDB extends Plugin {
 
         settingsTab = new SettingsTab(BottomShit.class, SettingsTab.Type.BOTTOM_SHEET).withArgs(settings);
 
-        if (PluginManager.isPluginEnabled("UserReviews")|| PluginManager.isPluginEnabled("ServerReviews")) {
-            File pluginFile = new File(Constants.BASE_PATH + "/plugins/UserReviews.zip");
-            Utils.showToast("UserReviews and ServerReviews are now merged, please delete the old plugins.",true);
+        var userReviewFile = new File(Constants.PLUGINS_PATH , "UserReviews.zip");
+        var serverReviewFile = new File(Constants.PLUGINS_PATH , "ServerReviews.zip");
 
+        if (userReviewFile.exists() || serverReviewFile.exists()) {
             PluginManager.stopPlugin("UserReviews");
             PluginManager.disablePlugin("UserReviews");
             PluginManager.stopPlugin("ServerReviews");
             PluginManager.disablePlugin("ServerReviews");
+
+            userReviewFile.delete();
+            serverReviewFile.delete();
+
+            var reviewDBFile = new File(Constants.PLUGINS_PATH ,"ReviewDB.zip");
+
+            if (!reviewDBFile.exists()) {
+
+                Utils.threadPool.execute(() ->{
+                    try {
+                        var response = new Http.Request("https://github.com/mantikafasi/AliucordPlugins/raw/builds/ReviewDB.zip").execute();
+                        response.saveToFile(reviewDBFile);
+
+                        PluginManager.loadPlugin(Utils.getAppContext(), reviewDBFile);
+                        PluginManager.startPlugin("ReviewDB");
+
+                    } catch (IOException e) {
+                        logger.error(e);
+                    }
+                });
+            }
         }
 
         new SettingsAPI("ReviewDBCache").resetSettings();
