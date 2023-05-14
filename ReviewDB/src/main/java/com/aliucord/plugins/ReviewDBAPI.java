@@ -9,6 +9,8 @@ import com.aliucord.Utils;
 import com.aliucord.patcher.PreHook;
 import com.aliucord.plugins.dataclasses.Response;
 import com.aliucord.plugins.dataclasses.Review;
+import com.aliucord.utils.GsonUtils;
+import com.aliucord.utils.IOUtils;
 import com.discord.restapi.RestAPIParams;
 import com.discord.widgets.auth.WidgetOauth2Authorize;
 import com.discord.widgets.auth.WidgetOauth2Authorize$authorizeApplication$2;
@@ -32,16 +34,27 @@ public class ReviewDBAPI {
 
     public static Response simpleRequest(String endpoint,String method, JSONObject body) {
         try {
+            Http.Request request = new Http.Request(API_URL + endpoint, method);
             Http.Response response;
 
             if (body == null)
-                response = new Http.Request(API_URL + endpoint, method).execute();
+                response = request.execute();
             else
-                response = new Http.Request(API_URL + endpoint, method).setFollowRedirects(false).executeWithBody(body.toString());
+                response = request.setFollowRedirects(false).executeWithBody(body.toString());
 
+            Response json;
+            if (response.ok()) {
+                json = response.json(Response.class);
+            } else {
+                try (var es = request.conn.getErrorStream()) {
+                    var errorJson = IOUtils.readAsText(es);
+                    json = GsonUtils.fromJson(GsonUtils.getGson(),errorJson, Response.class);
+                } catch (IOException exploded) {
+                    logger.error(exploded);
+                    json = new Response(false, false, exploded.getMessage());
+                }
+            }
 
-            var json = response.json(Response.class);
-            ReviewDB.logger.info(json.toString());
             return json;
 
         } catch (IOException e) {
