@@ -9,6 +9,7 @@ import com.aliucord.Utils;
 import com.aliucord.patcher.PreHook;
 import com.aliucord.plugins.dataclasses.Response;
 import com.aliucord.plugins.dataclasses.Review;
+import com.aliucord.plugins.dataclasses.User;
 import com.aliucord.utils.GsonUtils;
 import com.aliucord.utils.IOUtils;
 import com.discord.restapi.RestAPIParams;
@@ -83,6 +84,19 @@ public class ReviewDBAPI {
         } catch (IOException | NumberFormatException e) {
             ReviewDB.logger.error(e);
             return 0;
+        }
+    }
+
+    public static User getUser() {
+        try {
+            var req = new Http.Request(API_URL + "/api/reviewdb/users");
+            if (ReviewDB.staticSettings.getString ("token", "").isEmpty()) return null;
+            req.setHeader("Authorization", ReviewDB.staticSettings.getString("token", ""));
+            var res = req.execute();
+            return res.json(User.class);
+        } catch (IOException e) {
+            logger.error(e);
+            return null;
         }
     }
 

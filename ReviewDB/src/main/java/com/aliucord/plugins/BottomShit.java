@@ -3,6 +3,7 @@ package com.aliucord.plugins;
 import static com.aliucord.plugins.ReviewDBAPI.AUTH_URL;
 
 import android.annotation.SuppressLint;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
@@ -20,6 +21,9 @@ import com.aliucord.widgets.BottomSheet;
 import com.discord.stores.StoreInviteSettings;
 import com.discord.views.CheckedSetting;
 import com.discord.widgets.guilds.invite.WidgetGuildInvite;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 
 public class BottomShit extends BottomSheet {
     SettingsAPI settings;
@@ -107,9 +111,17 @@ public class BottomShit extends BottomSheet {
 
         var website = new Button(context);
         website.setText("Website");
-        website.setOnClickListener(
-            v -> Utils.launchUrl("https://reviewdb.mantikafasi.dev?token=" + settings.getString("token", "")) // passing oauth2 token to website so user can change settings
-        );
+            website.setOnClickListener(
+                v -> {
+                    var uri = Uri.parse("https://reviewdb.mantikafasi.dev").buildUpon();
+                    if (settings.getString("token", "").equals("")) {
+                        Utils.launchUrl(uri.build());
+                    } else {
+                        Utils.launchUrl(uri.appendPath("api").appendPath("redirect").appendQueryParameter("token",settings.getString("token", "")).build());
+                    }
+                } // passing oauth2 token to website so user can change settings
+            );
+
 
         addView(title);
         addView(crashing);

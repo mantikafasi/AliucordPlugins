@@ -4,6 +4,7 @@ import static com.aliucord.plugins.ReviewDBAPI.API_URL;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.net.Uri;
 import android.view.View;
 import android.widget.LinearLayout;
 
@@ -31,8 +32,12 @@ import com.google.gson.reflect.TypeToken;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 @SuppressWarnings("unused")
 @AliucordPlugin
@@ -86,7 +91,6 @@ public class ReviewDB extends Plugin {
 
         new SettingsAPI("ReviewDBCache").resetSettings();
 
-        if (settings.getBool("notifyNewReviews", true)) {
             Utils.threadPool.execute(() -> {
                 try {
                     AdminList = new Http.Request(API_URL + "/admins").execute().json(TypeToken.getParameterized(List.class, Long.class).type);
@@ -95,24 +99,64 @@ public class ReviewDB extends Plugin {
                 }
 
                 var userid = StoreStream.getUsers().getMe().getId();
-                try { Thread.sleep(6000); } catch (InterruptedException e) { e.printStackTrace(); }
-                int id = ReviewDBAPI.getLastReviewID(userid);
-                int lastReviewID = settings.getInt("lastreviewid",0);
-                if (id > lastReviewID) {
-                    settings.setInt("lastreviewid",id);
+                try {
+                    Thread.sleep(6000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                var currentUser = ReviewDBAPI.getUser();
+                if (currentUser == null) return;
 
-                    if (lastReviewID != 0) {
-                        NotificationsAPI.display(new NotificationData()
+                if (settings.getBool("notifyNewReviews", true)) {
+                    int lastReviewID = settings.getInt("lastreviewid", 0);
+                    if (currentUser.getLastReviewID() > lastReviewID) {
+                        settings.setInt("lastreviewid", currentUser.getLastReviewID());
+
+                        if (lastReviewID != 0) {
+                            NotificationsAPI.display(new NotificationData()
                                     .setTitle("ReviewDB")
-                                .setBody("You Have New Reviews On Your Profile")
-                                .setOnClick(view -> {
-                                    WidgetUserSheet.Companion.show(userid,Utils.widgetChatList.getParentFragmentManager());
-                                    return null;
-                                }));
+                                    .setBody("You Have New Reviews On Your Profile")
+                                    .setOnClick(view -> {
+                                        WidgetUserSheet.Companion.show(userid, Utils.widgetChatList.getParentFragmentManager());
+                                        return null;
+                                    }));
+                        }
                     }
                 }
+
+                var timeString = currentUser.getBanInfo().getBanEndDate().replace("T", " ").replace("Z", "");
+                if (currentUser.getBanInfo() != null && !(timeString.equals(settings.getString("banEndDate", "")))) {
+
+                    var localDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+                    localDateTime.setTimeZone(TimeZone.getTimeZone("UTC"));
+                    Date time;
+                    try {
+                        time = localDateTime.parse(timeString);
+                    } catch (ParseException e) {
+                        logger.error(e);
+                        return;
+                    }
+                    localDateTime.setTimeZone(TimeZone.getDefault());
+                    if (time.after(new Date())) { // this check is done on the server side but just in case
+
+                        var description = "You Have Been Banned From ReviewDB Until " + localDateTime.format(time);
+                        if (currentUser.getBanInfo().getReviewContent() != null && !currentUser.getBanInfo().getReviewContent().isEmpty()) {
+                            description += "\n\nOffensive Review: " + currentUser.getBanInfo().getReviewContent();
+                        }
+                        description += "\n\nContinued offenses will result in a permanent ban.";
+
+                        var dialog = new BanDialog().setTitle("ReviewDB")
+                                .setDescription(description).setOnCancelListener(v -> {
+                                    Utils.launchUrl(Uri.parse("https://reviewdb.mantikafasi.dev/api/redirect").buildUpon().appendQueryParameter("token", settings.getString("token", "")).appendQueryParameter("page", "dashboard/appeal").build());
+                                });
+
+                        dialog.show(Utils.appActivity.getSupportFragmentManager(), "ReviewDB");
+                    }
+                    settings.setString("banEndDate", timeString);
+                }
             });
-        }
+
 
         try {
             patcher.patch(WidgetGuildProfileSheet.class.getDeclaredMethod("configureUI", WidgetGuildProfileSheetViewModel.ViewState.Loaded.class), new Hook(cf -> {
