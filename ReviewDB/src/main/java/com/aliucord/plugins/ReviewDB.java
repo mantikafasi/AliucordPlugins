@@ -123,9 +123,11 @@ public class ReviewDB extends Plugin {
                         }
                     }
                 }
+                if (currentUser.getBanInfo() == null)
+                    return;
 
                 var timeString = currentUser.getBanInfo().getBanEndDate().replace("T", " ").replace("Z", "");
-                if (currentUser.getBanInfo() != null && !(timeString.equals(settings.getString("banEndDate", "")))) {
+                if (!(timeString.equals(settings.getString("banEndDate", "")))) {
 
                     var localDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
