@@ -62,7 +62,8 @@ public class ReviewDBAPI {
             ReviewDB.logger.error(e);
             e.printStackTrace();
         }
-        return null;
+
+        return new Response(false, false, "Unknown error");
     }
 
     public static List<Review> getReviews(long userid) {
