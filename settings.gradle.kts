@@ -27,5 +27,7 @@ include(":UpsideDownChat")
 include(":ShuffleUsers")
 include(":VoiceMessages")
 include(":UserReviews")
+//include(":Shortcuts")
+//include(":FixTimestamps")
 
 rootProject.name = "AliucordPlugins"

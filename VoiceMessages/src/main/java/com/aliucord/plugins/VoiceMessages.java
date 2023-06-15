@@ -28,9 +28,13 @@ import com.aliucord.annotations.AliucordPlugin;
 import com.aliucord.api.SettingsAPI;
 import com.aliucord.entities.Plugin;
 import com.aliucord.utils.DimenUtils;
+import com.aliucord.utils.ReflectUtils;
 import com.aliucord.wrappers.ChannelWrapper;
+import com.discord.stores.StoreStageInstances;
 import com.discord.stores.StoreStream;
+import com.discord.stores.StoreThreadsJoined;
 import com.discord.utilities.color.ColorCompat;
+import com.discord.utilities.permissions.PermissionUtils;
 import com.discord.widgets.chat.input.WidgetChatInputEditText$setOnTextChangedListener$1;
 import com.lytefast.flexinput.fragment.FlexInputFragment;
 import com.lytefast.flexinput.widget.FlexEditText;
@@ -63,6 +67,9 @@ public class VoiceMessages extends Plugin {
     };
     private Thread updateWaveformThread;
     public static SettingsAPI staticSettings;
+    long voicePermissionMask = ((long) 1 << 46);
+    long adminMask = ((long) 1 << 3);
+    long meID = StoreStream.getUsers().getMe().getId();
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -145,64 +152,45 @@ public class VoiceMessages extends Plugin {
             }
         });
 
+
+        var stageInstances = (StoreStageInstances) ReflectUtils.getField(StoreStream.getPermissions(), "storeStageInstances");
+        var storeThreadsJoined = (StoreThreadsJoined) ReflectUtils.getField(StoreStream.getPermissions(), "storeThreadsJoined");
+
         patcher.patch(StoreStream.class.getDeclaredMethod("handleChannelSelected", long.class), cf -> {
-            Utils.mainThread.post(()->{
-                var id = (long) cf.args[0];
+            var id = (long) cf.args[0];
+
+            if (id != 0L) {
+                var guild = StoreStream.getGuilds().getGuild(StoreStream.getGuildSelected().getSelectedGuildId());
                 try {
                     var channel = new ChannelWrapper(StoreStream.getChannels().getChannel(id));
 
-                    if (channel.isDM()) {
-                        recordButton.setVisibility(View.VISIBLE);
-                    } else {
-                        recordButton.setVisibility(View.GONE);
-                    }
-                } catch (NullPointerException ignored) {
-                    // if no channel is selected plugin will throw error
-                }
-            });
-            /*
-            if (id != 0L) {
-                var meID = StoreStream.getUsers().getMe().getId();
+                    var permissions = PermissionUtils.computePermissions(meID,
+                            StoreStream.getChannels().getChannel(id),
+                            StoreStream.getChannels().getGuildChannelInternal$app_productionGoogleRelease(guild.getId(), channel.getParentId()),
+                            guild.getOwnerId(),
+                            StoreStream.getGuilds().getMember(guild.getId(), meID),
+                            StoreStream.getGuilds().getRoles().get(guild.getId()),
+                            stageInstances.getStageInstancesForGuild(guild.getId()),
+                            storeThreadsJoined.hasJoinedInternal(channel.getId())
+                    );
 
-                var guild = StoreStream.getGuilds().getGuild(StoreStream.getGuildSelected().getSelectedGuildId());
-                try {
+                    var admin = PermissionUtils.can(adminMask, permissions);
 
-                    var stageInstances = (StoreStageInstances)ReflectUtils.getField(StoreStream.getPermissions(), "storeStageInstances");
-                    var storeThreadsJoined = (StoreThreadsJoined)ReflectUtils.getField(StoreStream.getPermissions(), "storeThreadsJoined");
-                    var storeChannels = (StoreChannels)ReflectUtils.getField(StoreStream.getPermissions(), "storeChannels");
-                    var hasJoined = storeThreadsJoined.hasJoinedInternal(channel.getId());
-                    var member = StoreStream.getGuilds().getMember(guild.getId(), meID);
-                    var parentId = channel.getParentId();
-                    var parentChannel = storeChannels.getGuildChannelInternal$app_productionGoogleRelease(guild.getId(), parentId);
-                    //computePermissions(long meID, Channel channel, Channel parentChannel, long ownerId, GuildMember member, Map<Long, GuildRole> roles, Map<Long, StageInstance> stageInstances, boolean hasJoined)
-                    var permissions = PermissionUtils.computePermissions(meID, StoreStream.getChannels().getChannel(id), parentChannel, guild.getOwnerId(), member, StoreStream.getGuilds().getRoles().get(guild.getId()), stageInstances.getStageInstancesForGuild(guild.getId()), hasJoined);
-                    var mask = (1L << 46);
-                    if((permissions & mask) != mask)
-                        hasPerms = true;
-                    Utils.showToast(String.valueOf(permissions));
-                    logger.info(String.valueOf(permissions));
+                    Utils.mainThread.post(() -> {
+                        if (admin || PermissionUtils.can(voicePermissionMask, permissions))
+                            recordButton.setVisibility(View.VISIBLE);
+                        else
+                            recordButton.setVisibility(View.GONE);
+                    });
 
-                } catch (NoSuchFieldException | IllegalAccessException e) {
-                    throw new RuntimeException(e);
+                } catch (NullPointerException e) {
+                    logger.error(e);
                 }
             }
-             */
-
         });
-        /*
-        patcher.patch(AnalyticSuperProperties.class.getDeclaredMethod("getSuperProperties"), cf -> {
-            var map = (Map<String, Object>) cf.getResult();
-            map.put("client_version", "175.6 - rn");
-            map.put("client_build_number", 175206);
-            cf.setResult(map);
-        });
-
-         */
-
     }
 
     private double calculateMagnitude(short[] buffer) {
-
         double sum = 0;
         for (short s : buffer) {
             sum += s * s;
@@ -227,7 +215,7 @@ public class VoiceMessages extends Plugin {
         mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.OPUS);
 
         mediaRecorder.setAudioEncodingBitRate(settings.getInt("audioQuality", 128) * 1024);
-        mediaRecorder.setAudioSamplingRate(44100);
+        mediaRecorder.setAudioSamplingRate(settings.getBool("highSamplingRate", false) ? 48000 : 44100);
 
         outputFile = File.createTempFile("audio_record", ".ogg", new File(Constants.BASE_PATH));
         outputFile.deleteOnExit();
