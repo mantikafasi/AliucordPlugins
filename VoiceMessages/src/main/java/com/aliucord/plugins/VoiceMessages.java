@@ -70,6 +70,8 @@ public class VoiceMessages extends Plugin {
     long voicePermissionMask = ((long) 1 << 46);
     long adminMask = ((long) 1 << 3);
     long meID = StoreStream.getUsers().getMe().getId();
+    StoreStageInstances stageInstances;
+    StoreThreadsJoined storeThreadsJoined;
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -79,6 +81,9 @@ public class VoiceMessages extends Plugin {
             Utils.showToast("This plugin requires Android 10 or higher");
             return;
         }
+
+        stageInstances = (StoreStageInstances) ReflectUtils.getField(StoreStream.getPermissions(), "storeStageInstances");
+        storeThreadsJoined = (StoreThreadsJoined) ReflectUtils.getField(StoreStream.getPermissions(), "storeThreadsJoined");
 
         staticSettings = settings;
 
@@ -130,7 +135,6 @@ public class VoiceMessages extends Plugin {
         patcher.patch(FlexInputFragment.class.getDeclaredMethod("onViewCreated", View.class, Bundle.class), cf -> {
             var input = (FlexInputFragment) cf.thisObject;
 
-
             editText = input.getView().findViewById(Utils.getResId("text_input", "id"));
 
             var viewgroup = ((ViewGroup) input.getView().findViewById(Utils.getResId("main_input_container", "id")));
@@ -145,44 +149,22 @@ public class VoiceMessages extends Plugin {
         });
 
         patcher.patch(WidgetChatInputEditText$setOnTextChangedListener$1.class.getDeclaredMethod("afterTextChanged", Editable.class), cf -> {
-            if (editText.getText() == null || editText.getText().toString().equals("") && new ChannelWrapper(StoreStream.getChannelsSelected().getSelectedChannel()).isDM() ) {
-                recordButton.setVisibility(View.VISIBLE);
+            if (editText.getText() == null || editText.getText().toString().equals("")) {
+                ChannelWrapper channel = new ChannelWrapper(StoreStream.getChannelsSelected().getSelectedChannel());
+                logger.info(String.valueOf(channel.getId()));
+                showVoiceChannelIconIfCan(channel.getId());
             } else {
                 recordButton.setVisibility(View.GONE);
             }
         });
 
 
-        var stageInstances = (StoreStageInstances) ReflectUtils.getField(StoreStream.getPermissions(), "storeStageInstances");
-        var storeThreadsJoined = (StoreThreadsJoined) ReflectUtils.getField(StoreStream.getPermissions(), "storeThreadsJoined");
-
         patcher.patch(StoreStream.class.getDeclaredMethod("handleChannelSelected", long.class), cf -> {
             var id = (long) cf.args[0];
 
             if (id != 0L) {
-                var guild = StoreStream.getGuilds().getGuild(StoreStream.getGuildSelected().getSelectedGuildId());
                 try {
-                    var channel = new ChannelWrapper(StoreStream.getChannels().getChannel(id));
-
-                    var permissions = PermissionUtils.computePermissions(meID,
-                            StoreStream.getChannels().getChannel(id),
-                            StoreStream.getChannels().getGuildChannelInternal$app_productionGoogleRelease(guild.getId(), channel.getParentId()),
-                            guild.getOwnerId(),
-                            StoreStream.getGuilds().getMember(guild.getId(), meID),
-                            StoreStream.getGuilds().getRoles().get(guild.getId()),
-                            stageInstances.getStageInstancesForGuild(guild.getId()),
-                            storeThreadsJoined.hasJoinedInternal(channel.getId())
-                    );
-
-                    var admin = PermissionUtils.can(adminMask, permissions);
-
-                    Utils.mainThread.post(() -> {
-                        if (admin || PermissionUtils.can(voicePermissionMask, permissions))
-                            recordButton.setVisibility(View.VISIBLE);
-                        else
-                            recordButton.setVisibility(View.GONE);
-                    });
-
+                    showVoiceChannelIconIfCan(id);
                 } catch (NullPointerException e) {
                     logger.error(e);
                 }
@@ -254,7 +236,6 @@ public class VoiceMessages extends Plugin {
                 });
             }
 
-
         } catch (RuntimeException e) {
             // if you instantly stop recording it causes crash
             logger.error(e);
@@ -268,6 +249,38 @@ public class VoiceMessages extends Plugin {
         if (updateWaveformThread != null && updateWaveformThread.isAlive()) {
             updateWaveformThread.interrupt();
         }
+    }
+
+    public void showVoiceChannelIconIfCan(long channelId) {
+
+        var channel = new ChannelWrapper(StoreStream.getChannels().getChannel(channelId));
+        var guild = StoreStream.getGuilds().getGuild(channel.getGuildId());
+        if (channel.isDM()) {
+            // if channel is dm it causes guild to be null and causes issues
+            setRecordButtonVisibility(View.VISIBLE);
+            return;
+        }
+
+        var permissions = PermissionUtils.computePermissions(meID,
+                StoreStream.getChannels().getChannel(channelId),
+                StoreStream.getChannels().getGuildChannelInternal$app_productionGoogleRelease(guild.getId(), channel.getParentId()),
+                guild.getOwnerId(),
+                StoreStream.getGuilds().getMember(guild.getId(), meID),
+                StoreStream.getGuilds().getRoles().get(guild.getId()),
+                stageInstances.getStageInstancesForGuild(guild.getId()),
+                storeThreadsJoined.hasJoinedInternal(channel.getId())
+        );
+
+        var admin = PermissionUtils.can(adminMask, permissions);
+
+        if (admin || PermissionUtils.can(voicePermissionMask, permissions) || channel.isDM())
+            setRecordButtonVisibility(View.VISIBLE);
+        else
+            setRecordButtonVisibility(View.GONE);
+    }
+
+    public void setRecordButtonVisibility (int visibility){
+        Utils.mainThread.post(() -> recordButton.setVisibility(visibility));
     }
 
     @Override

@@ -1,7 +1,10 @@
-version = "1.1.0"
+version = "1.1.1"
 description = "Send Voice Messages"
 
 aliucord.changelog.set("""
+# 1.1.1
+* Fix some issues
+
 # 1.1.0
 * Make voice messages sendable in servers
 
