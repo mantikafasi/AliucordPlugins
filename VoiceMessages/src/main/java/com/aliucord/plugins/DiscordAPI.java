@@ -17,7 +17,7 @@ import kotlin.io.FilesKt;
 
 public class DiscordAPI {
 
-    public static String uploadFile(File file, long channel) {
+    public static String uploadFile(File file, long channel, String extension) {
         try {
             var req = Http.Request.newDiscordRNRequest("/channels/" + channel + "/attachments","POST")
                     .setHeader("content-type", "application/json")
@@ -34,7 +34,8 @@ public class DiscordAPI {
 
             var attachment = jsonResponse.getJSONArray("attachments").getJSONObject(0);
 
-            var uploadReq = new Http.Request(attachment.getString("upload_url")).setHeader("Content-Type", "audio/ogg")
+            String type = extension == ".ogg" ? "audio/ogg" : "audio/x-aac";
+            var uploadReq = new Http.Request(attachment.getString("upload_url")).setHeader("Content-Type", type)
                     .setHeader("Content-Length", file.length() + "")
                     .setHeader("user-agent", "Discord-Android/175207;RNA");
 
@@ -49,13 +50,13 @@ public class DiscordAPI {
         }
     }
 
-    public static String sendVoiceMessage(String fileName, float duration, String waveform, long channelID) {
+    public static String sendVoiceMessage(String fileName, float duration, String waveform, long channelID, String extension) {
         try {
             var request = Http.Request.newDiscordRNRequest("/channels/" + channelID + "/messages","POST");
             request.setHeader("content-type", "application/json");
 
             VoiceMessageBody body = new VoiceMessageBody(channelID, new VoiceMessageBody.Attachment(
-                    "voice-message.ogg",
+                    "voice-message" + extension,
                     fileName,
                     duration,
                     waveform
