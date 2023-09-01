@@ -72,14 +72,18 @@ public class VoiceMessages extends Plugin {
     long meID = StoreStream.getUsers().getMe().getId();
     StoreStageInstances stageInstances;
     StoreThreadsJoined storeThreadsJoined;
+    int outputFormat = MediaRecorder.OutputFormat.OGG;
+    int audioEncoder = MediaRecorder.AudioEncoder.OPUS;
+    String extension = ".ogg";
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
     public void start(Context context) throws NoSuchMethodException, NoSuchFieldException, IllegalAccessException {
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            Utils.showToast("This plugin requires Android 10 or higher");
-            return;
+            outputFormat = MediaRecorder.OutputFormat.MPEG_2_TS;
+            audioEncoder = MediaRecorder.AudioEncoder.AAC;
+            extension = ".aac";
         }
 
         stageInstances = (StoreStageInstances) ReflectUtils.getField(StoreStream.getPermissions(), "storeStageInstances");
@@ -193,13 +197,13 @@ public class VoiceMessages extends Plugin {
 
         // prepare media recorder
         mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-        mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.OGG);
-        mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.OPUS);
+        mediaRecorder.setOutputFormat(outputFormat);
+        mediaRecorder.setAudioEncoder(audioEncoder);
 
         mediaRecorder.setAudioEncodingBitRate(settings.getInt("audioQuality", 128) * 1024);
         mediaRecorder.setAudioSamplingRate(settings.getBool("highSamplingRate", false) ? 48000 : 44100);
 
-        outputFile = File.createTempFile("audio_record", ".ogg", new File(Constants.BASE_PATH));
+        outputFile = File.createTempFile("audio_record", extension, new File(Constants.BASE_PATH));
         outputFile.deleteOnExit();
         mediaRecorder.setOutputFile(outputFile.getAbsolutePath());
 
@@ -222,7 +226,7 @@ public class VoiceMessages extends Plugin {
             if (send) {
                 Utils.threadPool.execute(() -> {
                     var waveform = waveFormView.getWaveForm();
-                    var filename = DiscordAPI.uploadFile(outputFile, StoreStream.getChannelsSelected().getId());
+                    var filename = DiscordAPI.uploadFile(outputFile, StoreStream.getChannelsSelected().getId(), extension);
 
                     // extract duration
                     Uri uri = Uri.parse(outputFile.getAbsolutePath());
@@ -232,7 +236,7 @@ public class VoiceMessages extends Plugin {
                     String durationStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
                     float seconds = (Integer.parseInt(durationStr) / 1000.0f);
 
-                    DiscordAPI.sendVoiceMessage(filename, seconds, waveform, discordid);
+                    DiscordAPI.sendVoiceMessage(filename, seconds, waveform, discordid, extension);
                 });
             }
 
