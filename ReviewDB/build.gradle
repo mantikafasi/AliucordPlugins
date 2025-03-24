@@ -1,8 +1,9 @@
 version = "1.1.6"
 description = "Review other users and servers"
 aliucord {
-    author("Ven",343383572805058560)
+    author("Ven",343383572805058560,true)
 }
+
 aliucord.changelog.set("""
 # 1.1.4
 * Show ban modal if user gets banned

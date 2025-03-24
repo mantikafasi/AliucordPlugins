@@ -27,6 +27,7 @@ include(":UpsideDownChat")
 include(":ShuffleUsers")
 include(":VoiceMessages")
 include(":UserReviews")
+include(":TypingProfiles")
 //include(":Shortcuts")
 //include(":FixTimestamps")
 
