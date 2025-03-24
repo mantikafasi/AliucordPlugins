@@ -99,9 +99,9 @@ public class TypingProfiles extends Plugin {
         channelSelectedSub = RxUtils.subscribe(StoreStream.getChannelsSelected().observeId(), channelId -> {
             try {
                 var channel = StoreStream.getChannels().getChannel(channelId);
+
                 if (old.get() != null && !old.get().isUnsubscribed()) old.get().unsubscribe();
                 old.set(RxUtils.subscribe(StoreStream.getUsersTyping().observeTypingUsers(channelId), _typingUsers -> {
-
                     if (overlay.get() != null) {
                         var typing = overlay.get();
                         try {
@@ -115,6 +115,12 @@ public class TypingProfiles extends Plugin {
                                 Utils.mainThread.post(() -> {
                                     LinearLayout linearLayout = binding.getRoot().findViewById(linearLayoutId);
                                     linearLayout.removeAllViews();
+
+                                    if (channel == null) {
+                                        logger.info("Channel is null");
+                                        return;
+                                    } // how th does this even happen???
+
                                     if (_typingUsers.isEmpty() && channel.x() <= 0) {
                                         // Stop TypingDots
                                         binding.d.c();
