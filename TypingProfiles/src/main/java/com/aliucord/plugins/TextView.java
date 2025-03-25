@@ -17,7 +17,7 @@ import com.discord.utilities.color.ColorCompat;
 @RequiresApi(api = Build.VERSION_CODES.O)
 public class TextView extends androidx.appcompat.widget.AppCompatTextView {
     static LinearLayout.LayoutParams textLayoutParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, DimenUtils.dpToPx(24));
-    Typeface typeface = Utils.appActivity.getResources().getFont(Utils.getResId("whitney_medium", "font"));
+    public static Typeface typeface = Utils.appActivity.getResources().getFont(Utils.getResId("whitney_medium", "font"));
     int colorId = Utils.getResId("colorTextNormal", "attr");
     public TextView(@NonNull Context context, String text) {
         super(context);

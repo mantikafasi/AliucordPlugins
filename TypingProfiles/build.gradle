@@ -6,7 +6,12 @@ version = "1.0.1"
 description = "Typing Profiles"
 
 aliucord.changelog.set("""
+# 1.0.3
+- Minor tweaks
+- Now clicking username and profile photo will open users profile
+
+
 # 1.0.1
-# fixed crash caused by null channel (how th does that happen)
+- fixed crash caused by null channel (how th does that happen)
 
 """)

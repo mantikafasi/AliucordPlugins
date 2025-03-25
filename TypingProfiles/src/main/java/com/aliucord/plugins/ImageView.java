@@ -5,10 +5,12 @@ import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
 
+import com.aliucord.Utils;
 import com.aliucord.utils.DimenUtils;
 import com.discord.models.user.User;
 import com.discord.utilities.icon.IconUtils;
 import com.discord.utilities.images.MGImages;
+import com.discord.widgets.user.usersheet.WidgetUserSheet;
 import com.facebook.drawee.view.SimpleDraweeView;
 
 public class ImageView extends SimpleDraweeView {
@@ -22,6 +24,7 @@ public class ImageView extends SimpleDraweeView {
     public ImageView(@NonNull Context context, User user) {
         super(context);
 
+        setOnClickListener(v -> WidgetUserSheet.Companion.show(user.getId(), Utils.appActivity.getSupportFragmentManager()));
         setLayoutParams(layoutParams);
         IconUtils.setIcon(this, IconUtils.getForUser(user));
         MGImages.setRoundingParams(/* imageView = */ this, /* borderRadius = */ DimenUtils.dpToPx(8), false, null, null, null);

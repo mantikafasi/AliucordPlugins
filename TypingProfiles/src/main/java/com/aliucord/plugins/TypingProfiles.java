@@ -28,6 +28,7 @@ import com.discord.utilities.view.extensions.ViewExtensions;
 import com.discord.views.typing.TypingDots;
 import com.discord.widgets.chat.overlay.ChatTypingModel;
 import com.discord.widgets.chat.overlay.WidgetChatOverlay;
+import com.discord.widgets.user.usersheet.WidgetUserSheet;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -136,7 +137,8 @@ public class TypingProfiles extends Plugin {
                                     // this is to not reimplement discords "and x others" feature
                                     Map<String, User> signatureMap = new HashMap<>();
                                     for (int i = 0; i < users.size(); i++) {
-                                        signatureMap.put(generateRandomString(users.get(i).getUsername().length()), users.get(i));
+                                        // adding 3 chars because of images
+                                        signatureMap.put(generateRandomString(users.get(i).getUsername().length() + 3), users.get(i));
                                     }
 
                                     String typingString;
@@ -176,6 +178,8 @@ public class TypingProfiles extends Plugin {
                                         var end = pair.second;
                                         var beginning = typingString.substring(previous, start);
 
+
+
                                         previous = end;
                                         var beginningTextView = new TextView(context, beginning);
 
@@ -197,7 +201,8 @@ public class TypingProfiles extends Plugin {
                                         }
 
                                         var usernameTextView = new TextView(context, username);
-                                        usernameTextView.setTypeface(null, Typeface.BOLD);
+                                        usernameTextView.setOnClickListener(v -> WidgetUserSheet.Companion.show(user.getId(), Utils.appActivity.getSupportFragmentManager()));
+                                        usernameTextView.setTypeface(TextView.typeface, Typeface.BOLD);
 
                                         linearLayout.addView(usernameTextView);
                                     }
