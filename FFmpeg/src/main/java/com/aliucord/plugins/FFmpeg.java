@@ -1,18 +1,17 @@
 package com.aliucord.plugins;
 
 import android.content.Context;
+import android.net.Uri;
 
-import com.aliucord.Constants;
-import com.aliucord.Http;
 import com.aliucord.Utils;
 import com.aliucord.annotations.AliucordPlugin;
 import com.aliucord.entities.Plugin;
 import com.aliucord.patcher.Hook;
 import com.arthenica.mobileffmpeg.Config;
+import com.discord.api.message.LocalAttachment;
+import com.lytefast.flexinput.model.Attachment;
 
 import java.io.File;
-
-import kotlin.io.FilesKt;
 
 @SuppressWarnings("unused")
 @AliucordPlugin
@@ -21,63 +20,49 @@ public class FFmpeg extends Plugin {
     @Override
     public void start(Context context) {
         try {
-            // Patch the HTTP request execution to intercept file uploads
-            patchFileUploads();
+            // Patch the LocalAttachment creation to intercept HEIC files
+            patchLocalAttachment();
             logger.info("FFmpeg plugin loaded - HEIC to JPEG conversion enabled");
         } catch (Exception e) {
             logger.error("Failed to start FFmpeg plugin", e);
         }
     }
 
-    private void patchFileUploads() throws NoSuchMethodException {
-        // Patch the Http.Request.executeWithBody method to intercept file uploads
+    private void patchLocalAttachment() throws NoSuchMethodException {
+        // Patch the LocalAttachment constructor to intercept HEIC files
         patcher.patch(
-            Http.Request.class.getDeclaredMethod("executeWithBody", byte[].class),
+            LocalAttachment.class.getDeclaredConstructor(long.class, String.class, String.class),
             new Hook(cf -> {
                 try {
-                    // Check if this is a file upload request
-                    Http.Request request = (Http.Request) cf.thisObject;
-                    String contentType = request.headers.get("Content-Type");
+                    String uriString = (String) cf.args[1];
+                    String displayName = (String) cf.args[2];
                     
-                    // Check if this is an image upload (HEIC files are uploaded as images)
-                    if (contentType != null && contentType.startsWith("image/")) {
-                        // Check for HEIC content type or check the actual file being uploaded
-                        // We need to trace back to find the File object
-                        // This is complex, so let's use a different approach
-                    }
-                } catch (Exception e) {
-                    logger.error("Error in upload interception", e);
-                }
-            })
-        );
-
-        // Better approach: Patch FilesKt.readBytes which is used to read files for upload
-        try {
-            patcher.patch(
-                FilesKt.class.getDeclaredMethod("readBytes", File.class),
-                new Hook(cf -> {
-                    try {
-                        File file = (File) cf.args[0];
-                        if (file != null && file.exists()) {
-                            String fileName = file.getName().toLowerCase();
-                            if (fileName.endsWith(".heic") || fileName.endsWith(".heif")) {
-                                logger.info("Intercepted HEIC file: " + file.getName());
-                                File converted = convertHeicToJpeg(file);
-                                if (converted != null && !converted.equals(file)) {
-                                    // Replace the file argument with the converted file
-                                    cf.args[0] = converted;
-                                    logger.info("Replaced with converted JPEG: " + converted.getName());
+                    if (uriString != null && displayName != null) {
+                        // Check if this is a HEIC file
+                        String lowerDisplayName = displayName.toLowerCase();
+                        if (lowerDisplayName.endsWith(".heic") || lowerDisplayName.endsWith(".heif")) {
+                            logger.info("Intercepted HEIC file in LocalAttachment: " + displayName);
+                            
+                            // Get the file from URI
+                            Uri uri = Uri.parse(uriString);
+                            File heicFile = new File(uri.getPath());
+                            
+                            if (heicFile.exists()) {
+                                File converted = convertHeicToJpeg(heicFile);
+                                if (converted != null && !converted.equals(heicFile)) {
+                                    // Replace the URI and display name with the converted file
+                                    cf.args[1] = Uri.fromFile(converted).toString();
+                                    cf.args[2] = converted.getName();
+                                    logger.info("Replaced LocalAttachment with converted JPEG: " + converted.getName());
                                 }
                             }
                         }
-                    } catch (Exception e) {
-                        logger.error("Error processing file in readBytes", e);
                     }
-                })
-            );
-        } catch (Exception e) {
-            logger.warn("Could not patch FilesKt.readBytes, trying alternative approach", e);
-        }
+                } catch (Exception e) {
+                    logger.error("Error processing LocalAttachment", e);
+                }
+            })
+        );
     }
 
     /**

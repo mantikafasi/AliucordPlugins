@@ -11,16 +11,16 @@ Automatically converts HEIC (High Efficiency Image Container) images to JPEG for
 
 ## How it works
 
-The plugin hooks into Discord's file upload process and intercepts HEIC files before they are uploaded. When a HEIC file is detected, it:
+The plugin hooks into Discord's LocalAttachment creation process and intercepts HEIC files before they are uploaded. When a HEIC file is detected, it:
 
 1. Converts the HEIC file to JPEG format using FFmpeg
-2. Replaces the original file with the converted JPEG
+2. Replaces the original LocalAttachment with one pointing to the converted JPEG
 3. Uploads the JPEG file instead
 
 ## Technical Details
 
 - Uses the `mobile-ffmpeg-full` library for conversion
-- Hooks into `kotlin.io.FilesKt.readBytes()` to intercept file uploads
+- Hooks into `com.discord.api.message.LocalAttachment` constructor to intercept file attachments
 - Maintains high image quality (FFmpeg quality setting: 2)
 - Converted files are saved with `_converted.jpg` suffix
 
