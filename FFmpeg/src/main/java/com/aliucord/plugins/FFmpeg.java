@@ -100,11 +100,11 @@ public class FFmpeg extends Plugin {
         try {
             // Create output file in the same directory
             String outputPath = heicFile.getAbsolutePath();
-            outputPath = outputPath.replaceAll("\\.(heic|heif)$", "_converted.jpg");
+            outputPath = outputPath.replaceAll("(?i)\\.(heic|heif)$", "_converted.jpg");
             File outputFile = new File(outputPath);
 
             // Check if already converted
-            if (outputFile.exists()) {
+            if (outputFile.exists() && outputFile.length() > 0) {
                 logger.info("Using previously converted file: " + outputFile.getName());
                 return outputFile;
             }
@@ -117,19 +117,20 @@ public class FFmpeg extends Plugin {
                 outputFile.getAbsolutePath()
             };
 
-            logger.info("Converting HEIC to JPEG: " + heicFile.getName());
+            logger.info("Converting HEIC to JPEG: " + heicFile.getName() + " -> " + outputFile.getName());
             
             // Execute FFmpeg command
             int result = com.arthenica.mobileffmpeg.FFmpeg.execute(command);
 
             if (result == 0) {
-                logger.info("Conversion successful: " + outputFile.getName());
+                logger.info("Conversion successful: " + outputFile.getName() + " (" + outputFile.length() + " bytes)");
+                Utils.showToast("Converted HEIC to JPEG: " + heicFile.getName());
                 return outputFile;
             } else {
                 logger.error("FFmpeg conversion failed with code: " + result);
                 String output = Config.getLastCommandOutput();
                 logger.error("FFmpeg output: " + output);
-                Utils.showToast("Failed to convert HEIC image (code " + result + ")");
+                Utils.showToast("Failed to convert HEIC image");
                 return heicFile; // Return original file on failure
             }
         } catch (Exception e) {
