@@ -28,7 +28,7 @@ import com.discord.widgets.settings.WidgetSettings;
 import com.discord.widgets.settings.WidgetSettingsAppearance;
 import com.discord.widgets.settings.WidgetSettingsAppearance$updateTheme$1;
 
-import java.util.Calendar;
+// import java.util.Calendar;
 
 @AliucordPlugin
 public class PluginRepo extends Plugin {
@@ -67,7 +67,7 @@ public class PluginRepo extends Plugin {
             });
         });
          */
-
+        /*
         var guh = Calendar.getInstance().get(Calendar.MONTH);
         var guh2 = Calendar.getInstance().get(Calendar.DAY_OF_MONTH);
         if (guh == 3 && guh2 == 1 && settings.getBool("dj391kl",true)) {
@@ -77,7 +77,7 @@ public class PluginRepo extends Plugin {
                 Utils.showToast("Have a blind day! **PluginRepo**");
             },3000);
         }
-
+        */
 
         patcher.patch(WidgetSettings.class.getDeclaredMethod("onViewBound", View.class), new Hook(cf -> {
             Context ctx = ((WidgetSettings) cf.thisObject).requireContext();
