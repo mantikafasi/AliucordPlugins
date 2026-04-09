@@ -38,7 +38,7 @@ public class lightshotRoulette extends Plugin {
 
     public String generateLinks(long count) {
         String val = "";
-        String str = "abcdefghijklmnoprstuxwyz0123456789";
+        String str = "abcdefghijklmnopqrstuvwxyz0123456789";
         Random random = new Random();
         int charCount = 6;
         for (int j = 0; j < count; j++) {
