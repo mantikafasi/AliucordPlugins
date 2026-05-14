@@ -23,6 +23,7 @@ import com.aliucord.api.SettingsAPI;
 import com.aliucord.entities.NotificationData;
 import com.aliucord.entities.Plugin;
 import com.aliucord.patcher.Hook;
+import com.discord.stores.StoreChat;
 import com.discord.stores.StoreStream;
 import com.discord.widgets.guilds.profile.WidgetGuildProfileSheet;
 import com.discord.widgets.guilds.profile.WidgetGuildProfileSheetViewModel;
@@ -125,6 +126,7 @@ public class ReviewDB extends Plugin {
                 }
                 if (currentUser.getBanInfo() == null)
                     return;
+
 
                 var timeString = currentUser.getBanInfo().getBanEndDate().replace("T", " ").replace("Z", "");
                 if (!(timeString.equals(settings.getString("banEndDate", "")))) {

@@ -12,6 +12,7 @@ public class User {
     private int warningCount;
     List<Badge> badges = new ArrayList <> ();
     BanInfo banInfo;
+    Notification notification;
     private int lastReviewID;
     private float type;
 
@@ -38,6 +39,10 @@ public class User {
 
     public BanInfo getBanInfo() {
         return banInfo;
+    }
+
+    public Notification getNotification() {
+        return notification;
     }
 
     public int getLastReviewID() {

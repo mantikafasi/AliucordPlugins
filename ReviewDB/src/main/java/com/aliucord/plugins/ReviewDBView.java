@@ -33,27 +33,63 @@ public class ReviewDBView extends LinearLayout {
     RecyclerView recycler;
     TextView title;
     TextView nobodyReviewed;
+    TextView previousPage;
+    TextView pageNumber;
+    TextView nextPage;
+    LinearLayout pageControls;
     Long id;
+    String titlePrefix;
+    int reviewCount = 0;
+    int offset = 0;
+    int lastPageSize = 0;
 
     Runnable loadData = (() -> {
+        loadPage(0);
+    });
 
-        reviews.clear();
-        var data = ReviewDBAPI.getReviews(id);
+    private void loadPage(int newOffset) {
+        var data = ReviewDBAPI.getReviewResponse(id, newOffset);
+        var rating = ReviewDBAPI.getRating(id);
+        var newReviews = new ArrayList<Review>();
+        var newReviewCount = 0;
+        var newOffsetValue = offset;
+        var newLastPageSize = 0;
         if (data != null) {
-            reviews.addAll(data);
+            if (data.getReviews() != null) newReviews.addAll(data.getReviews());
+            newReviewCount = data.getReviewCount();
+            newOffsetValue = newOffset;
+            newLastPageSize = data.getReviews() == null ? 0 : data.getReviews().size();
         } else {
-            reviews.clear();
-            reviews.add(new Review("There was an error while getting reviews", 0L, 0L, -1, ""));
+            newReviews.add(new Review("There was an error while getting reviews", 0L, 0L, -1, ""));
         }
 
+        var finalReviewCount = newReviewCount;
+        var finalOffset = newOffsetValue;
+        var finalLastPageSize = newLastPageSize;
         Utils.mainThread.post(() -> {
+            reviews.clear();
+            reviews.addAll(newReviews);
+            reviewCount = finalReviewCount;
+            offset = finalOffset;
+            lastPageSize = finalLastPageSize;
+
             if (reviews.size() == 0) nobodyReviewed.setVisibility(VISIBLE);
             else nobodyReviewed.setVisibility(GONE);
 
+            var page = offset / 50 + 1;
+            title.setText(titlePrefix + " (" + reviewCount + ", rating " + rating + ")");
+            pageNumber.setText("Page " + page);
+            setPageButtonState(previousPage, offset > 0);
+            setPageButtonState(nextPage, data.hasNextPage);
             adapter.notifyDataSetChanged();
         });
 
-    });
+        var token = ReviewDB.staticSettings.getString("token", "");
+        if (!token.equals("")) {
+            var votes = ReviewDBAPI.getVotes(id, token);
+            Utils.mainThread.post(() -> adapter.setVotes(votes));
+        }
+    }
 
     public enum PaddingType {
         User,
@@ -74,9 +110,13 @@ public class ReviewDBView extends LinearLayout {
         et = new CustomEditText(ctx);
         submit = new ImageView(ctx);
         nobodyReviewed = new TextView(ctx);
+        previousPage = new TextView(ctx, null, 0, com.lytefast.flexinput.R.i.UiKit_Settings_Item_Icon);
+        pageNumber = new TextView(ctx, null, 0, com.lytefast.flexinput.R.i.UiKit_Settings_Item_Icon);
+        nextPage = new TextView(ctx, null, 0, com.lytefast.flexinput.R.i.UiKit_Settings_Item_Icon);
         padding = DimenUtils.getDefaultPadding();
         var reporting = new TextView(ctx);
         var buttonFrameLayout = new FrameLayout(ctx);
+        pageControls = new LinearLayout(ctx);
 
         //etLayout.setGravity(Gravity.CENTER_VERTICAL);
         reporting.setText("Note: To report someone's review, long click the review and click 'Report Review'");
@@ -85,6 +125,7 @@ public class ReviewDBView extends LinearLayout {
         sendCommentLayout.addView(et);
         sendCommentLayout.addView(buttonFrameLayout);
         sendCommentLayout.setOrientation(HORIZONTAL);
+        pageControls.setOrientation(HORIZONTAL);
 
         nobodyReviewed.setText("Looks like nobody has reviewed this user: you can be first");
         nobodyReviewed.setVisibility(GONE);
@@ -98,14 +139,16 @@ public class ReviewDBView extends LinearLayout {
             nobodyReviewed.setPadding(padding, 0, padding, padding);
             title.setPadding(padding, padding, 0, 0);
             recycler.setPadding(padding/2,0,0,0);
-            title.setText("User Reviews");
+            titlePrefix = "User Reviews";
+            title.setText(titlePrefix);
         } else {
             submit.setPadding(padding / 3 * 2, 0, padding / 2, 0);
             nobodyReviewed.setPadding(0,padding/3,0,padding);
             reporting.setPadding(0,padding/3,0,0);
             title.setPadding(0,padding,0,0);
             recycler.setPadding(0,padding,0,0);
-            title.setText("Server Reviews");
+            titlePrefix = "Server Reviews";
+            title.setText(titlePrefix);
         }
 
         addView(title);
@@ -113,6 +156,7 @@ public class ReviewDBView extends LinearLayout {
         addView(recycler);
         addView(nobodyReviewed);
         addView(sendCommentLayout);
+        addView(pageControls);
 
         var etLayoutParams = (android.widget.LinearLayout.LayoutParams) et.getLayoutParams();
         etLayoutParams.width = 0;
@@ -130,6 +174,33 @@ public class ReviewDBView extends LinearLayout {
         recycler.setLayoutManager(new LinearLayoutManager(ctx, RecyclerView.VERTICAL, false));
         adapter = new com.aliucord.plugins.ReviewListModal.Adapter(reviews);
         recycler.setAdapter(adapter);
+
+        previousPage.setText("Previous Page");
+        pageNumber.setText("Page 1");
+        nextPage.setText("Next Page");
+        previousPage.setGravity(android.view.Gravity.CENTER);
+        pageNumber.setGravity(android.view.Gravity.CENTER);
+        nextPage.setGravity(android.view.Gravity.CENTER);
+        pageControls.setPadding(padding, 0, padding, padding / 2);
+        setPageButtonState(previousPage, false);
+        setPageButtonState(nextPage, false);
+        previousPage.setOnClickListener(v -> Utils.threadPool.execute(() -> loadPage(Math.max(0, offset - 50))));
+        nextPage.setOnClickListener(v -> Utils.threadPool.execute(() -> loadPage(offset + 50)));
+        pageControls.addView(previousPage);
+        pageControls.addView(pageNumber);
+        pageControls.addView(nextPage);
+        var previousParams = (LinearLayout.LayoutParams) previousPage.getLayoutParams();
+        previousParams.width = 0;
+        previousParams.weight = 1;
+        previousPage.setLayoutParams(previousParams);
+        var pageParams = (LinearLayout.LayoutParams) pageNumber.getLayoutParams();
+        pageParams.width = 0;
+        pageParams.weight = 1;
+        pageNumber.setLayoutParams(pageParams);
+        var nextParams = (LinearLayout.LayoutParams) nextPage.getLayoutParams();
+        nextParams.width = 0;
+        nextParams.weight = 1;
+        nextPage.setLayoutParams(nextParams);
 
         Utils.threadPool.execute(loadData);
 
@@ -194,4 +265,7 @@ public class ReviewDBView extends LinearLayout {
 
     }
 
+    private void setPageButtonState(TextView button, boolean enabled) {
+        button.setEnabled(enabled);
+    }
 }
