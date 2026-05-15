@@ -1,0 +1,7 @@
+version = "1.0.0"
+description = "Converts HEIC/HEIF images to JPG before uploading"
+
+aliucord.changelog.set("""
+# 1.0.0
+* Convert HEIC and HEIF local attachments to JPG before Discord uploads them
+""")

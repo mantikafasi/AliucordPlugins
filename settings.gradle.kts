@@ -2,7 +2,7 @@
 //include(":byebyeSlashCommands")
 //include(":EncryptDMs")
 
-include(":FFmpeg")
+include(":HeicImageConverter")
 include(":LightShotRoulette")
 include(":BetterSilentTyping")
 include(":HighlightReplies")
