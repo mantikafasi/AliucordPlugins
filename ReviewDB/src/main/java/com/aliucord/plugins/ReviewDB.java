@@ -23,6 +23,7 @@ import com.aliucord.api.SettingsAPI;
 import com.aliucord.entities.NotificationData;
 import com.aliucord.entities.Plugin;
 import com.aliucord.patcher.Hook;
+import com.discord.stores.StoreChat;
 import com.discord.stores.StoreStream;
 import com.discord.widgets.guilds.profile.WidgetGuildProfileSheet;
 import com.discord.widgets.guilds.profile.WidgetGuildProfileSheetViewModel;
@@ -126,6 +127,7 @@ public class ReviewDB extends Plugin {
                 if (currentUser.getBanInfo() == null)
                     return;
 
+
                 var timeString = currentUser.getBanInfo().getBanEndDate().replace("T", " ").replace("Z", "");
                 if (!(timeString.equals(settings.getString("banEndDate", "")))) {
 
@@ -162,6 +164,9 @@ public class ReviewDB extends Plugin {
 
         try {
             patcher.patch(WidgetGuildProfileSheet.class.getDeclaredMethod("configureUI", WidgetGuildProfileSheetViewModel.ViewState.Loaded.class), new Hook(cf -> {
+                if (!(cf.args[0] instanceof WidgetGuildProfileSheetViewModel.ViewState.Loaded))
+                    return;
+
                 var viewstate = (WidgetGuildProfileSheetViewModel.ViewState.Loaded) cf.args[0];
                 fragmentManager = ((WidgetGuildProfileSheet) cf.thisObject).getChildFragmentManager();
 
@@ -182,6 +187,9 @@ public class ReviewDB extends Plugin {
 
         try {
             patcher.patch(WidgetUserSheet.class.getDeclaredMethod("configureUI", WidgetUserSheetViewModel.ViewState.class), new Hook(cf -> {
+                if (!(cf.args[0] instanceof WidgetUserSheetViewModel.ViewState.Loaded))
+                    return;
+
                 var viewstate = (WidgetUserSheetViewModel.ViewState.Loaded) cf.args[0];
 
                 var scrollView = (NestedScrollView) (WidgetUserSheet.access$getBinding$p((WidgetUserSheet) cf.thisObject)).getRoot();

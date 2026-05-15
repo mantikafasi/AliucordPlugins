@@ -26,16 +26,20 @@ import com.aliucord.plugins.RoleIconView;
 import com.aliucord.plugins.ReviewDB;
 import com.aliucord.plugins.dataclasses.Badge;
 import com.aliucord.plugins.dataclasses.Review;
+import com.aliucord.plugins.dataclasses.ReviewVote;
 import com.aliucord.utils.DimenUtils;
 import com.discord.stores.StoreStream;
 import com.discord.widgets.user.usersheet.WidgetUserSheet;
 
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Adapter extends RecyclerView.Adapter<ViewHolder> {
     private static final int layoutId = Utils.getResId("widget_chat_list_adapter_item_text", "layout");
 
     public final List<Review> reviews;
+    public final Map<Integer, Boolean> votes = new HashMap<>();
 
     public Adapter(List<Review> reviews) {
         this.reviews = reviews;
@@ -108,7 +112,15 @@ public class Adapter extends RecyclerView.Adapter<ViewHolder> {
         }
 
         holder.message.setText(review.getComment());
-        holder.username.setText(review.getUsername());
+        var name = review.getUsername();
+        if (review.hasVoting()) {
+            if (review.getScore() != 0) name += "  " + (review.getScore() >= 0 ? "+" : "") + review.getScore();
+            if (votes.containsKey(review.getId())) name += votes.get(review.getId()) ? " ▲" : " ▼";
+        }
+        holder.username.setText(name);
+        var timestamp = review.getTimestampText();
+        holder.timestamp.setText(timestamp);
+        holder.timestamp.setVisibility(timestamp.equals("") ? android.view.View.GONE : android.view.View.VISIBLE);
         holder.username.setOnLongClickListener(view -> {
 
             ClipboardManager clipboard = (ClipboardManager) Utils.getAppActivity().getSystemService(Context.CLIPBOARD_SERVICE);
@@ -135,5 +147,24 @@ public class Adapter extends RecyclerView.Adapter<ViewHolder> {
     }
     public int getReviewID(Review review) {
         return CollectionUtils.findIndex(reviews,review1 -> review==review1);
+    }
+
+    public void setVotes(List<ReviewVote> reviewVotes) {
+        votes.clear();
+        if (reviewVotes == null) return;
+        for (ReviewVote vote : reviewVotes) {
+            votes.put(vote.reviewID, vote.isUpvote);
+        }
+        notifyDataSetChanged();
+    }
+
+    public void setVote(Review review, boolean isUpvote) {
+        Boolean oldVote = votes.get(review.getId());
+        if (oldVote != null && oldVote == isUpvote) return;
+        if (oldVote == null) review.score += isUpvote ? 1 : -1;
+        else review.score += isUpvote ? 2 : -2;
+        votes.put(review.getId(), isUpvote);
+        var index = getReviewID(review);
+        if (index != -1) notifyItemChanged(index);
     }
 }

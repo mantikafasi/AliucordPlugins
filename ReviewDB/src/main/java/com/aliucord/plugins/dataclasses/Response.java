@@ -6,6 +6,12 @@ public class Response {
     boolean success;
     String message;
     List<Review> reviews;
+    int reviewCount;
+    boolean hasOptedOut;
+    float averageRating;
+    List<ReviewVote> votes;
+    public boolean hasNextPage;
+
 
     public List<Review> getReviews() {
         return reviews;
@@ -34,6 +40,22 @@ public class Response {
 
     public boolean isUpdated() {
         return updated;
+    }
+
+    public int getReviewCount() {
+        return reviewCount;
+    }
+
+    public boolean hasOptedOut() {
+        return hasOptedOut;
+    }
+
+    public float getAverageRating() {
+        return averageRating;
+    }
+
+    public List<ReviewVote> getVotes() {
+        return votes;
     }
 
     @Override

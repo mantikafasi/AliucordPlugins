@@ -5,22 +5,32 @@ buildscript {
     repositories {
         google()
         mavenCentral()
+        gradlePluginPortal()
         maven("https://jitpack.io")
+        maven("https://maven.aliucord.com/releases")
         maven("https://maven.aliucord.com/snapshots")
+
+
     }
     dependencies {
-        classpath("com.aliucord:gradle:main-SNAPSHOT")
-        classpath("com.aliucord:jadb:1.2.1-SNAPSHOT")
-        classpath("com.android.tools.build:gradle:7.0.4")
+        classpath(libs.gradle)
+        classpath(libs.jadb)
+        classpath(libs.build.gradle)
     }
 }
+
 
 allprojects {
     repositories {
         google()
         mavenCentral()
+        maven("https://maven.aliucord.com/releases")
+        // Aliucord/Aliucord isnt in releases
         maven("https://maven.aliucord.com/snapshots")
+
     }
+
+    apply(plugin = "com.aliucord.plugin")
 }
 
 fun Project.aliucord(configuration: AliucordExtension.() -> Unit) = extensions.getByName<AliucordExtension>("aliucord").configuration()
@@ -28,11 +38,12 @@ fun Project.aliucord(configuration: AliucordExtension.() -> Unit) = extensions.g
 fun Project.android(configuration: BaseExtension.() -> Unit) = extensions.getByName<BaseExtension>("android").configuration()
 
 subprojects {
-    apply(plugin = "com.android.library")
-    apply(plugin = "com.aliucord.gradle")
 
+    apply(plugin = "com.android.library")
+    apply(plugin = "com.aliucord.plugin")
 
     aliucord {
+
         author("mantikafasi", 287555395151593473)
 
         updateUrl.set("https://raw.githubusercontent.com/mantikafasi/AliucordPlugins/builds/updater.json")
@@ -40,6 +51,7 @@ subprojects {
     }
 
     android {
+        namespace = "com.aliucord.plugins"
         compileSdkVersion(30)
 
         defaultConfig {
@@ -55,14 +67,14 @@ subprojects {
     }
 
     dependencies {
-        val discord by configurations
         val compileOnly by configurations
 
-        discord("com.discord:discord:aliucord-SNAPSHOT")
-        compileOnly("com.aliucord:Aliucord:main-SNAPSHOT")
+
+        compileOnly("com.discord:discord:126021")
+        compileOnly("com.aliucord:Aliucord:2.4.0")
     }
 }
 
-task<Delete>("clean") {
+tasks.register("clean") {
     delete(rootProject.buildDir)
 }

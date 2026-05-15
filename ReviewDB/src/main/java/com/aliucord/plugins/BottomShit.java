@@ -3,7 +3,6 @@ package com.aliucord.plugins;
 import static com.aliucord.plugins.ReviewDBAPI.AUTH_URL;
 
 import android.annotation.SuppressLint;
-import android.net.Uri;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
@@ -22,8 +21,7 @@ import com.discord.stores.StoreInviteSettings;
 import com.discord.views.CheckedSetting;
 import com.discord.widgets.guilds.invite.WidgetGuildInvite;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
+import java.util.stream.Collectors;
 
 public class BottomShit extends BottomSheet {
     SettingsAPI settings;
@@ -102,6 +100,29 @@ public class BottomShit extends BottomSheet {
             settings.setBool("disableWarnings", aBoolean);
         });
 
+        var optOut = Utils.createCheckedSetting(context, CheckedSetting.ViewType.CHECK, "Opt out of ReviewDB", "Prevents other users from reviewing you");
+        optOut.setChecked(settings.getBool("optedOut", false));
+        Utils.threadPool.execute(() -> {
+            if (!settings.getString("token", "").equals("")) {
+                var remote = ReviewDBAPI.getSettings(settings.getString("token", ""));
+                if (remote != null) Utils.mainThread.post(() -> {
+                    settings.setBool("optedOut", remote.isOptedOut());
+                    optOut.setChecked(remote.isOptedOut());
+                });
+            }
+        });
+        optOut.setOnCheckedListener(aBoolean -> {
+            if (!ensureAuthorized()) {
+                optOut.setChecked(false);
+                return;
+            }
+            settings.setBool("optedOut", aBoolean);
+            Utils.threadPool.execute(() -> {
+                var res = ReviewDBAPI.setOptOut(settings.getString("token", ""), aBoolean);
+                if (!res.isSuccessful()) Utils.showToast(res.getMessage());
+            });
+        });
+
         var supportServer = new Button(context);
         supportServer.setText("Support Server");
 
@@ -112,16 +133,43 @@ public class BottomShit extends BottomSheet {
         var website = new Button(context);
         website.setText("Website");
             website.setOnClickListener(
-                v -> {
-                    var uri = Uri.parse("https://reviewdb.mantikafasi.dev").buildUpon();
-                    if (settings.getString("token", "").equals("")) {
-                        Utils.launchUrl(uri.build());
-                    } else {
-                        Utils.launchUrl(uri.appendPath("api").appendPath("redirect").appendQueryParameter("token",settings.getString("token", "")).build());
-                    }
-                } // passing oauth2 token to website so user can change settings
+                v -> Utils.launchUrl(ReviewDBAPI.redirectUrl(""))
             );
 
+        Button dashboard = new Button(context);
+        dashboard.setText("Dashboard");
+        dashboard.setOnClickListener(v -> Utils.launchUrl(ReviewDBAPI.redirectUrl("dashboard")));
+
+        Button appeal = new Button(context);
+        appeal.setText("Appeal Ban");
+        appeal.setOnClickListener(v -> {
+            if (!ensureAuthorized()) return;
+            var dialog = new InputDialog().setTitle("Appeal Ban").setDescription("Explain why the ban should be reviewed.");
+            dialog.setOnOkListener(view1 -> Utils.threadPool.execute(() -> {
+                var res = ReviewDBAPI.appeal(settings.getString("token", ""), dialog.getInput());
+                Utils.showToast(res.isSuccessful() ? "Appeal submitted" : res.getMessage());
+            }));
+            dialog.show(getParentFragmentManager(), "reviewdb_appeal");
+        });
+
+        Button blockedUsers = new Button(context);
+        blockedUsers.setText("Blocked Users");
+        blockedUsers.setOnClickListener(v -> {
+            if (!ensureAuthorized()) return;
+            Utils.threadPool.execute(() -> {
+                var users = ReviewDBAPI.getBlockedUsers(settings.getString("token", ""));
+                Utils.mainThread.post(() -> {
+                    var dialog = new InputDialog();
+                    dialog.setOnDialogShownListener(view1 -> {
+                        dialog.setTitle("Blocked Users");
+                        if (users == null || users.isEmpty()) dialog.getBody().setText("No blocked users.");
+                        else dialog.getBody().setText(users.stream().map(user -> user.username + " (" + user.discordID + ")").collect(Collectors.joining("\n")));
+                        dialog.getInputLayout().setVisibility(View.GONE);
+                    });
+                    dialog.show(getParentFragmentManager(), "reviewdb_blocks");
+                });
+            });
+        });
 
         addView(title);
         addView(crashing);
@@ -129,10 +177,23 @@ public class BottomShit extends BottomSheet {
         addView(enterTokenManually);
         addView(supportServer);
         addView(website);
+        addView(dashboard);
+        addView(appeal);
+        addView(blockedUsers);
         addView(notifyNewReviews);
         addView(disableAds);
         addView(disableWarnings);
+        addView(optOut);
 
 
+    }
+
+    private boolean ensureAuthorized() {
+        if (settings.getString("token", "").equals("")) {
+            Utils.showToast("You need to authorize first");
+            ReviewDBAPI.authorize();
+            return false;
+        }
+        return true;
     }
 }

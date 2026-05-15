@@ -33,6 +33,7 @@ public class ViewHolder extends RecyclerView.ViewHolder {
     private static final int serverNickId = Utils.getResId("chat_list_adapter_item_text", "id");
     public final SimpleDraweeView icon;
     public final TextView username;
+    public final TextView timestamp;
     public final TextView message;
     private final Adapter adapter;
     public final ViewGroup layout;
@@ -52,12 +53,25 @@ public class ViewHolder extends RecyclerView.ViewHolder {
         tagIcon = layout.findViewById(tagIconID);
         headerLayout = layout.findViewById(Utils.getResId("chat_list_adapter_item_text_header","id"));
 
+        timestamp = new TextView(layout.getContext());
+        timestamp.setId(View.generateViewId());
+        timestamp.setTextSize(10f);
+        timestamp.setTextColor(ColorCompat.getThemedColor(layout.getContext(), com.lytefast.flexinput.R.b.colorTextMuted));
+        timestamp.setPadding(DimenUtils.dpToPx(4), 0, 0, 0);
+        headerLayout.addView(timestamp);
+
+        var timestampLayoutParams = (ConstraintLayout.LayoutParams) timestamp.getLayoutParams();
+        timestampLayoutParams.startToEnd = Utils.getResId("chat_list_adapter_item_text_name","id");
+        timestampLayoutParams.topToTop = Utils.getResId("chat_list_adapter_item_text_name","id");
+        timestampLayoutParams.bottomToBottom = Utils.getResId("chat_list_adapter_item_text_name","id");
+        timestamp.setLayoutParams(timestampLayoutParams);
+
         badgeLayout = new LinearLayout(layout.getContext());
         badgeLayout.setPadding(DimenUtils.dpToPx(4),0,0,0);
         headerLayout.addView(badgeLayout);
 
         var badgeLayoutLayoutParams = (ConstraintLayout.LayoutParams)badgeLayout.getLayoutParams();
-        badgeLayoutLayoutParams.startToEnd = Utils.getResId("chat_list_adapter_item_text_name","id");
+        badgeLayoutLayoutParams.startToEnd = timestamp.getId();
         badgeLayout.setLayoutParams(badgeLayoutLayoutParams);
 
         this.layout = layout;
