@@ -21,24 +21,17 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Locale;
-import java.util.WeakHashMap;
+import java.util.Map;
 
-import okhttp3.MediaType;
 import okio.BufferedSink;
 
 @SuppressWarnings("unused")
 @AliucordPlugin
 public class HeicImageConverter extends Plugin {
-    private static final MediaType JPEG_MEDIA_TYPE = MediaType.b("image/jpeg");
     private Context appContext;
     private Field attachmentField;
-    private Field fileUploadContentLengthField;
-    private Field fileUploadMimeTypeField;
-    private Field fileUploadNameField;
     private final Map<String, ConvertedImage> conversionsByUri = Collections.synchronizedMap(new HashMap<>());
-    private final Map<AttachmentRequestBody, ConvertedImage> convertedBodies = Collections.synchronizedMap(new WeakHashMap<>());
 
     @Override
     public void start(Context context) {
@@ -47,10 +40,6 @@ public class HeicImageConverter extends Plugin {
         try {
             attachmentField = AttachmentRequestBody.class.getDeclaredField("attachment");
             attachmentField.setAccessible(true);
-            fileUploadContentLengthField = SendUtils.FileUpload.class.getDeclaredField("contentLength");
-            fileUploadContentLengthField.setAccessible(true);
-            fileUploadMimeTypeField = SendUtils.FileUpload.class.getDeclaredField("mimeType");
-            fileUploadMimeTypeField.setAccessible(true);
 
             // change filename to .jpg from .heic
             patcher.patch(
@@ -66,23 +55,14 @@ public class HeicImageConverter extends Plugin {
             );
 
             patcher.patch(
-                    AttachmentRequestBody.class.getDeclaredConstructor(ContentResolver.class, Attachment.class),
-                    new Hook(callFrame -> {
-                        try {
-                            Attachment<?> attachment = getAttachment((AttachmentRequestBody) callFrame.thisObject);
-                            ConvertedImage converted = conversionsByUri.get(uriKey(attachment));
-                            if (converted != null) convertedBodies.put((AttachmentRequestBody) callFrame.thisObject, converted);
-                        } catch (Throwable e) {
-                            logger.error("Failed to bind converted HEIC upload body", e);
-                        }
-                    })
-            );
-
-            patcher.patch(
                     AttachmentRequestBody.class.getDeclaredMethod("contentLength"),
                     new Hook(callFrame -> {
-                        ConvertedImage converted = convertedBodies.get((AttachmentRequestBody) callFrame.thisObject);
-                        if (converted != null) callFrame.setResult((long) converted.bytes.length);
+                        try {
+                            ConvertedImage converted = convertedFromBody((AttachmentRequestBody) callFrame.thisObject);
+                            if (converted != null) callFrame.setResult((long) converted.bytes.length);
+                        } catch (Throwable e) {
+                            logger.error("Failed to get converted HEIC upload length", e);
+                        }
                     })
             );
 
@@ -91,13 +71,19 @@ public class HeicImageConverter extends Plugin {
                     AttachmentRequestBody.class.getDeclaredMethod("writeTo", BufferedSink.class),
                     new InsteadHook(callFrame -> {
                         try {
-                            ConvertedImage converted = convertedBodies.get((AttachmentRequestBody) callFrame.thisObject);
+                            AttachmentRequestBody body = (AttachmentRequestBody) callFrame.thisObject;
+                            String key = uriKey(getAttachment(body));
+                            ConvertedImage converted = conversionsByUri.get(key);
                             if (converted == null) return de.robv.android.xposed.XposedBridge.invokeOriginalMethod(callFrame.method, callFrame.thisObject, callFrame.args);
 
-                            ((BufferedSink) callFrame.args[0]).write(converted.bytes);
-                            logger.info("Wrote converted JPG upload: " + converted.displayName);
-                            Utils.showToast("Converted HEIC to JPG");
-                            return null;
+                            try {
+                                ((BufferedSink) callFrame.args[0]).write(converted.bytes);
+                                logger.info("Wrote converted JPG upload: " + converted.displayName);
+                                Utils.showToast("Converted HEIC to JPG");
+                                return null;
+                            } finally {
+                                conversionsByUri.remove(key);
+                            }
                         } catch (Throwable e) {
                             logger.error("Failed to write converted JPG upload", e);
                             throw new RuntimeException(e);
@@ -123,8 +109,8 @@ public class HeicImageConverter extends Plugin {
     @Override
     public void stop(Context context) {
         patcher.unpatchAll();
-        convertedBodies.clear();
         conversionsByUri.clear();
+        appContext = null;
     }
 
     private ConvertedImage getOrConvertAttachment(Attachment<?> attachment) {
@@ -164,14 +150,22 @@ public class HeicImageConverter extends Plugin {
         return (Attachment<?>) attachmentField.get(body);
     }
 
+    private ConvertedImage convertedFromBody(AttachmentRequestBody body) throws IllegalAccessException {
+        return conversionsByUri.get(uriKey(getAttachment(body)));
+    }
+
     private ConvertedImage convertedFromUpload(SendUtils.FileUpload upload) {
         if (upload == null || upload.getPart() == null || !(upload.getPart().b instanceof AttachmentRequestBody)) return null;
-        return convertedBodies.get((AttachmentRequestBody) upload.getPart().b);
+        try {
+            return convertedFromBody((AttachmentRequestBody) upload.getPart().b);
+        } catch (Throwable e) {
+            logger.error("Failed to get converted HEIC file upload", e);
+            return null;
+        }
     }
 
     private byte[] convertToJpegBytes(Bitmap bitmap) throws IOException {
-        try {
-            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        try (ByteArrayOutputStream stream = new ByteArrayOutputStream()) {
             if (!bitmap.compress(Bitmap.CompressFormat.JPEG, 95, stream)) {
                 throw new IOException("Bitmap compression returned false");
             }

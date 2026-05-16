@@ -1,4 +1,4 @@
-version = "1.0.0"
+version = "1.0.1"
 description = "Converts HEIC/HEIF images to JPG before uploading"
 
 aliucord.changelog.set("""

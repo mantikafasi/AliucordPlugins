@@ -33,3 +33,7 @@ include(":TypingProfiles")
 //include(":FixTimestamps")
 
 rootProject.name = "AliucordPlugins"
+
+include(":AvatarResizer")
+
+include(":PowerMode")
