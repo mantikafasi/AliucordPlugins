@@ -37,3 +37,5 @@ rootProject.name = "AliucordPlugins"
 include(":AvatarResizer")
 
 include(":PowerMode")
+
+include(":PasswordLogin")
