@@ -39,3 +39,6 @@ include(":AvatarResizer")
 include(":PowerMode")
 
 include(":PasswordLogin")
+
+include(":MoreGifProviders")
+
