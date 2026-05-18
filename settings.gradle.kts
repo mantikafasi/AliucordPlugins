@@ -43,3 +43,4 @@ include(":PasswordLogin")
 include(":MoreGifProviders")
 
 include(":SwipeMediaViewer")
+include(":PerformanceTuner")
