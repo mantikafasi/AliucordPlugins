@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -186,7 +187,7 @@ public class MoreGifProviders extends Plugin {
     }
 
     @Override
-    public void stop(Context context) throws Throwable {
+    public void stop(Context context) {
         patcher.unpatchAll();
         commands.unregisterAll();
     }
@@ -206,9 +207,9 @@ public class MoreGifProviders extends Plugin {
     private void handleFetchSuccess(StoreGifPicker store, String query, List<ModelGif> gifs) {
         try {
             if (query == null) {
-                callStoreMethod(store, "handleFetchTrendingGifsOnNext", new Class[]{List.class}, gifs);
+                StoreGifPicker.access$handleFetchTrendingGifsOnNext(store, gifs);
             } else {
-                callStoreMethod(store, "handleGifSearchResults", new Class[]{String.class, List.class}, query, gifs);
+                StoreGifPicker.access$handleGifSearchResults(store, query, gifs);
             }
         } catch (Throwable throwable) {
             logger.error("Failed to update GIF picker state", throwable);
@@ -218,9 +219,9 @@ public class MoreGifProviders extends Plugin {
     private void handleFetchError(StoreGifPicker store, String query) {
         try {
             if (query == null) {
-                callStoreMethod(store, "handleFetchTrendingGifsError", new Class[0]);
+                StoreGifPicker.access$handleFetchTrendingGifsError(store);
             } else {
-                callStoreMethod(store, "handleGifSearchResults", new Class[]{String.class, List.class}, query, new ArrayList<ModelGif>());
+                StoreGifPicker.access$handleGifSearchResults(store, query, Collections.emptyList());
             }
         } catch (Throwable throwable) {
             logger.error("Failed to update GIF picker error state", throwable);
@@ -246,81 +247,27 @@ public class MoreGifProviders extends Plugin {
     }
 
     private List<ModelGif> fetchProviderGifs(String provider, String query) throws IOException {
-        String mediaFormat = getMediaFormat(provider);
         String route = query == null
-                ? "/gifs/trending-gifs?provider=" + provider + "&locale=" + LOCALE + "&media_format=" + mediaFormat
-                : "/gifs/search?q=" + encode(query) + "&media_format=" + mediaFormat + "&provider=" + provider + "&locale=" + LOCALE + "&limit=" + GIF_LIMIT;
+                ? "/gifs/trending-gifs?provider=" + provider + "&locale=" + LOCALE + "&media_format=webp"
+                : "/gifs/search?q=" + encode(query) + "&media_format=webp&provider=" + provider + "&locale=" + LOCALE + "&limit=" + GIF_LIMIT;
 
-        Http.Response response = Http.Request.newDiscordRNRequest(route)
-                .setHeader("x-discord-locale", LOCALE)
-                .execute();
+        Http.Response response = Http.Request.newDiscordRNRequest(route).execute();
 
         if (response.statusCode < 200 || response.statusCode >= 300) {
             throw new IOException("Discord GIF request failed: " + response.statusCode + " " + response.text());
         }
 
-        return parseGifResponse(response.text(), mediaFormat);
+        return parseGifResponse(response.text());
     }
 
-    private List<ModelGif> parseGifResponse(String body, String mediaFormat) {
-        GifResponseItem[] gifsJson = parseGifItems(body);
+    private List<ModelGif> parseGifResponse(String body) {
+        GifDto[] gifsJson = GsonUtils.fromJson(body, GifDto[].class);
 
         ArrayList<ModelGif> gifs = new ArrayList<>();
-        for (GifResponseItem gifJson : gifsJson) {
-            if (gifJson == null) continue;
-            GifDto gifDto = parseGifDto(gifJson, mediaFormat);
-            if (gifDto != null) gifs.add(ModelGif.Companion.createFromGifDto(gifDto));
+        for (GifDto gifDTO : gifsJson) {
+            gifs.add(ModelGif.Companion.createFromGifDto(gifDTO));
         }
         return gifs;
-    }
-
-    private GifResponseItem[] parseGifItems(String body) {
-        if (body.trim().startsWith("[")) {
-            GifResponseItem[] items = GsonUtils.fromJson(body, GifResponseItem[].class);
-            return items == null ? new GifResponseItem[0] : items;
-        }
-
-        GifResponse response = GsonUtils.fromJson(body, GifResponse.class);
-        if (response == null) return new GifResponseItem[0];
-        if (response.gifs != null) return response.gifs;
-        if (response.results != null) return response.results;
-        return new GifResponseItem[0];
-    }
-
-    private GifDto parseGifDto(GifResponseItem gifJson, String mediaFormat) {
-        String src = emptyToNull(gifJson.src);
-        String url = emptyToNull(gifJson.url);
-        int height = gifJson.height;
-        int width = gifJson.width;
-
-        if (gifJson.media_formats != null) {
-            GifMedia media = gifJson.media_formats.get(mediaFormat);
-            if (media == null) media = gifJson.media_formats.get("gif");
-            if (media == null) media = gifJson.media_formats.get("mp4");
-            if (media != null) {
-                if (src == null) src = emptyToNull(media.url);
-                if (media.dims != null && media.dims.length >= 2) {
-                    width = media.dims[0];
-                    height = media.dims[1];
-                }
-            }
-        }
-
-        if (src == null) return null;
-        if (url == null) url = src;
-        if (width <= 0) width = 220;
-        if (height <= 0) height = 220;
-        return new GifDto(src, url, height, width);
-    }
-
-    private String getMediaFormat(String provider) {
-        return "webp";
-    }
-
-    private void callStoreMethod(StoreGifPicker store, String name, Class<?>[] parameterTypes, Object... args) throws ReflectiveOperationException {
-        Method method = StoreGifPicker.class.getDeclaredMethod(name, parameterTypes);
-        method.setAccessible(true);
-        method.invoke(store, args);
     }
 
     private void runOnStoreThread(Runnable runnable) {
@@ -336,27 +283,5 @@ public class MoreGifProviders extends Plugin {
         } catch (Throwable ignored) {
             return value;
         }
-    }
-
-    private String emptyToNull(String value) {
-        return value == null || value.isEmpty() ? null : value;
-    }
-
-    private static class GifResponse {
-        GifResponseItem[] gifs;
-        GifResponseItem[] results;
-    }
-
-    private static class GifResponseItem {
-        String src;
-        String url;
-        int height;
-        int width;
-        Map<String, GifMedia> media_formats;
-    }
-
-    private static class GifMedia {
-        String url;
-        int[] dims;
     }
 }
