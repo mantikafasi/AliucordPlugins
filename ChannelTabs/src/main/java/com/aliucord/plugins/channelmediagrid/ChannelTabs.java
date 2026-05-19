@@ -3,6 +3,7 @@ package com.aliucord.plugins.channelmediagrid;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.graphics.drawable.Drawable;
 
@@ -22,6 +23,8 @@ import com.discord.views.channelsidebar.GuildChannelSideBarActionsView;
 import com.discord.widgets.channels.WidgetChannelSidebarActions;
 import com.discord.widgets.channels.WidgetChannelSidebarActionsViewModel;
 import android.widget.TextView;
+import com.discord.widgets.guilds.profile.WidgetGuildProfileSheet;
+import com.discord.widgets.guilds.profile.WidgetGuildProfileSheetViewModel;
 
 import kotlin.Unit;
 import kotlin.jvm.functions.Function1;
@@ -30,6 +33,7 @@ import kotlin.jvm.functions.Function1;
 @SuppressWarnings("unused")
 public class ChannelTabs extends Plugin {
     private static final String MEDIA_BUTTON_TAG = "ChannelTabsButton";
+    private static final int GUILD_WIDE_BTN_ID = View.generateViewId();
     private static long selectedGuildId;
     private static long selectedChannelId;
 
@@ -78,6 +82,131 @@ public class ChannelTabs extends Plugin {
                     }
                 })
         );
+
+        patcher.patch(
+                WidgetGuildProfileSheet.class.getDeclaredMethod("configureUI", WidgetGuildProfileSheetViewModel.ViewState.Loaded.class),
+                new Hook(callFrame -> {
+                    try {
+                        Object viewState = callFrame.args[0];
+                        if (!(viewState instanceof WidgetGuildProfileSheetViewModel.ViewState.Loaded))
+                            return;
+
+                        var state = (WidgetGuildProfileSheetViewModel.ViewState.Loaded) viewState;
+                        var thisObject = (WidgetGuildProfileSheet) callFrame.thisObject;
+
+                        var linearLayout = (LinearLayout) (WidgetGuildProfileSheet.access$getGuildActionBinding$p(thisObject)).getRoot();
+                        if (linearLayout == null) return;
+
+                        var constraintLayout = (ViewGroup) linearLayout.getParent();
+                        if (constraintLayout == null) return;
+
+                        int tabItemsId = Utils.getResId("guild_profile_sheet_tab_items", "id");
+                        var tabItems = (LinearLayout) constraintLayout.findViewById(tabItemsId);
+                        if (tabItems == null) return;
+
+                        if (tabItems.findViewById(GUILD_WIDE_BTN_ID) != null) {
+                            return;
+                        }
+
+                        com.google.android.material.button.MaterialButton refBtn = null;
+                        int notificationsId = Utils.getResId("guild_profile_sheet_notifications", "id");
+                        if (notificationsId != 0) {
+                            refBtn = (com.google.android.material.button.MaterialButton) tabItems.findViewById(notificationsId);
+                        }
+                        if (refBtn == null) {
+                            int boostsId = Utils.getResId("guild_profile_sheet_boosts", "id");
+                            if (boostsId != 0) {
+                                refBtn = (com.google.android.material.button.MaterialButton) tabItems.findViewById(boostsId);
+                            }
+                        }
+                        if (refBtn == null) {
+                            int settingsId = Utils.getResId("guild_profile_sheet_settings", "id");
+                            if (settingsId != 0) {
+                                refBtn = (com.google.android.material.button.MaterialButton) tabItems.findViewById(settingsId);
+                            }
+                        }
+
+                        Context tabItemsContext = tabItems.getContext();
+                        com.google.android.material.button.MaterialButton mediaBtn = new com.google.android.material.button.MaterialButton(tabItemsContext);
+                        mediaBtn.setId(GUILD_WIDE_BTN_ID);
+                        mediaBtn.setText("Media");
+                        mediaBtn.setAllCaps(false);
+
+                        if (refBtn != null) {
+                            if (refBtn.getLayoutParams() instanceof LinearLayout.LayoutParams) {
+                                LinearLayout.LayoutParams refParams = (LinearLayout.LayoutParams) refBtn.getLayoutParams();
+                                LinearLayout.LayoutParams newParams = new LinearLayout.LayoutParams(0, refParams.height, 1f);
+                                newParams.gravity = refParams.gravity;
+                                newParams.setMargins(refParams.leftMargin, refParams.topMargin, refParams.rightMargin, refParams.bottomMargin);
+                                mediaBtn.setLayoutParams(newParams);
+                            } else {
+                                mediaBtn.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+                            }
+
+                            mediaBtn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, refBtn.getTextSize());
+                            mediaBtn.setTextColor(refBtn.getTextColors());
+                            mediaBtn.setTypeface(refBtn.getTypeface());
+                            mediaBtn.setGravity(refBtn.getGravity());
+                            mediaBtn.setPadding(refBtn.getPaddingLeft(), refBtn.getPaddingTop(), refBtn.getPaddingRight(), refBtn.getPaddingBottom());
+                            mediaBtn.setCompoundDrawablePadding(refBtn.getCompoundDrawablePadding());
+
+                            try {
+                                if (refBtn.getBackgroundTintList() != null) {
+                                    mediaBtn.setBackgroundTintList(refBtn.getBackgroundTintList());
+                                }
+                                if (refBtn.getBackgroundTintMode() != null) {
+                                    mediaBtn.setBackgroundTintMode(refBtn.getBackgroundTintMode());
+                                }
+                                if (refBtn.getRippleColor() != null) {
+                                    mediaBtn.setRippleColor(refBtn.getRippleColor());
+                                }
+                            } catch (Throwable ignored) {}
+
+                            try {
+                                if (refBtn.getBackground() != null && refBtn.getBackground().getConstantState() != null) {
+                                    mediaBtn.setBackground(refBtn.getBackground().getConstantState().newDrawable().mutate());
+                                }
+                            } catch (Throwable ignored) {}
+                        } else {
+                            mediaBtn.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+                        }
+
+                        Drawable icon = ContextCompat.getDrawable(tabItemsContext, com.lytefast.flexinput.R.e.ic_image_library_24dp);
+                        if (icon != null) {
+                            icon = icon.mutate();
+                            int tintColor = ColorCompat.getThemedColor(tabItemsContext, com.lytefast.flexinput.R.b.colorInteractiveNormal);
+                            icon.setTint(tintColor);
+                            mediaBtn.setCompoundDrawablesWithIntrinsicBounds(null, icon, null, null);
+                        }
+
+                        long guildId = state.getGuildId();
+                        mediaBtn.setOnClickListener(v1 -> {
+                            try {
+                                thisObject.dismiss();
+                            } catch (Throwable ignored) {}
+                            openMediaSheet(v1, guildId, 0L);
+                        });
+
+                        int insertionIndex = 2; // Default to after boosts and notifications
+                        int notificationsIndex = -1;
+                        if (notificationsId != 0) {
+                            for (int i = 0; i < tabItems.getChildCount(); i++) {
+                                if (tabItems.getChildAt(i).getId() == notificationsId) {
+                                    notificationsIndex = i;
+                                    break;
+                                }
+                            }
+                        }
+                        if (notificationsIndex != -1) {
+                            insertionIndex = notificationsIndex + 1;
+                        }
+
+                        tabItems.addView(mediaBtn, insertionIndex);
+                    } catch (Throwable t) {
+                        logger.error("Failed to add guild wide media button next to notifications", t);
+                    }
+                })
+        );
     }
 
     @Override
@@ -122,9 +251,7 @@ public class ChannelTabs extends Plugin {
                 }
             }
 
-            int iconRes = Utils.getResId("ic_image_24dp", "drawable");
-            if (iconRes == 0) iconRes = android.R.drawable.ic_menu_gallery;
-            Drawable icon = androidx.core.content.ContextCompat.getDrawable(context, iconRes);
+            Drawable icon = androidx.core.content.ContextCompat.getDrawable(context, com.lytefast.flexinput.R.e.ic_image_library_24dp);
             if (icon != null) {
                 icon.mutate().setTint(themedColor);
                 button.setCompoundDrawablesWithIntrinsicBounds(null, icon, null, null);

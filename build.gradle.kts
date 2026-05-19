@@ -28,6 +28,7 @@ allprojects {
         // Aliucord/Aliucord isnt in releases
         maven("https://maven.aliucord.com/snapshots")
 
+
     }
 
     apply(plugin = "com.aliucord.plugin")
