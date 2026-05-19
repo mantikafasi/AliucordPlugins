@@ -41,3 +41,5 @@ include(":ChannelTabs")
 
 
 rootProject.name = "AliucordPlugins"
+
+include(":AudioPlayer")
