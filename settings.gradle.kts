@@ -31,16 +31,13 @@ include(":UserReviews")
 include(":TypingProfiles")
 //include(":Shortcuts")
 //include(":FixTimestamps")
-
-rootProject.name = "AliucordPlugins"
-
 include(":AvatarResizer")
-
 include(":PowerMode")
-
 include(":PasswordLogin")
-
 include(":MoreGifProviders")
-
 include(":SwipeMediaViewer")
 include(":PerformanceTuner")
+include(":ChannelTabs")
+
+
+rootProject.name = "AliucordPlugins"
