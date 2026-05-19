@@ -207,6 +207,7 @@ public class SwipeMediaViewer extends Plugin {
         private int previewOffset;
         private int dragOffset;
         private boolean swiping;
+        private boolean suppressUntilUp;
         private float downX;
         private float downY;
 
@@ -218,6 +219,9 @@ public class SwipeMediaViewer extends Plugin {
         @Override
         public boolean onTouch(View view, MotionEvent event) {
             if (event.getPointerCount() > 1) {
+                suppressUntilUp = true;
+                swiping = false;
+                dragOffset = 0;
                 resetDrag();
                 return false;
             }
@@ -228,13 +232,17 @@ public class SwipeMediaViewer extends Plugin {
                     downY = event.getRawY();
                     swiping = false;
                     dragOffset = 0;
+                    suppressUntilUp = false;
                     return false;
                 case MotionEvent.ACTION_MOVE:
                     float moveDx = event.getRawX() - downX;
                     float moveDy = event.getRawY() - downY;
                     if (isCurrentImageZoomed()) {
+                        suppressUntilUp = true;
                         swiping = false;
                         dragOffset = 0;
+                        downX = event.getRawX();
+                        downY = event.getRawY();
                         return false;
                     }
 
@@ -262,6 +270,14 @@ public class SwipeMediaViewer extends Plugin {
                     float dx = event.getRawX() - downX;
                     float dy = event.getRawY() - downY;
                     view.getParent().requestDisallowInterceptTouchEvent(false);
+                    if (suppressUntilUp) {
+                        suppressUntilUp = false;
+                        swiping = false;
+                        dragOffset = 0;
+                        resetDrag();
+                        return false;
+                    }
+
                     if (Math.abs(dx) < touchSlop && Math.abs(dy) < touchSlop) {
                         view.performClick();
                         return false;
@@ -293,6 +309,7 @@ public class SwipeMediaViewer extends Plugin {
                     return true;
                 case MotionEvent.ACTION_CANCEL:
                     view.getParent().requestDisallowInterceptTouchEvent(false);
+                    suppressUntilUp = false;
                     resetDrag();
                     return false;
                 default:
