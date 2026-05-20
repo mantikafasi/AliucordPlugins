@@ -7,7 +7,6 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
-import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -40,10 +39,7 @@ public class AudioPlayerView extends LinearLayout implements AudioPlayerManager.
         init(context);
     }
 
-    public AudioPlayerView(Context context, AttributeSet attrs) {
-        super(context, attrs);
-        init(context);
-    }
+
 
     private void init(Context context) {
         setOrientation(LinearLayout.HORIZONTAL);
@@ -157,7 +153,7 @@ public class AudioPlayerView extends LinearLayout implements AudioPlayerManager.
         });
     }
 
-    public void configure(String url, String filename) {
+    public void configure(final String url, String filename) {
         this.audioUrl = url;
         this.filename = filename;
 
@@ -169,6 +165,20 @@ public class AudioPlayerView extends LinearLayout implements AudioPlayerManager.
         timerText.setText("0:00 / 0:00");
 
         AudioPlayerManager.registerListener(url, this);
+
+        AudioPlayerManager.getDurationAsync(url, new AudioPlayerManager.DurationCallback() {
+            @Override
+            public void onDurationFetched(int durationMs) {
+                if (url.equals(audioUrl)) {
+                    if (durationMs > 0) {
+                        progressView.setMax(durationMs);
+                        if (!url.equals(AudioPlayerManager.getCurrentUrl())) {
+                            timerText.setText("0:00 / " + formatTime(durationMs));
+                        }
+                    }
+                }
+            }
+        });
     }
 
     @Override

@@ -8,6 +8,9 @@ import android.os.Looper;
 
 import com.aliucord.Logger;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class AudioPlayerManager {
     private static final Logger logger = new Logger("AudioPlayerManager");
 
@@ -23,10 +26,16 @@ public class AudioPlayerManager {
         void onProgressUpdate(int position, int duration);
     }
 
+    public interface DurationCallback {
+        void onDurationFetched(int durationMs);
+    }
+
     private static MediaPlayer mediaPlayer;
     private static String currentUrl;
     private static PlayerState currentState = PlayerState.IDLE;
     private static PlayerListener activeListener;
+    private static int currentDurationHint;
+    private static final Map<String, Integer> durationCache = new HashMap<>();
 
     private static final Handler handler = new Handler(Looper.getMainLooper());
     private static final Runnable progressUpdater = new Runnable() {
@@ -35,7 +44,7 @@ public class AudioPlayerManager {
             if (mediaPlayer != null && currentState == PlayerState.PLAYING) {
                 try {
                     int pos = mediaPlayer.getCurrentPosition();
-                    int dur = mediaPlayer.getDuration();
+                    int dur = getDisplayDuration(mediaPlayer.getDuration());
                     if (activeListener != null) {
                         activeListener.onProgressUpdate(pos, dur);
                     }
@@ -51,9 +60,6 @@ public class AudioPlayerManager {
         return currentUrl;
     }
 
-    public static synchronized PlayerState getCurrentState() {
-        return currentState;
-    }
 
     public static synchronized int getCurrentPosition() {
         if (mediaPlayer != null && (currentState == PlayerState.PLAYING || currentState == PlayerState.PAUSED)) {
@@ -67,10 +73,51 @@ public class AudioPlayerManager {
     public static synchronized int getDuration() {
         if (mediaPlayer != null && (currentState == PlayerState.PLAYING || currentState == PlayerState.PAUSED)) {
             try {
-                return mediaPlayer.getDuration();
+                return getDisplayDuration(mediaPlayer.getDuration());
             } catch (Throwable ignored) {}
         }
-        return 0;
+        return currentDurationHint;
+    }
+
+    public static synchronized void getDurationAsync(final String url, final DurationCallback callback) {
+        if (url == null) {
+            if (callback != null) callback.onDurationFetched(0);
+            return;
+        }
+
+        final Integer cached = durationCache.get(url);
+        if (cached != null) {
+            if (callback != null) callback.onDurationFetched(cached);
+            return;
+        }
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                int duration = 0;
+                try {
+                    duration = AudioDurationReader.readDurationMs(url);
+                } catch (Throwable t) {
+                    logger.error("Failed to pre-fetch duration for " + url, t);
+                }
+
+                final int finalDuration = duration;
+                if (finalDuration > 0) {
+                    synchronized (AudioPlayerManager.class) {
+                        durationCache.put(url, finalDuration);
+                    }
+                }
+
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (callback != null) {
+                            callback.onDurationFetched(finalDuration);
+                        }
+                    }
+                });
+            }
+        }).start();
     }
 
     public static synchronized void registerListener(String url, PlayerListener listener) {
@@ -115,6 +162,8 @@ public class AudioPlayerManager {
 
         currentUrl = url;
         activeListener = listener;
+        Integer cachedDuration = durationCache.get(url);
+        currentDurationHint = cachedDuration != null ? cachedDuration : 0;
         currentState = PlayerState.LOADING;
         if (activeListener != null) {
             activeListener.onStateChanged(PlayerState.LOADING);
@@ -124,6 +173,7 @@ public class AudioPlayerManager {
             mediaPlayer = new MediaPlayer();
             mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
             mediaPlayer.setDataSource(url);
+            fetchDurationHintAsync(url);
 
             mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
                 @Override
@@ -134,10 +184,16 @@ public class AudioPlayerManager {
                             return;
                         }
                         try {
+                            int duration = safeDuration(mp);
+                            if (duration > 0) {
+                                currentDurationHint = duration;
+                                durationCache.put(url, duration);
+                            }
                             mp.start();
                             currentState = PlayerState.PLAYING;
                             if (activeListener != null) {
                                 activeListener.onStateChanged(PlayerState.PLAYING);
+                                activeListener.onProgressUpdate(mp.getCurrentPosition(), getDisplayDuration(duration));
                             }
                             handler.removeCallbacks(progressUpdater);
                             handler.post(progressUpdater);
@@ -158,6 +214,7 @@ public class AudioPlayerManager {
                     synchronized (AudioPlayerManager.class) {
                         currentState = PlayerState.IDLE;
                         currentUrl = null;
+                        currentDurationHint = 0;
                         if (activeListener != null) {
                             activeListener.onStateChanged(PlayerState.IDLE);
                             activeListener.onProgressUpdate(0, 0);
@@ -174,6 +231,7 @@ public class AudioPlayerManager {
                     synchronized (AudioPlayerManager.class) {
                         currentState = PlayerState.IDLE;
                         currentUrl = null;
+                        currentDurationHint = 0;
                         if (activeListener != null) {
                             activeListener.onStateChanged(PlayerState.IDLE);
                         }
@@ -188,6 +246,7 @@ public class AudioPlayerManager {
             logger.error("Failed to set up media player for URL: " + url, t);
             currentState = PlayerState.IDLE;
             currentUrl = null;
+            currentDurationHint = 0;
             if (activeListener != null) {
                 activeListener.onStateChanged(PlayerState.IDLE);
             }
@@ -239,6 +298,48 @@ public class AudioPlayerManager {
         stopInternal();
         currentUrl = null;
         currentState = PlayerState.IDLE;
+        currentDurationHint = 0;
+    }
+
+    private static int safeDuration(MediaPlayer player) {
+        if (player == null) return 0;
+        try {
+            int duration = player.getDuration();
+            return duration > 0 ? duration : 0;
+        } catch (Throwable ignored) {
+            return 0;
+        }
+    }
+
+    private static int getDisplayDuration(int mediaPlayerDuration) {
+        return mediaPlayerDuration > 0 ? mediaPlayerDuration : currentDurationHint;
+    }
+
+    private static void fetchDurationHintAsync(final String url) {
+        if (url == null || durationCache.containsKey(url)) return;
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    int duration = AudioDurationReader.readDurationMs(url);
+                    if (duration <= 0) return;
+
+                    final int finalDuration = duration;
+                    synchronized (AudioPlayerManager.class) {
+                        durationCache.put(url, finalDuration);
+                        if (!url.equals(currentUrl)) return;
+
+                        currentDurationHint = finalDuration;
+                        if (activeListener != null) {
+                            activeListener.onProgressUpdate(getCurrentPosition(), finalDuration);
+                        }
+                    }
+                } catch (Throwable t) {
+                    logger.error("Failed to read media duration hint", t);
+                }
+            }
+        }).start();
     }
 
     private static void stopInternal() {
