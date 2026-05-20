@@ -23,6 +23,11 @@ public class AudioPlayer extends Plugin {
     private static final Logger logger = new Logger("AudioPlayer");
     private static final String PLAYER_TAG = "AudioPlayerView";
 
+    private static final int ORIGINAL_BOTTOM_TO_BOTTOM_KEY = 1937548293;
+    private static final int ORIGINAL_BOTTOM_TO_TOP_KEY = 1937548294;
+    private static final int ORIGINAL_BOTTOM_MARGIN_KEY = 1937548295;
+    private static final int HAS_ALTERED_CONSTRAINTS_KEY = 1937548296;
+
     // Robust anti-obfuscation data model matching Discord API Attachment JSON properties
     public static class AudioAttachment {
         public String url;
@@ -57,6 +62,8 @@ public class AudioPlayer extends Plugin {
                     if (isAudioAttachment(audio)) {
                         if (playerView == null) {
                             playerView = createPlayerView(binding);
+                        } else {
+                            applyPlayerConstraints(binding, playerView);
                         }
 
                         playerView.setVisibility(View.VISIBLE);
@@ -64,8 +71,9 @@ public class AudioPlayer extends Plugin {
                         playerView.configure(playbackUrl, audio.filename);
                     } else {
                         if (playerView != null) {
-                            playerView.setVisibility(View.GONE);
+                            root.removeView(playerView);
                         }
+                        restoreAnchorConstraints(binding);
                     }
                 } catch (Throwable t) {
                     logger.error("Error in onConfigure attachment hook", t);
@@ -98,6 +106,77 @@ public class AudioPlayer extends Plugin {
                 lower.endsWith(".opus");
     }
 
+    private static void applyPlayerConstraints(WidgetChatListAdapterItemAttachmentBinding binding, AudioPlayerView playerView) {
+        View anchor = binding.d;
+        if (anchor == null) return;
+
+        ConstraintLayout.LayoutParams anchorLp = (ConstraintLayout.LayoutParams) anchor.getLayoutParams();
+        if (anchorLp == null) return;
+
+        // Only save original constraints once
+        if (anchor.getTag(HAS_ALTERED_CONSTRAINTS_KEY) == null) {
+            anchor.setTag(ORIGINAL_BOTTOM_TO_BOTTOM_KEY, anchorLp.bottomToBottom);
+            anchor.setTag(ORIGINAL_BOTTOM_TO_TOP_KEY, anchorLp.bottomToTop);
+            anchor.setTag(ORIGINAL_BOTTOM_MARGIN_KEY, anchorLp.bottomMargin);
+            anchor.setTag(HAS_ALTERED_CONSTRAINTS_KEY, true);
+        }
+
+        Object bToB = anchor.getTag(ORIGINAL_BOTTOM_TO_BOTTOM_KEY);
+        Object bToT = anchor.getTag(ORIGINAL_BOTTOM_TO_TOP_KEY);
+        Object bMarg = anchor.getTag(ORIGINAL_BOTTOM_MARGIN_KEY);
+
+        int origBToB = bToB != null ? (int) bToB : ConstraintLayout.LayoutParams.UNSET;
+        int origBToT = bToT != null ? (int) bToT : ConstraintLayout.LayoutParams.UNSET;
+        int origBMarg = bMarg != null ? (int) bMarg : 0;
+
+        // Clear the anchor's bottom constraints
+        anchorLp.bottomToBottom = ConstraintLayout.LayoutParams.UNSET;
+        anchorLp.bottomToTop = ConstraintLayout.LayoutParams.UNSET;
+        anchorLp.bottomMargin = 0;
+        anchor.setLayoutParams(anchorLp);
+
+        // Apply player view constraints
+        ConstraintLayout.LayoutParams playerLp = (ConstraintLayout.LayoutParams) playerView.getLayoutParams();
+        if (playerLp == null) {
+            playerLp = new ConstraintLayout.LayoutParams(0, com.aliucord.utils.DimenUtils.dpToPx(48));
+        } else {
+            playerLp.width = 0;
+            playerLp.height = com.aliucord.utils.DimenUtils.dpToPx(48);
+        }
+
+        playerLp.leftToLeft = anchor.getId();
+        playerLp.rightToRight = anchor.getId();
+        playerLp.topToBottom = anchor.getId();
+        playerLp.topMargin = -com.aliucord.utils.DimenUtils.dpToPx(10); // Overlap
+        
+        // Chain the player bottom constraints using the original anchor constraints
+        playerLp.bottomToBottom = origBToB;
+        playerLp.bottomToTop = origBToT;
+        playerLp.bottomMargin = origBMarg;
+
+        playerView.setLayoutParams(playerLp);
+    }
+
+    private static void restoreAnchorConstraints(WidgetChatListAdapterItemAttachmentBinding binding) {
+        View anchor = binding.d;
+        if (anchor == null) return;
+
+        if (anchor.getTag(HAS_ALTERED_CONSTRAINTS_KEY) != null) {
+            ConstraintLayout.LayoutParams anchorLp = (ConstraintLayout.LayoutParams) anchor.getLayoutParams();
+            if (anchorLp != null) {
+                Object bToB = anchor.getTag(ORIGINAL_BOTTOM_TO_BOTTOM_KEY);
+                Object bToT = anchor.getTag(ORIGINAL_BOTTOM_TO_TOP_KEY);
+                Object bMarg = anchor.getTag(ORIGINAL_BOTTOM_MARGIN_KEY);
+
+                anchorLp.bottomToBottom = bToB != null ? (int) bToB : ConstraintLayout.LayoutParams.UNSET;
+                anchorLp.bottomToTop = bToT != null ? (int) bToT : ConstraintLayout.LayoutParams.UNSET;
+                anchorLp.bottomMargin = bMarg != null ? (int) bMarg : 0;
+                anchor.setLayoutParams(anchorLp);
+            }
+            anchor.setTag(HAS_ALTERED_CONSTRAINTS_KEY, null);
+        }
+    }
+
     private static AudioPlayerView createPlayerView(WidgetChatListAdapterItemAttachmentBinding binding) {
         ConstraintLayout root = binding.a;
         AudioPlayerView playerView = new AudioPlayerView(root.getContext());
@@ -110,16 +189,14 @@ public class AudioPlayer extends Plugin {
         }
 
         ConstraintLayout.LayoutParams playerLp = new ConstraintLayout.LayoutParams(
-                0,
-                ViewGroup.LayoutParams.WRAP_CONTENT
+                ConstraintLayout.LayoutParams.MATCH_CONSTRAINT,
+                com.aliucord.utils.DimenUtils.dpToPx(48)
         );
-        int margin = com.aliucord.utils.DimenUtils.dpToPx(6);
-        playerLp.leftToLeft = anchor.getId();
-        playerLp.rightToRight = anchor.getId();
-        playerLp.topToBottom = anchor.getId();
-        playerLp.topMargin = margin;
 
         root.addView(playerView, playerLp);
+
+        applyPlayerConstraints(binding, playerView);
+
         return playerView;
     }
 }

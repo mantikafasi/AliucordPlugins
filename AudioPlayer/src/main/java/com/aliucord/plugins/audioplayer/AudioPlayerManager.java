@@ -104,8 +104,14 @@ public class AudioPlayerManager {
             return;
         }
 
+        PlayerListener previousListener = activeListener;
+
         // Stop current audio
         stopInternal();
+        if (previousListener != null) {
+            previousListener.onStateChanged(PlayerState.IDLE);
+            previousListener.onProgressUpdate(0, 0);
+        }
 
         currentUrl = url;
         activeListener = listener;

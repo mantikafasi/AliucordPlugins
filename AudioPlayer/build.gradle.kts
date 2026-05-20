@@ -1,4 +1,4 @@
-version = "1.0.0"
+version = "1.0.1"
 description = "Play audio files with a beautiful inline player UI."
 
 android {
