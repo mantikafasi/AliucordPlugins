@@ -23,7 +23,6 @@ import com.discord.api.message.attachment.MessageAttachmentType;
 import com.discord.databinding.WidgetChatListAdapterItemAttachmentBinding;
 import com.discord.models.message.Message;
 import com.discord.utilities.images.MGImages;
-import com.discord.widgets.chat.list.InlineMediaView;
 import com.discord.widgets.chat.list.adapter.WidgetChatListAdapterItemAttachment;
 import com.discord.widgets.chat.list.entries.AttachmentEntry;
 import com.discord.widgets.chat.list.entries.ChatListEntry;
@@ -370,6 +369,39 @@ public class SwipeMediaViewer extends Plugin {
                     image.computeVerticalScrollRange() > image.computeVerticalScrollExtent() + touchSlop;
         }
 
+        private String getFormattedUrl(Context context, MessageAttachment attachment) {
+            String url = attachment.c();
+            if (url == null) return null;
+
+            if (attachment.e() == MessageAttachmentType.IMAGE) {
+                return url;
+            }
+
+            android.net.Uri uri = android.net.Uri.parse(url);
+            int attachmentWidth = attachment.g() != null ? attachment.g() : 0;
+            int attachmentHeight = attachment.b() != null ? attachment.b() : 0;
+
+            if (attachmentWidth <= 0 || attachmentHeight <= 0) {
+                android.graphics.Rect screenSize = com.discord.utilities.display.DisplayUtils.getScreenSize(context);
+                attachmentWidth = screenSize.width();
+                attachmentHeight = screenSize.height();
+            }
+
+            android.graphics.Rect fitRect = com.discord.utilities.display.DisplayUtils.resizeToFitScreen(
+                context,
+                new android.graphics.Rect(0, 0, attachmentWidth, attachmentHeight)
+            );
+
+            String lastPathSegment = uri.getLastPathSegment();
+            String sb = "";
+            if (lastPathSegment == null || !lastPathSegment.toLowerCase(java.util.Locale.ROOT).endsWith(".gif")) {
+                sb = "&format=" + com.discord.utilities.string.StringUtilsKt.getSTATIC_IMAGE_EXTENSION();
+            }
+
+            String separator = url.contains("?") ? "&" : "?";
+            return url + separator + "width=" + fitRect.width() + "&height=" + fitRect.height() + sb;
+        }
+
         private void ensurePreview(FrameLayout root, int nextIndex, int offset) {
             if (previewView != null && previewOffset == offset)
                 return;
@@ -377,24 +409,25 @@ public class SwipeMediaViewer extends Plugin {
             removePreview();
             previewOffset = offset;
             MessageAttachment attachment = activeAttachments.get(nextIndex);
-            if (attachment.e() == MessageAttachmentType.IMAGE) {
-                ZoomableDraweeView imagePreview = new ZoomableDraweeView(root.getContext(), null);
-                imagePreview.setIsLongpressEnabled(false);
-                MGImages.setScaleType(imagePreview, v.l);
-                MGImages.setImage(imagePreview, attachment.c());
-                previewView = imagePreview;
-            } else {
-                InlineMediaView videoPreview = new InlineMediaView(root.getContext());
-                previewView = videoPreview;
-            }
+            
+            ZoomableDraweeView imagePreview = new ZoomableDraweeView(root.getContext(), null);
+            imagePreview.setIsLongpressEnabled(false);
+            MGImages.setScaleType(imagePreview, v.l);
+            
+            String imageUrl = getFormattedUrl(root.getContext(), attachment);
+            MGImages.setImage(imagePreview, imageUrl);
+            previewView = imagePreview;
+
             previewView.setBackgroundColor(Color.BLACK);
             previewView.setTag("SwipeMediaViewerPreview");
-            root.addView(previewView, new FrameLayout.LayoutParams(
+            var binding = WidgetMedia.access$getBinding$p(media);
+            FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.MATCH_PARENT,
                     FrameLayout.LayoutParams.MATCH_PARENT
-            ));
-            if (previewView instanceof InlineMediaView)
-                ((InlineMediaView) previewView).updateUIWithAttachment(attachment, root.getWidth(), root.getHeight(), true);
+            );
+
+            int targetIndex = Math.max(root.indexOfChild(binding.d), root.indexOfChild(binding.g)) + 1;
+            root.addView(previewView, targetIndex, params);
         }
 
         private void resetDrag() {
