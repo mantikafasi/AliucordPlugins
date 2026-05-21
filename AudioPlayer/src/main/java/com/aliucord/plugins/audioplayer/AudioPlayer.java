@@ -88,6 +88,7 @@ public class AudioPlayer extends Plugin {
         patcher.unpatchAll();
         commands.unregisterAll();
         AudioPlayerManager.stop();
+        AudioPlayerManager.clearCache();
         logger.info("AudioPlayer plugin stopped.");
     }
 

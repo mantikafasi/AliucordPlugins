@@ -36,6 +36,7 @@ public class AudioPlayerManager {
     private static PlayerListener activeListener;
     private static int currentDurationHint;
     private static final Map<String, Integer> durationCache = new HashMap<>();
+    private static final Map<String, String> localFileCache = new HashMap<>();
 
     private static final Handler handler = new Handler(Looper.getMainLooper());
     private static final Runnable progressUpdater = new Runnable() {
@@ -169,81 +170,105 @@ public class AudioPlayerManager {
             activeListener.onStateChanged(PlayerState.LOADING);
         }
 
+        boolean shouldDownload = false;
+        String lowerUrl = url.toLowerCase();
+        if (lowerUrl.contains(".ogg") || lowerUrl.contains(".opus")) {
+            shouldDownload = true;
+        }
+
+        if (shouldDownload) {
+            downloadAndPlay(context, url, listener);
+        } else {
+            startMediaPlayerStreaming(context, url);
+        }
+    }
+
+    private static void downloadAndPlay(final Context context, final String url, final PlayerListener listener) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    String localPath;
+                    synchronized (AudioPlayerManager.class) {
+                        localPath = localFileCache.get(url);
+                    }
+
+                    if (localPath == null) {
+                        java.io.File cacheFile = java.io.File.createTempFile("audio_cache_", ".opus", context.getCacheDir());
+                        cacheFile.deleteOnExit();
+
+                        java.net.HttpURLConnection conn = (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
+                        conn.setConnectTimeout(10000);
+                        conn.setReadTimeout(15000);
+
+                        java.io.InputStream in = conn.getInputStream();
+                        java.io.FileOutputStream out = new java.io.FileOutputStream(cacheFile);
+                        byte[] buffer = new byte[8192];
+                        int read;
+                        while ((read = in.read(buffer)) != -1) {
+                            out.write(buffer, 0, read);
+                        }
+                        out.close();
+                        in.close();
+                        conn.disconnect();
+
+                        localPath = cacheFile.getAbsolutePath();
+                        synchronized (AudioPlayerManager.class) {
+                            localFileCache.put(url, localPath);
+                        }
+                    }
+
+                    final String finalPath = localPath;
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            synchronized (AudioPlayerManager.class) {
+                                if (!url.equals(currentUrl)) {
+                                    return;
+                                }
+                                startMediaPlayerWithLocalFile(context, url, finalPath);
+                            }
+                        }
+                    });
+                } catch (final Throwable t) {
+                    logger.error("Failed to download audio for local playback: " + url, t);
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            synchronized (AudioPlayerManager.class) {
+                                if (!url.equals(currentUrl)) return;
+                                startMediaPlayerStreaming(context, url);
+                            }
+                        }
+                    });
+                }
+            }
+        }).start();
+    }
+
+    private static void startMediaPlayerWithLocalFile(final Context context, final String url, final String localPath) {
+        try {
+            mediaPlayer = new MediaPlayer();
+            mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+            mediaPlayer.setDataSource(localPath);
+            setupMediaPlayerListeners(url);
+            mediaPlayer.prepareAsync();
+        } catch (Throwable t) {
+            logger.error("Failed to start media player for local file: " + localPath, t);
+            startMediaPlayerStreaming(context, url);
+        }
+    }
+
+    private static void startMediaPlayerStreaming(final Context context, final String url) {
         try {
             mediaPlayer = new MediaPlayer();
             mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
             mediaPlayer.setDataSource(url);
             fetchDurationHintAsync(url);
-
-            mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-                @Override
-                public void onPrepared(MediaPlayer mp) {
-                    synchronized (AudioPlayerManager.class) {
-                        if (!url.equals(currentUrl)) {
-                            mp.release();
-                            return;
-                        }
-                        try {
-                            int duration = safeDuration(mp);
-                            if (duration > 0) {
-                                currentDurationHint = duration;
-                                durationCache.put(url, duration);
-                            }
-                            mp.start();
-                            currentState = PlayerState.PLAYING;
-                            if (activeListener != null) {
-                                activeListener.onStateChanged(PlayerState.PLAYING);
-                                activeListener.onProgressUpdate(mp.getCurrentPosition(), getDisplayDuration(duration));
-                            }
-                            handler.removeCallbacks(progressUpdater);
-                            handler.post(progressUpdater);
-                        } catch (Throwable t) {
-                            logger.error("Failed to start media player", t);
-                            currentState = PlayerState.IDLE;
-                            if (activeListener != null) {
-                                activeListener.onStateChanged(PlayerState.IDLE);
-                            }
-                        }
-                    }
-                }
-            });
-
-            mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-                @Override
-                public void onCompletion(MediaPlayer mp) {
-                    synchronized (AudioPlayerManager.class) {
-                        currentState = PlayerState.IDLE;
-                        currentUrl = null;
-                        currentDurationHint = 0;
-                        if (activeListener != null) {
-                            activeListener.onStateChanged(PlayerState.IDLE);
-                            activeListener.onProgressUpdate(0, 0);
-                        }
-                        stopInternal();
-                    }
-                }
-            });
-
-            mediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
-                @Override
-                public boolean onError(MediaPlayer mp, int what, int extra) {
-                    logger.error("MediaPlayer error: what=" + what + ", extra=" + extra, null);
-                    synchronized (AudioPlayerManager.class) {
-                        currentState = PlayerState.IDLE;
-                        currentUrl = null;
-                        currentDurationHint = 0;
-                        if (activeListener != null) {
-                            activeListener.onStateChanged(PlayerState.IDLE);
-                        }
-                        stopInternal();
-                    }
-                    return true;
-                }
-            });
-
+            setupMediaPlayerListeners(url);
             mediaPlayer.prepareAsync();
         } catch (Throwable t) {
-            logger.error("Failed to set up media player for URL: " + url, t);
+            logger.error("Failed to set up streaming media player for URL: " + url, t);
             currentState = PlayerState.IDLE;
             currentUrl = null;
             currentDurationHint = 0;
@@ -252,6 +277,84 @@ public class AudioPlayerManager {
             }
             stopInternal();
         }
+    }
+
+    private static void setupMediaPlayerListeners(final String url) {
+        mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+            @Override
+            public void onPrepared(MediaPlayer mp) {
+                synchronized (AudioPlayerManager.class) {
+                    if (!url.equals(currentUrl)) {
+                        mp.release();
+                        return;
+                    }
+                    try {
+                        int duration = safeDuration(mp);
+                        if (duration > 0) {
+                            currentDurationHint = duration;
+                            durationCache.put(url, duration);
+                        }
+                        mp.start();
+                        currentState = PlayerState.PLAYING;
+                        if (activeListener != null) {
+                            activeListener.onStateChanged(PlayerState.PLAYING);
+                            activeListener.onProgressUpdate(mp.getCurrentPosition(), getDisplayDuration(duration));
+                        }
+                        handler.removeCallbacks(progressUpdater);
+                        handler.post(progressUpdater);
+                    } catch (Throwable t) {
+                        logger.error("Failed to start media player", t);
+                        currentState = PlayerState.IDLE;
+                        if (activeListener != null) {
+                            activeListener.onStateChanged(PlayerState.IDLE);
+                        }
+                    }
+                }
+            }
+        });
+
+        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            @Override
+            public void onCompletion(MediaPlayer mp) {
+                synchronized (AudioPlayerManager.class) {
+                    currentState = PlayerState.IDLE;
+                    currentUrl = null;
+                    currentDurationHint = 0;
+                    if (activeListener != null) {
+                        activeListener.onStateChanged(PlayerState.IDLE);
+                        activeListener.onProgressUpdate(0, 0);
+                    }
+                    stopInternal();
+                }
+            }
+        });
+
+        mediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+            @Override
+            public boolean onError(MediaPlayer mp, int what, int extra) {
+                logger.error("MediaPlayer error: what=" + what + ", extra=" + extra, null);
+                synchronized (AudioPlayerManager.class) {
+                    currentState = PlayerState.IDLE;
+                    currentUrl = null;
+                    currentDurationHint = 0;
+                    if (activeListener != null) {
+                        activeListener.onStateChanged(PlayerState.IDLE);
+                    }
+                    stopInternal();
+                }
+                return true;
+            }
+        });
+    }
+
+    public static synchronized void clearCache() {
+        for (String path : localFileCache.values()) {
+            try {
+                new java.io.File(path).delete();
+            } catch (Throwable ignored) {}
+        }
+        localFileCache.clear();
+        durationCache.clear();
     }
 
     public static synchronized void pause() {
@@ -287,7 +390,11 @@ public class AudioPlayerManager {
     public static synchronized void seekTo(int positionMs) {
         if (mediaPlayer != null && (currentState == PlayerState.PLAYING || currentState == PlayerState.PAUSED)) {
             try {
-                mediaPlayer.seekTo(positionMs);
+                if (safeDuration(mediaPlayer) > 0) {
+                    mediaPlayer.seekTo(positionMs);
+                } else {
+                    logger.warn("Stream is not seekable (native duration is 0 or unknown). Ignoring seek.");
+                }
             } catch (Throwable t) {
                 logger.error("Failed to seek media player", t);
             }
@@ -345,9 +452,11 @@ public class AudioPlayerManager {
     private static void stopInternal() {
         handler.removeCallbacks(progressUpdater);
         if (mediaPlayer != null) {
-            try {
-                mediaPlayer.stop();
-            } catch (Throwable ignored) {}
+            if (currentState == PlayerState.PLAYING || currentState == PlayerState.PAUSED) {
+                try {
+                    mediaPlayer.stop();
+                } catch (Throwable ignored) {}
+            }
             try {
                 mediaPlayer.release();
             } catch (Throwable ignored) {}
