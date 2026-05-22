@@ -1,10 +1,13 @@
-version = "1.2.0"
+version = "1.2.1"
 description = "Review other users and servers"
 aliucord {
     author("Ven",343383572805058560,true)
 }
 
 aliucord.changelog.set(""",
+# 1.2.1
+* Fix crash when ReviewDB fails to load a review page
+
 # 1.2.0
 # bunch of new features so tuff
 

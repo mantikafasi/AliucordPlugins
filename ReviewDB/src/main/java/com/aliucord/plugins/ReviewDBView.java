@@ -66,6 +66,7 @@ public class ReviewDBView extends LinearLayout {
         var finalReviewCount = newReviewCount;
         var finalOffset = newOffsetValue;
         var finalLastPageSize = newLastPageSize;
+        var finalHasNextPage = data != null && data.hasNextPage;
         Utils.mainThread.post(() -> {
             reviews.clear();
             reviews.addAll(newReviews);
@@ -80,7 +81,7 @@ public class ReviewDBView extends LinearLayout {
             title.setText(titlePrefix + " (" + reviewCount + ", rating " + rating + ")");
             pageNumber.setText("Page " + page);
             setPageButtonState(previousPage, offset > 0);
-            setPageButtonState(nextPage, data.hasNextPage);
+            setPageButtonState(nextPage, finalHasNextPage);
             adapter.notifyDataSetChanged();
         });
 
