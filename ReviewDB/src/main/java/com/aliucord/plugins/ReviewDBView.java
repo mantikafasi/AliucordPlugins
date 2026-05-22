@@ -3,11 +3,13 @@ package com.aliucord.plugins;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -33,9 +35,9 @@ public class ReviewDBView extends LinearLayout {
     RecyclerView recycler;
     TextView title;
     TextView nobodyReviewed;
-    TextView previousPage;
+    ImageView previousPage;
     TextView pageNumber;
-    TextView nextPage;
+    ImageView nextPage;
     LinearLayout pageControls;
     Long id;
     String titlePrefix;
@@ -111,9 +113,9 @@ public class ReviewDBView extends LinearLayout {
         et = new CustomEditText(ctx);
         submit = new ImageView(ctx);
         nobodyReviewed = new TextView(ctx);
-        previousPage = new TextView(ctx, null, 0, com.lytefast.flexinput.R.i.UiKit_Settings_Item_Icon);
+        previousPage = new ImageView(ctx);
         pageNumber = new TextView(ctx, null, 0, com.lytefast.flexinput.R.i.UiKit_Settings_Item_Icon);
-        nextPage = new TextView(ctx, null, 0, com.lytefast.flexinput.R.i.UiKit_Settings_Item_Icon);
+        nextPage = new ImageView(ctx);
         padding = DimenUtils.getDefaultPadding();
         var reporting = new TextView(ctx);
         var buttonFrameLayout = new FrameLayout(ctx);
@@ -176,12 +178,18 @@ public class ReviewDBView extends LinearLayout {
         adapter = new com.aliucord.plugins.ReviewListModal.Adapter(reviews);
         recycler.setAdapter(adapter);
 
-        previousPage.setText("Previous Page");
+        var previousPageIcon = getTintedIcon(ctx, com.lytefast.flexinput.R.e.material_ic_keyboard_arrow_previous_black_24dp);
+        var nextPageIcon = getTintedIcon(ctx, com.lytefast.flexinput.R.e.material_ic_keyboard_arrow_next_black_24dp);
+
+        previousPage.setContentDescription("Previous Page");
+        previousPage.setImageDrawable(previousPageIcon);
+        previousPage.setScaleType(ImageView.ScaleType.CENTER);
         pageNumber.setText("Page 1");
-        nextPage.setText("Next Page");
-        previousPage.setGravity(android.view.Gravity.CENTER);
+        nextPage.setContentDescription("Next Page");
+        nextPage.setImageDrawable(nextPageIcon);
+        nextPage.setScaleType(ImageView.ScaleType.CENTER);
         pageNumber.setGravity(android.view.Gravity.CENTER);
-        nextPage.setGravity(android.view.Gravity.CENTER);
+        pageControls.setGravity(android.view.Gravity.CENTER_VERTICAL);
         pageControls.setPadding(padding, 0, padding, padding / 2);
         setPageButtonState(previousPage, false);
         setPageButtonState(nextPage, false);
@@ -192,14 +200,17 @@ public class ReviewDBView extends LinearLayout {
         pageControls.addView(nextPage);
         var previousParams = (LinearLayout.LayoutParams) previousPage.getLayoutParams();
         previousParams.width = 0;
+        previousParams.height = DimenUtils.dpToPx(40);
         previousParams.weight = 1;
         previousPage.setLayoutParams(previousParams);
         var pageParams = (LinearLayout.LayoutParams) pageNumber.getLayoutParams();
         pageParams.width = 0;
+        pageParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
         pageParams.weight = 1;
         pageNumber.setLayoutParams(pageParams);
         var nextParams = (LinearLayout.LayoutParams) nextPage.getLayoutParams();
         nextParams.width = 0;
+        nextParams.height = DimenUtils.dpToPx(40);
         nextParams.weight = 1;
         nextPage.setLayoutParams(nextParams);
 
@@ -266,7 +277,17 @@ public class ReviewDBView extends LinearLayout {
 
     }
 
-    private void setPageButtonState(TextView button, boolean enabled) {
+    private void setPageButtonState(View button, boolean enabled) {
         button.setEnabled(enabled);
+        button.setAlpha(enabled ? 1f : 0.35f);
+    }
+
+    private Drawable getTintedIcon(Context ctx, int resId) {
+        var icon = ContextCompat.getDrawable(ctx, resId);
+        if (icon != null) {
+            icon = icon.mutate();
+            icon.setTint(ColorCompat.getThemedColor(ctx, com.lytefast.flexinput.R.b.colorInteractiveNormal));
+        }
+        return icon;
     }
 }

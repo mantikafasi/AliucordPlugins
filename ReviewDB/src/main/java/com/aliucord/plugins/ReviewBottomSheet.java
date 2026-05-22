@@ -1,5 +1,6 @@
 package com.aliucord.plugins;
 
+import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.View;
@@ -20,6 +21,7 @@ public class ReviewBottomSheet extends BottomSheet {
     Drawable deleteIcon;
     Drawable upvoteIcon;
     Drawable downvoteIcon;
+    Drawable blockIcon;
     Adapter adapter;
 
     public ReviewBottomSheet(Review review, Adapter adapter) {
@@ -32,23 +34,11 @@ public class ReviewBottomSheet extends BottomSheet {
         super.onViewCreated(view, bundle);
         var ctx = view.getContext();
 
-        reportIcon = ContextCompat.getDrawable(ctx, com.lytefast.flexinput.R.e.ic_flag_24dp);
-        deleteIcon = ContextCompat.getDrawable(ctx,com.lytefast.flexinput.R.e.ic_delete_24dp);
-        upvoteIcon = ContextCompat.getDrawable(ctx, android.R.drawable.arrow_up_float);
-        downvoteIcon = ContextCompat.getDrawable(ctx, android.R.drawable.arrow_down_float);
-
-        if (reportIcon != null) reportIcon.setTint(
-                ColorCompat.getThemedColor(ctx, com.lytefast.flexinput.R.b.colorInteractiveNormal)
-        );
-        if (deleteIcon != null) deleteIcon.setTint(
-                ColorCompat.getThemedColor(ctx, com.lytefast.flexinput.R.b.colorInteractiveNormal)
-        );
-        if (upvoteIcon != null) upvoteIcon.setTint(
-                ColorCompat.getThemedColor(ctx, com.lytefast.flexinput.R.b.colorInteractiveNormal)
-        );
-        if (downvoteIcon != null) downvoteIcon.setTint(
-                ColorCompat.getThemedColor(ctx, com.lytefast.flexinput.R.b.colorInteractiveNormal)
-        );
+        reportIcon = getTintedIcon(ctx, com.lytefast.flexinput.R.e.ic_flag_24dp);
+        deleteIcon = getTintedIcon(ctx, com.lytefast.flexinput.R.e.ic_delete_24dp);
+        upvoteIcon = getTintedIcon(ctx, com.lytefast.flexinput.R.e.ic_arrow_up_24dp);
+        downvoteIcon = getTintedIcon(ctx, com.lytefast.flexinput.R.e.ic_arrow_down_24dp);
+        blockIcon = getTintedIcon(ctx, com.lytefast.flexinput.R.e.ic_ban_red_24dp);
 
         var style = com.lytefast.flexinput.R.i.UiKit_Settings_Item_Icon;
 
@@ -74,6 +64,7 @@ public class ReviewBottomSheet extends BottomSheet {
         downvoteReview.setText("Downvote Review");
         downvoteReview.setCompoundDrawablesRelativeWithIntrinsicBounds(downvoteIcon, null, null, null);
         blockUser.setText("Block Reviewer");
+        blockUser.setCompoundDrawablesRelativeWithIntrinsicBounds(blockIcon, null, null, null);
 
         upvoteReview.setOnClickListener(v -> vote(true));
         downvoteReview.setOnClickListener(v -> vote(false));
@@ -147,5 +138,14 @@ public class ReviewBottomSheet extends BottomSheet {
             Utils.showToast(res.getMessage() == null || res.getMessage().equals("") ? "Vote recorded" : res.getMessage());
             dismiss();
         });
+    }
+
+    private Drawable getTintedIcon(Context ctx, int resId) {
+        var icon = ContextCompat.getDrawable(ctx, resId);
+        if (icon != null) {
+            icon = icon.mutate();
+            icon.setTint(ColorCompat.getThemedColor(ctx, com.lytefast.flexinput.R.b.colorInteractiveNormal));
+        }
+        return icon;
     }
 }
