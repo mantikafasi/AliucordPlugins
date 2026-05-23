@@ -1,17 +1,13 @@
 package com.aliucord.plugins;
 
-import android.os.Build;
-
 import com.aliucord.Http;
 import com.aliucord.utils.GsonUtils;
-import com.discord.utilities.analytics.AnalyticSuperProperties;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 import kotlin.io.FilesKt;
 
@@ -27,21 +23,21 @@ public class DiscordAPI {
 
             var response = req.executeWithBody(GsonUtils.toJson(body));
 
-            if (response.statusCode != 200) {
+            if (!isSuccessful(response.statusCode)) {
                 throw new RuntimeException("Failed to upload file: " + response.statusCode + " " + response.text());
             }
             var jsonResponse = new JSONObject(response.text());
 
             var attachment = jsonResponse.getJSONArray("attachments").getJSONObject(0);
 
-            String type = extension == ".ogg" ? "audio/ogg" : "audio/x-aac";
+            String type = ".ogg".equals(extension) ? "audio/ogg" : "audio/x-aac";
             var uploadReq = new Http.Request(attachment.getString("upload_url")).setHeader("Content-Type", type)
                     .setHeader("Content-Length", file.length() + "")
                     .setHeader("user-agent", "Discord-Android/175207;RNA");
 
             uploadReq.conn.setRequestMethod("PUT");
             var upload = uploadReq.executeWithBody(FilesKt.readBytes(file));
-            if (upload.statusCode != 200) {
+            if (!isSuccessful(upload.statusCode)) {
                 throw new RuntimeException("Failed to upload file: " + upload.statusCode + " " + upload.text());
             }
             return attachment.getString("upload_filename");
@@ -61,10 +57,17 @@ public class DiscordAPI {
                     duration,
                     waveform
             ));
-            request.executeWithBody(GsonUtils.toJson(body));
+            var response = request.executeWithBody(GsonUtils.toJson(body));
+            if (!isSuccessful(response.statusCode)) {
+                throw new RuntimeException("Failed to send message: " + response.statusCode + " " + response.text());
+            }
             return "Success";
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static boolean isSuccessful(int statusCode) {
+        return statusCode >= 200 && statusCode < 300;
     }
 }

@@ -4,11 +4,8 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
-import android.media.AudioFormat;
-import android.media.AudioRecord;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaRecorder;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
@@ -16,6 +13,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 
@@ -46,22 +44,25 @@ import java.util.UUID;
 @SuppressWarnings("unused")
 @AliucordPlugin
 public class VoiceMessages extends Plugin {
-    private final int bufferSize = AudioRecord.getMinBufferSize(44100, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
     WaveFormView waveFormView;
     FlexEditText editText;
     ImageButton recordButton;
     File outputFile;
     private MediaRecorder mediaRecorder;
+    private volatile boolean isRecording;
     private final Runnable updateWaveform = () -> {
 
-        while (true) {
-
-            waveFormView.addWave((int) ((mediaRecorder.getMaxAmplitude() / 32767.0) * 254) + 1); //discord uses 8 bit , explode. Also I add 1 because if we insert 0 it breaks discorc
-            waveFormView.invalidate();
+        while (isRecording && !Thread.currentThread().isInterrupted()) {
+            try {
+                waveFormView.addWave((int) ((mediaRecorder.getMaxAmplitude() / 32767.0) * 254) + 1); //discord uses 8 bit , explode. Also I add 1 because if we insert 0 it breaks discorc
+            } catch (RuntimeException ignored) {
+                break;
+            }
+            waveFormView.postInvalidate();
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+                Thread.currentThread().interrupt();
             }
         }
     };
@@ -69,7 +70,7 @@ public class VoiceMessages extends Plugin {
     public static SettingsAPI staticSettings;
     long voicePermissionMask = ((long) 1 << 46);
     long adminMask = ((long) 1 << 3);
-    long meID = StoreStream.getUsers().getMe().getId();
+    long meID;
     StoreStageInstances stageInstances;
     StoreThreadsJoined storeThreadsJoined;
     int outputFormat = MediaRecorder.OutputFormat.OGG;
@@ -88,6 +89,7 @@ public class VoiceMessages extends Plugin {
 
         stageInstances = (StoreStageInstances) ReflectUtils.getField(StoreStream.getPermissions(), "storeStageInstances");
         storeThreadsJoined = (StoreThreadsJoined) ReflectUtils.getField(StoreStream.getPermissions(), "storeThreadsJoined");
+        meID = StoreStream.getUsers().getMe().getId();
 
         staticSettings = settings;
 
@@ -116,12 +118,14 @@ public class VoiceMessages extends Plugin {
                     }
                     return true;
                 case MotionEvent.ACTION_UP:
-                    onRecordStop(true,StoreStream.getChannelsSelected().getId());
+                    if (isRecording) {
+                        onRecordStop(true, StoreStream.getChannelsSelected().getId());
+                    }
                     return true;
                 case (MotionEvent.ACTION_MOVE):
                     // check if user moved finger out of button
-                    if ( motionEvent.getY() < 0 || motionEvent.getY() > view.getHeight()) {
-                        onRecordStop(false,0L);
+                    if (isRecording && (motionEvent.getY() < 0 || motionEvent.getY() > view.getHeight())) {
+                        onRecordStop(false, 0L);
                         Utils.showToast("Cancelled recording");
                     }
                     return true;
@@ -142,10 +146,11 @@ public class VoiceMessages extends Plugin {
             editText = input.getView().findViewById(Utils.getResId("text_input", "id"));
 
             var viewgroup = ((ViewGroup) input.getView().findViewById(Utils.getResId("main_input_container", "id")));
+            detachFromParent(waveFormView);
             viewgroup.addView(waveFormView, 0);
             waveFormView.setVisibility(View.GONE);
 
-            var buttonViewGroup = ((ViewGroup) input.getView().findViewById(Utils.getResId("main_input_container", "id")));
+            detachFromParent(recordButton);
             viewgroup.addView(recordButton);
             var params = (LinearLayout.LayoutParams) waveFormView.getLayoutParams();
             params.height = DimenUtils.dpToPx(30);
@@ -153,8 +158,18 @@ public class VoiceMessages extends Plugin {
         });
 
         patcher.patch(WidgetChatInputEditText$setOnTextChangedListener$1.class.getDeclaredMethod("afterTextChanged", Editable.class), cf -> {
+            if (editText == null || recordButton == null) {
+                return;
+            }
+
             if (editText.getText() == null || editText.getText().toString().equals("")) {
-                ChannelWrapper channel = new ChannelWrapper(StoreStream.getChannelsSelected().getSelectedChannel());
+                var selectedChannel = StoreStream.getChannelsSelected().getSelectedChannel();
+                if (selectedChannel == null) {
+                    setRecordButtonVisibility(View.GONE);
+                    return;
+                }
+
+                ChannelWrapper channel = new ChannelWrapper(selectedChannel);
                 logger.info(String.valueOf(channel.getId()));
                 showVoiceChannelIconIfCan(channel.getId());
             } else {
@@ -176,16 +191,23 @@ public class VoiceMessages extends Plugin {
         });
     }
 
-    private double calculateMagnitude(short[] buffer) {
-        double sum = 0;
-        for (short s : buffer) {
-            sum += s * s;
+    private void detachFromParent(View view) {
+        if (view == null) {
+            return;
         }
-        double rms = Math.sqrt(sum / buffer.length);
-        return 20 * Math.log10(rms);
+
+        ViewParent parent = view.getParent();
+
+        if (parent instanceof ViewGroup) {
+            ((ViewGroup) parent).removeView(view);
+        }
     }
 
     public void onRecordStart() throws IOException {
+        if (isRecording) {
+            return;
+        }
+
         //check permission
         if (ContextCompat.checkSelfPermission(Utils.getAppContext(), android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(Utils.getAppActivity(), new String[]{android.Manifest.permission.RECORD_AUDIO}, 1);
@@ -207,9 +229,17 @@ public class VoiceMessages extends Plugin {
         outputFile.deleteOnExit();
         mediaRecorder.setOutputFile(outputFile.getAbsolutePath());
 
-        mediaRecorder.prepare();
-
-        mediaRecorder.start();
+        try {
+            mediaRecorder.prepare();
+            mediaRecorder.start();
+            isRecording = true;
+        } catch (IOException e) {
+            mediaRecorder.reset();
+            throw e;
+        } catch (RuntimeException e) {
+            mediaRecorder.reset();
+            throw e;
+        }
 
         editText.setVisibility(View.GONE);
         waveFormView.setVisibility(View.VISIBLE);
@@ -220,26 +250,23 @@ public class VoiceMessages extends Plugin {
     }
 
     public void onRecordStop(boolean send, long discordid) {
+        if (!isRecording) {
+            return;
+        }
+
+        isRecording = false;
+        if (updateWaveformThread != null && updateWaveformThread.isAlive()) {
+            updateWaveformThread.interrupt();
+        }
+
+        File recordedFile = outputFile;
+        String recordingExtension = extension;
+        String waveform = waveFormView.getWaveForm();
+        boolean stopped = false;
+
         try {
             mediaRecorder.stop();
-
-            if (send) {
-                Utils.threadPool.execute(() -> {
-                    var waveform = waveFormView.getWaveForm();
-                    var filename = DiscordAPI.uploadFile(outputFile, StoreStream.getChannelsSelected().getId(), extension);
-
-                    // extract duration
-                    Uri uri = Uri.parse(outputFile.getAbsolutePath());
-                    MediaMetadataRetriever mmr = new MediaMetadataRetriever();
-
-                    mmr.setDataSource(Utils.getAppContext(), uri);
-                    String durationStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
-                    float seconds = (Integer.parseInt(durationStr) / 1000.0f);
-
-                    DiscordAPI.sendVoiceMessage(filename, seconds, waveform, discordid, extension);
-                });
-            }
-
+            stopped = true;
         } catch (RuntimeException e) {
             // if you instantly stop recording it causes crash
             logger.error(e);
@@ -250,23 +277,64 @@ public class VoiceMessages extends Plugin {
         waveFormView.setVisibility(View.GONE);
         editText.setVisibility(View.VISIBLE);
 
-        if (updateWaveformThread != null && updateWaveformThread.isAlive()) {
-            updateWaveformThread.interrupt();
+        if (send && stopped && recordedFile != null) {
+            Utils.threadPool.execute(() -> {
+                try {
+                    var filename = DiscordAPI.uploadFile(recordedFile, discordid, recordingExtension);
+                    float seconds = getRecordingDurationSeconds(recordedFile);
+                    DiscordAPI.sendVoiceMessage(filename, seconds, waveform, discordid, recordingExtension);
+                } catch (RuntimeException e) {
+                    logger.error(e);
+                    Utils.showToast("Failed to send voice message");
+                }
+            });
+        }
+    }
+
+    private float getRecordingDurationSeconds(File file) {
+        MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+
+        try {
+            mmr.setDataSource(file.getAbsolutePath());
+            String durationStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+
+            if (durationStr == null) {
+                return 0.0f;
+            }
+
+            return Integer.parseInt(durationStr) / 1000.0f;
+        } catch (RuntimeException e) {
+            logger.error(e);
+            return 0.0f;
+        } finally {
+            try {
+                mmr.release();
+            } catch (RuntimeException ignored) {}
         }
     }
 
     public void showVoiceChannelIconIfCan(long channelId) {
 
-        var channel = new ChannelWrapper(StoreStream.getChannels().getChannel(channelId));
+        var rawChannel = StoreStream.getChannels().getChannel(channelId);
+        if (rawChannel == null) {
+            setRecordButtonVisibility(View.GONE);
+            return;
+        }
+
+        var channel = new ChannelWrapper(rawChannel);
         var guild = StoreStream.getGuilds().getGuild(channel.getGuildId());
         if (channel.isDM()) {
             // if channel is dm it causes guild to be null and causes issues
             setRecordButtonVisibility(View.VISIBLE);
             return;
         }
+        if (guild == null) {
+            setRecordButtonVisibility(View.GONE);
+            return;
+        }
 
         var permissions = PermissionUtils.computePermissions(meID,
-                StoreStream.getChannels().getChannel(channelId),
+                rawChannel,
                 StoreStream.getChannels().getGuildChannelInternal$app_productionGoogleRelease(guild.getId(), channel.getParentId()),
                 guild.getOwnerId(),
                 StoreStream.getGuilds().getMember(guild.getId(), meID),
@@ -289,6 +357,14 @@ public class VoiceMessages extends Plugin {
 
     @Override
     public void stop(Context context) {
+        if (isRecording) {
+            onRecordStop(false, 0L);
+        }
+        try {
+            mediaRecorder.release();
+        } catch (RuntimeException ignored) {}
+        detachFromParent(waveFormView);
+        detachFromParent(recordButton);
         patcher.unpatchAll();
         commands.unregisterAll();
     }

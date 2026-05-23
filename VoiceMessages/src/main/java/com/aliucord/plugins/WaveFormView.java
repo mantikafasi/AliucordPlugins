@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class WaveFormView extends android.view.View {
-    public List<Integer> waves = new ArrayList<>();
+    private final List<Integer> waves = new ArrayList<>();
 
     public WaveFormView(Context context) {
         super(context);
@@ -21,7 +21,7 @@ public class WaveFormView extends android.view.View {
         super(context, attrs);
     }
 
-    public void addWave(int wave) {
+    public synchronized void addWave(int wave) {
         waves.add(0, wave);
 
         if (waves.size() > 300) {
@@ -29,11 +29,15 @@ public class WaveFormView extends android.view.View {
         }
     }
 
-    public void reset() {
+    public synchronized void reset() {
         waves.clear();
     }
 
-    public String getWaveForm() {
+    public synchronized String getWaveForm() {
+        if (waves.isEmpty()) {
+            return new String(Base64.encode(new byte[]{1}, Base64.NO_WRAP), StandardCharsets.UTF_8);
+        }
+
         var quiet = true;
         // if sound is too quiet we double it so its shown in waveform
         for (int wave : waves) {
@@ -54,13 +58,18 @@ public class WaveFormView extends android.view.View {
     @Override
     protected void onDraw(Canvas canvas) {
 
+        List<Integer> currentWaves;
+        synchronized (this) {
+            currentWaves = new ArrayList<>(waves);
+        }
+
         Paint paint = new Paint();
         paint.setColor(Color.MAGENTA);
         int width = getWidth();
         int height = getHeight();
 
-        for (int i = 1; i < waves.size(); i++) {
-            int lineLenght = waves.get(i) / 3 + 1;
+        for (int i = 1; i < currentWaves.size(); i++) {
+            int lineLenght = currentWaves.get(i) / 3 + 1;
             int top = height / 2;
             int left = width - 10 * i;
             int lineHeight = (lineLenght * 3);

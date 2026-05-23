@@ -1,7 +1,10 @@
-version = "1.1.2"
+version = "1.1.3"
 description = "Send Voice Messages"
 
 aliucord.changelog.set("""
+# 1.1.3
+* Vibecoded fixes
+
 # 1.1.2
 * Added support for Android versions below 10
 
