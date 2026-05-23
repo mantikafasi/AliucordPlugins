@@ -87,6 +87,7 @@ public class AudioPlayer extends Plugin {
     public void stop(Context context) throws Throwable {
         patcher.unpatchAll();
         commands.unregisterAll();
+        StickyAudioPlayerController.destroy();
         AudioPlayerManager.stop();
         AudioPlayerManager.clearCache();
         logger.info("AudioPlayer plugin stopped.");

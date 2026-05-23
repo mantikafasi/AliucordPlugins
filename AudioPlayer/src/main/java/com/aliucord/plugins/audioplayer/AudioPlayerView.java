@@ -7,6 +7,7 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -25,14 +26,19 @@ public class AudioPlayerView extends LinearLayout implements AudioPlayerManager.
     private static final Logger logger = new Logger("AudioPlayerView");
 
     private ImageView playButton;
+    private TextView hideButton;
     private ProgressBar loadingSpinner;
     private DiscordProgressView progressView;
+    private TextView filenameText;
     private TextView timerText;
     private String audioUrl;
     private String filename;
     private boolean isUserSeeking = false;
+    private boolean stickyMode = false;
     private int interactiveActiveColor;
     private int interactiveNormalColor;
+    private int cardColor;
+    private GradientDrawable backgroundDrawable;
 
     public AudioPlayerView(Context context) {
         super(context);
@@ -48,7 +54,7 @@ public class AudioPlayerView extends LinearLayout implements AudioPlayerManager.
         int padHorizontal = DimenUtils.dpToPx(12);
         setPadding(padHorizontal, 0, padHorizontal, 0);
 
-        int cardColor = ColorCompat.getThemedColor(context, R.b.colorBackgroundSecondary);
+        cardColor = ColorCompat.getThemedColor(context, R.b.colorBackgroundSecondary);
         if (cardColor == 0) {
             cardColor = Color.parseColor("#2F3136");
         }
@@ -63,12 +69,11 @@ public class AudioPlayerView extends LinearLayout implements AudioPlayerManager.
             interactiveNormalColor = interactiveActiveColor;
         }
 
-        GradientDrawable bg = new GradientDrawable();
-        bg.setShape(GradientDrawable.RECTANGLE);
-        int r = DimenUtils.dpToPx(8);
-        bg.setCornerRadii(new float[]{0, 0, 0, 0, r, r, r, r});
-        bg.setColor(cardColor);
-        setBackground(bg);
+        backgroundDrawable = new GradientDrawable();
+        backgroundDrawable.setShape(GradientDrawable.RECTANGLE);
+        backgroundDrawable.setColor(cardColor);
+        applyBackgroundCorners();
+        setBackground(backgroundDrawable);
 
         setMinimumHeight(0);
 
@@ -107,6 +112,17 @@ public class AudioPlayerView extends LinearLayout implements AudioPlayerManager.
             progressTrackColor = Color.parseColor("#4F545C");
         }
 
+        filenameText = new TextView(context);
+        filenameText.setTextSize(12f);
+        filenameText.setTextColor(textColor);
+        filenameText.setIncludeFontPadding(false);
+        filenameText.setSingleLine(true);
+        filenameText.setEllipsize(TextUtils.TruncateAt.END);
+        filenameText.setVisibility(View.GONE);
+        LayoutParams filenameParams = new LayoutParams(0, LayoutParams.WRAP_CONTENT, 0.85f);
+        filenameParams.setMargins(0, 0, DimenUtils.dpToPx(8), 0);
+        addView(filenameText, filenameParams);
+
         progressView = new DiscordProgressView(context);
         progressView.setColors(progressTrackColor, interactiveActiveColor);
         progressView.setMax(100);
@@ -123,6 +139,23 @@ public class AudioPlayerView extends LinearLayout implements AudioPlayerManager.
         LayoutParams timerParams = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
         timerParams.setMargins(DimenUtils.dpToPx(4), 0, 0, 0);
         addView(timerText, timerParams);
+
+        hideButton = new TextView(context);
+        hideButton.setText("×");
+        hideButton.setTextSize(20f);
+        hideButton.setTextColor(interactiveNormalColor);
+        hideButton.setGravity(Gravity.CENTER);
+        hideButton.setIncludeFontPadding(false);
+        hideButton.setVisibility(View.GONE);
+        LayoutParams hideParams = new LayoutParams(DimenUtils.dpToPx(28), DimenUtils.dpToPx(28));
+        hideParams.setMargins(DimenUtils.dpToPx(8), 0, 0, 0);
+        addView(hideButton, hideParams);
+        hideButton.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                StickyAudioPlayerController.hide();
+            }
+        });
 
         playButton.setOnClickListener(new OnClickListener() {
             @Override
@@ -156,6 +189,12 @@ public class AudioPlayerView extends LinearLayout implements AudioPlayerManager.
     public void configure(final String url, String filename) {
         this.audioUrl = url;
         this.filename = filename;
+        if (filenameText != null) {
+            filenameText.setText(filename != null && filename.length() > 0 ? filename : "Audio");
+        }
+        if (!stickyMode) {
+            StickyAudioPlayerController.hideIfShowing(url);
+        }
 
         setPlayIcon(false);
         playButton.setVisibility(View.VISIBLE);
@@ -181,9 +220,45 @@ public class AudioPlayerView extends LinearLayout implements AudioPlayerManager.
         });
     }
 
+    void setStickyMode(boolean stickyMode) {
+        this.stickyMode = stickyMode;
+        applyBackgroundCorners();
+        if (stickyMode) {
+            int padHorizontal = DimenUtils.dpToPx(14);
+            setPadding(padHorizontal, 0, padHorizontal, 0);
+            if (filenameText != null) {
+                filenameText.setVisibility(View.VISIBLE);
+            }
+            if (hideButton != null) {
+                hideButton.setVisibility(View.VISIBLE);
+            }
+        } else {
+            if (filenameText != null) {
+                filenameText.setVisibility(View.GONE);
+            }
+            if (hideButton != null) {
+                hideButton.setVisibility(View.GONE);
+            }
+        }
+    }
+
+    private void applyBackgroundCorners() {
+        if (backgroundDrawable == null) return;
+
+        int r = DimenUtils.dpToPx(8);
+        if (stickyMode) {
+            backgroundDrawable.setCornerRadius(r);
+        } else {
+            backgroundDrawable.setCornerRadii(new float[]{0, 0, 0, 0, r, r, r, r});
+        }
+    }
+
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
+        if (!stickyMode) {
+            StickyAudioPlayerController.hideIfShowing(audioUrl);
+        }
         if (audioUrl != null) {
             AudioPlayerManager.registerListener(audioUrl, this);
         }
@@ -192,8 +267,8 @@ public class AudioPlayerView extends LinearLayout implements AudioPlayerManager.
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        if (audioUrl != null && audioUrl.equals(AudioPlayerManager.getCurrentUrl())) {
-            AudioPlayerManager.stop();
+        if (!stickyMode && audioUrl != null && audioUrl.equals(AudioPlayerManager.getCurrentUrl())) {
+            StickyAudioPlayerController.show(audioUrl, filename);
         }
         AudioPlayerManager.unregisterListener(this);
     }
@@ -210,6 +285,9 @@ public class AudioPlayerView extends LinearLayout implements AudioPlayerManager.
                         loadingSpinner.setVisibility(View.GONE);
                         progressView.setProgress(0);
                         timerText.setText("0:00 / " + formatTime(AudioPlayerManager.getDuration()));
+                        if (stickyMode) {
+                            StickyAudioPlayerController.hide();
+                        }
                         break;
                     case LOADING:
                         playButton.setVisibility(View.GONE);

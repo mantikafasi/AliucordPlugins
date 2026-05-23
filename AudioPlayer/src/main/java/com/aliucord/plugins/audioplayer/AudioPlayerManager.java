@@ -272,6 +272,7 @@ public class AudioPlayerManager {
             currentState = PlayerState.IDLE;
             currentUrl = null;
             currentDurationHint = 0;
+            StickyAudioPlayerController.hide();
             if (activeListener != null) {
                 activeListener.onStateChanged(PlayerState.IDLE);
             }
@@ -305,6 +306,7 @@ public class AudioPlayerManager {
                     } catch (Throwable t) {
                         logger.error("Failed to start media player", t);
                         currentState = PlayerState.IDLE;
+                        StickyAudioPlayerController.hide();
                         if (activeListener != null) {
                             activeListener.onStateChanged(PlayerState.IDLE);
                         }
@@ -320,6 +322,7 @@ public class AudioPlayerManager {
                     currentState = PlayerState.IDLE;
                     currentUrl = null;
                     currentDurationHint = 0;
+                    StickyAudioPlayerController.hide();
                     if (activeListener != null) {
                         activeListener.onStateChanged(PlayerState.IDLE);
                         activeListener.onProgressUpdate(0, 0);
@@ -337,6 +340,7 @@ public class AudioPlayerManager {
                     currentState = PlayerState.IDLE;
                     currentUrl = null;
                     currentDurationHint = 0;
+                    StickyAudioPlayerController.hide();
                     if (activeListener != null) {
                         activeListener.onStateChanged(PlayerState.IDLE);
                     }
@@ -406,6 +410,7 @@ public class AudioPlayerManager {
         currentUrl = null;
         currentState = PlayerState.IDLE;
         currentDurationHint = 0;
+        StickyAudioPlayerController.hide();
     }
 
     private static int safeDuration(MediaPlayer player) {
