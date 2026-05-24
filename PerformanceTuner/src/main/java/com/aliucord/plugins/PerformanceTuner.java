@@ -13,6 +13,8 @@ import com.aliucord.patcher.InsteadHook;
 import com.aliucord.patcher.PreHook;
 import com.discord.api.message.embed.EmbedType;
 import com.discord.embed.RenderableEmbedMedia;
+import com.discord.stores.StoreMessagesLoader;
+import com.discord.stores.StoreMessagesLoader$handleChannelSelected$1;
 import com.discord.stores.StoreStream;
 import com.discord.views.typing.TypingDots;
 import com.discord.widgets.chat.list.WidgetChatList;
@@ -106,8 +108,7 @@ public class PerformanceTuner extends Plugin {
         if (!preserveLoaderTouchState())
             return;
 
-        Class<?> resetter = Class.forName("com.discord.stores.StoreMessagesLoader$handleChannelSelected$1");
-        Method method = resetter.getDeclaredMethod("invoke2", Class.forName("com.discord.stores.StoreMessagesLoader$ChannelLoadedState"));
+        Method method = StoreMessagesLoader$handleChannelSelected$1.class.getDeclaredMethod("invoke", StoreMessagesLoader.ChannelLoadedState.class);
         method.setAccessible(true);
 
         patcher.patch(method, new InsteadHook(callFrame -> {
