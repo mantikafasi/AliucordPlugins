@@ -45,3 +45,4 @@ rootProject.name = "AliucordPlugins"
 include(":AudioPlayer")
 include(":MessageForwarder")
 include(":PhotoEditor")
+include(":MediaFavorites")
