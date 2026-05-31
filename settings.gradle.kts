@@ -38,7 +38,7 @@ include(":MoreGifProviders")
 include(":SwipeMediaViewer")
 include(":PerformanceTuner")
 include(":ChannelTabs")
-include(":AnyPluginDownloader")
+// include(":AnyPluginDownloader")
 
 
 rootProject.name = "AliucordPlugins"
