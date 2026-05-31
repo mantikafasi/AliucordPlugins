@@ -1,6 +1,6 @@
 //include(":Someone")
 //include(":byebyeSlashCommands")
-//include(":EncryptDMs")
+include(":EncryptDMs")
 
 include(":HeicImageConverter")
 include(":LightShotRoulette")
