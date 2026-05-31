@@ -1,120 +1,137 @@
 package com.aliucord.plugins;
-import javax.crypto.Cipher;
-import java.io.InputStream;
-import java.security.*;
+
+import java.nio.charset.StandardCharsets;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.SecureRandom;
+import java.security.spec.MGF1ParameterSpec;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.Map;
 
-import android.util.Base64;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-
-import android.util.Base64;
-import android.util.Pair;
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.OAEPParameterSpec;
+import javax.crypto.spec.PSource;
+import javax.crypto.spec.SecretKeySpec;
 
 public class RSA {
+    private static final SecureRandom RANDOM = new SecureRandom();
+
+    public static class AesCiphertext {
+        public String iv;
+        public String cipher;
+
+        public AesCiphertext(String iv, String cipher) {
+            this.iv = iv;
+            this.cipher = cipher;
+        }
+    }
+
     public static KeyPair generateKeyPair() throws Exception {
         KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
-        generator.initialize(2048, new SecureRandom());
-        KeyPair pair = generator.generateKeyPair();
-
-        return pair;
+        generator.initialize(2048, RANDOM);
+        return generator.generateKeyPair();
     }
 
-    private static Pair<KeyFactory,X509EncodedKeySpec> generateKeyFactory(String key){
-        byte[] data = Base64.decode((key.getBytes()),0);
-        X509EncodedKeySpec spec = new X509EncodedKeySpec(data);
-        try{
-            return new Pair<>(KeyFactory.getInstance("RSA"),spec);
-        } catch (Exception e){
-            return null;
-        }
-
+    public static String encodePublicKey(PublicKey key) {
+        return b64(key.getEncoded());
     }
 
-    public static Key loadPublicKey(String stored) {
-        try{
-            var keyfac = generateKeyFactory(stored);
-            return keyfac.first.generatePublic(keyfac.second);
-        } catch (Exception e){
-            return null;
-        }
-    }
-    public static Key loadPrivateKey(String stored) {
-        try{
-            var keyfac = generateKeyFactory(stored);
-            return keyfac.first.generatePrivate(keyfac.second);
-        } catch (Exception e){return null;}
+    public static String encodePrivateKey(PrivateKey key) {
+        return b64(key.getEncoded());
     }
 
-
-    public static String encrypt(String plainText, PublicKey publicKey) {
-        try{
-            Cipher encryptCipher = Cipher.getInstance("RSA");
-            encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
-
-            byte[] cipherText = encryptCipher.doFinal(plainText.getBytes(UTF_8));
-
-            return Base64.encodeToString(cipherText,0);
-        } catch (Exception e) {return null;}
-
-    }
-
-    public static String decrypt(String cipherText, PrivateKey privateKey) {
+    public static PublicKey loadPublicKey(String stored) {
         try {
-            byte[] bytes = Base64.decode(cipherText,0);
-
-            Cipher decriptCipher = Cipher.getInstance("RSA");
-            decriptCipher.init(Cipher.DECRYPT_MODE, privateKey);
-
-            return new String(decriptCipher.doFinal(bytes), UTF_8);
-        }catch (Exception e){
+            byte[] data = b64decode(stored);
+            return KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(data));
+        } catch (Exception ignored) {
             return null;
         }
-
     }
 
-    public static String sign(String plainText, PrivateKey privateKey) throws Exception {
-        Signature privateSignature = Signature.getInstance("SHA256withRSA");
-        privateSignature.initSign(privateKey);
-        privateSignature.update(plainText.getBytes(UTF_8));
-
-        byte[] signature = privateSignature.sign();
-
-        return Base64.encodeToString(signature,0);
+    public static PrivateKey loadPrivateKey(String stored) {
+        try {
+            byte[] data = b64decode(stored);
+            return KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(data));
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 
-    public static boolean verify(String plainText, String signature, PublicKey publicKey) throws Exception {
-        Signature publicSignature = Signature.getInstance("SHA256withRSA");
-        publicSignature.initVerify(publicKey);
-        publicSignature.update(plainText.getBytes(UTF_8));
-
-        byte[] signatureBytes = Base64.decode(signature,0);
-
-        return publicSignature.verify(signatureBytes);
+    public static SecretKey generateAesKey() throws Exception {
+        KeyGenerator generator = KeyGenerator.getInstance("AES");
+        generator.init(256, RANDOM);
+        return generator.generateKey();
     }
 
-    public static void main(String... argv) throws Exception {
-        //First generate a public/private key pair
-        KeyPair pair = generateKeyPair();
-        //KeyPair pair = getKeyPairFromKeyStore();
+    public static String encryptKey(byte[] key, PublicKey publicKey) {
+        try {
+            Cipher cipher = getRsaCipher();
+            cipher.init(Cipher.ENCRYPT_MODE, publicKey, oaepSpec());
+            return b64(cipher.doFinal(key));
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
 
-        //Our secret message
-        String message = "the answer to life the universe and everything";
+    public static byte[] decryptKey(String cipherText, PrivateKey privateKey) {
+        try {
+            Cipher cipher = getRsaCipher();
+            cipher.init(Cipher.DECRYPT_MODE, privateKey, oaepSpec());
+            return cipher.doFinal(b64decode(cipherText));
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
 
-        //Encrypt the message
-        String cipherText = encrypt(message, pair.getPublic());
+    public static AesCiphertext encryptMessage(String plainText, SecretKey secretKey) throws Exception {
+        byte[] iv = new byte[12];
+        RANDOM.nextBytes(iv);
 
-        //Now decrypt it
-        String decipheredMessage = decrypt(cipherText, pair.getPrivate());
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey, new GCMParameterSpec(128, iv));
 
-        System.out.println(decipheredMessage);
+        return new AesCiphertext(
+                b64(iv),
+                b64(cipher.doFinal(plainText.getBytes(StandardCharsets.UTF_8)))
+        );
+    }
 
-        //Let's sign our message
-        String signature = sign("foobar", pair.getPrivate());
+    public static String decryptMessage(String cipherText, String iv, byte[] rawKey) {
+        try {
+            SecretKeySpec key = new SecretKeySpec(rawKey, "AES");
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(128, b64decode(iv)));
+            return new String(cipher.doFinal(b64decode(cipherText)), StandardCharsets.UTF_8);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
 
-        //Let's check the signature
-        boolean isCorrect = verify("foobar", signature, pair.getPublic());
-        System.out.println("Signature correct: " + isCorrect);
+    public static String b64(byte[] data) {
+        return android.util.Base64.encodeToString(data, android.util.Base64.NO_WRAP);
+    }
+
+    public static byte[] b64decode(String data) {
+        return android.util.Base64.decode(data, android.util.Base64.NO_WRAP);
+    }
+
+    private static Cipher getRsaCipher() throws Exception {
+        return Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
+    }
+
+    private static OAEPParameterSpec oaepSpec() {
+        return new OAEPParameterSpec(
+                "SHA-256",
+                "MGF1",
+                MGF1ParameterSpec.SHA256,
+                PSource.PSpecified.DEFAULT
+        );
     }
 }
