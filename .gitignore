@@ -11,3 +11,4 @@
 local.properties
 .project
 .settings/org.eclipse.buildship.core.prefs
+/AnyPluginDownloader

@@ -34,7 +34,10 @@ import com.aliucord.utils.GsonUtils;
 import com.aliucord.widgets.BottomSheet;
 import com.discord.app.AppFragment;
 import com.discord.databinding.WidgetChatListAdapterItemAttachmentBinding;
+import com.discord.models.gifpicker.dto.ModelGif;
 import com.discord.widgets.chat.input.WidgetChatInputAttachments;
+import com.discord.widgets.chat.input.gifpicker.GifSearchViewModel;
+import com.discord.widgets.chat.input.gifpicker.WidgetGifPickerSearch;
 import com.discord.widgets.chat.list.adapter.WidgetChatListAdapterItemAttachment;
 import com.discord.widgets.chat.list.entries.AttachmentEntry;
 import com.discord.widgets.chat.list.entries.ChatListEntry;
@@ -47,6 +50,8 @@ import com.lytefast.flexinput.model.Attachment;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -54,13 +59,15 @@ import java.util.Collections;
 import java.util.List;
 
 import de.robv.android.xposed.XposedBridge;
+import kotlin.jvm.functions.Function1;
 
 @AliucordPlugin
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "rawtypes", "unchecked"})
 public class MediaFavorites extends Plugin {
     private static final Logger logger = new Logger("MediaFavorites");
     private static final String FAVORITES_KEY = "mediaFavoritesData";
     private static final String FAV_BTN_TAG = "MediaFavoritesStarBtn";
+    private static final String FAV_GIF_STAR_TAG = "MediaFavoritesGifStar";
     private static final String FAV_SEGMENT_TAG = "MediaFavoritesSegment";
     private static final String FAV_TYPE_TABS_TAG = "MediaFavoritesTypeTabs";
     private static final String FAV_CONTENT_TAG = "MediaFavoritesContent";
@@ -69,6 +76,8 @@ public class MediaFavorites extends Plugin {
     private static String activeFavType = "images";
     private static String mediaSearchQuery = "";
     private static WidgetChatInputAttachments currentChatAttachments;
+    /** Callback captured from GifViewHolder.Gif.configure; equivalent to viewModel::selectGif */
+    private static Function1 currentGifSelectCallback;
 
     private interface TypeChangeListener {
         void onTypeChanged(String key);
@@ -94,8 +103,9 @@ public class MediaFavorites extends Plugin {
 
     public static class FavoritesData {
         public List<FavoriteAttachment> images = new ArrayList<>();
+        public List<FavoriteAttachment> gifs   = new ArrayList<>();
         public List<FavoriteAttachment> videos = new ArrayList<>();
-        public List<FavoriteAttachment> audio = new ArrayList<>();
+        public List<FavoriteAttachment> audio  = new ArrayList<>();
     }
 
     @Override
@@ -107,6 +117,7 @@ public class MediaFavorites extends Plugin {
         patchChatAttachments();
         patchExpressionSegmentedControl();
         patchExpressionSearchBarClick();
+        patchGifPickerStar();
         logger.info("MediaFavorites started");
     }
 
@@ -116,6 +127,7 @@ public class MediaFavorites extends Plugin {
         commands.unregisterAll();
         instance = null;
         currentChatAttachments = null;
+        currentGifSelectCallback = null;
         activeFavType = "images";
         logger.info("MediaFavorites stopped");
     }
@@ -178,11 +190,11 @@ public class MediaFavorites extends Plugin {
         View root = findExpressionTrayRoot(segments);
         hideFavContent(root);
 
-        View emojiContent = findViewByResourceEntryName(root, "expression_tray_emoji_picker_content");
-        View gifContent = findViewByResourceEntryName(root, "expression_tray_gif_picker_content");
+        View emojiContent   = findViewByResourceEntryName(root, "expression_tray_emoji_picker_content");
+        View gifContent     = findViewByResourceEntryName(root, "expression_tray_gif_picker_content");
         View stickerContent = findViewByResourceEntryName(root, "expression_tray_sticker_picker_content");
-        if (emojiContent != null) emojiContent.setVisibility(index == 0 ? View.VISIBLE : View.GONE);
-        if (gifContent != null) gifContent.setVisibility(index == 1 ? View.VISIBLE : View.GONE);
+        if (emojiContent   != null) emojiContent.setVisibility(index == 0 ? View.VISIBLE : View.GONE);
+        if (gifContent     != null) gifContent.setVisibility(index == 1 ? View.VISIBLE : View.GONE);
         if (stickerContent != null) stickerContent.setVisibility(index == 2 ? View.VISIBLE : View.GONE);
 
         View searchButton = findViewByResourceEntryName(root, "expression_tray_search_button");
@@ -197,7 +209,7 @@ public class MediaFavorites extends Plugin {
         }
     }
 
-    /* ── Star button on attachments ─────────────────────────── */
+    /* ── Star button on chat-message attachments ────────────────────────── */
 
     private void patchAttachmentStar() throws NoSuchMethodException {
         patcher.patch(
@@ -248,7 +260,7 @@ public class MediaFavorites extends Plugin {
                         return true;
                     });
                 } catch (Throwable t) {
-                    logger.error("Error in star hook", t);
+                    logger.error("Error in attachment star hook", t);
                 }
             })
         );
@@ -320,7 +332,120 @@ public class MediaFavorites extends Plugin {
         star.setTextColor(favorited ? Color.parseColor("#FFD700") : Color.WHITE);
     }
 
-    /* ── Expression tray favorites tab ───────────────────────── */
+    /* ── Star button inside the native GIF picker ───────────────────────── */
+
+    private void patchGifPickerStar() {
+        try {
+            Class<?> gifAdapterClass = Class.forName(
+                "com.discord.widgets.chat.input.gifpicker.GifAdapter");
+
+            // Patch the bridge method: onBindViewHolder(RecyclerView.ViewHolder, int)
+            // This is the method RecyclerView actually dispatches to.
+            Method onBind = gifAdapterClass.getDeclaredMethod(
+                "onBindViewHolder", RecyclerView.ViewHolder.class, int.class);
+            onBind.setAccessible(true);
+
+            patcher.patch(onBind, new Hook(callFrame -> {
+                try {
+                    Object adapter = callFrame.thisObject;
+                    RecyclerView.ViewHolder holder = (RecyclerView.ViewHolder) callFrame.args[0];
+                    int position = (int) callFrame.args[1];
+
+                    // Fetch the items list via the field
+                    java.lang.reflect.Field itemsField = gifAdapterClass.getDeclaredField("items");
+                    itemsField.setAccessible(true);
+                    java.util.List<?> items = (java.util.List<?>) itemsField.get(adapter);
+                    if (items == null || position < 0 || position >= items.size()) return;
+
+                    Object gifAdapterItem = items.get(position);
+                    if (gifAdapterItem == null) return;
+
+                    // Only decorate GifItem rows (not SuggestedTerms rows)
+                    if (!"GifItem".equals(gifAdapterItem.getClass().getSimpleName())) return;
+
+                    // Get ModelGif from the item
+                    Method getGif = gifAdapterItem.getClass().getDeclaredMethod("getGif");
+                    getGif.setAccessible(true);
+                    ModelGif modelGif = (ModelGif) getGif.invoke(gifAdapterItem);
+                    if (modelGif == null) return;
+
+                    String gifImageUrl = modelGif.getGifImageUrl();
+                    String tenorGifUrl = modelGif.getTenorGifUrl();
+                    if (gifImageUrl == null && tenorGifUrl == null) return;
+
+                    // Capture the select callback from the adapter field
+                    java.lang.reflect.Field onSelectGifField = gifAdapterClass.getDeclaredField("onSelectGif");
+                    onSelectGifField.setAccessible(true);
+                    Function1 cb = (Function1) onSelectGifField.get(adapter);
+                    if (cb != null) currentGifSelectCallback = cb;
+
+                    // Build a FavoriteAttachment for this GIF
+                    FavoriteAttachment fav = new FavoriteAttachment();
+                    fav.url       = tenorGifUrl;
+                    fav.proxy_url = gifImageUrl;
+                    fav.filename  = "tenor.gif";  // .gif → isImage() returns true in grid
+                    fav.width     = modelGif.getWidth();
+                    fav.height    = modelGif.getHeight();
+
+                    // holder.itemView is the CardView (FrameLayout) for GIF cells
+                    ViewGroup cardView = (ViewGroup) holder.itemView;
+
+                    // Find-or-create the star overlay button
+                    TextView starBtn = cardView.findViewWithTag(FAV_GIF_STAR_TAG);
+                    if (starBtn == null) {
+                        starBtn = createGifStarButton(cardView.getContext());
+                        int size = DimenUtils.dpToPx(26);
+                        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(size, size);
+                        lp.gravity     = Gravity.TOP | Gravity.END;
+                        lp.topMargin   = DimenUtils.dpToPx(4);
+                        lp.rightMargin = DimenUtils.dpToPx(4);
+                        cardView.addView(starBtn, lp);
+                    }
+                    // Ensure star is drawn on top of the SimpleDraweeView
+                    starBtn.bringToFront();
+
+                    // Sync filled / unfilled colour
+                    updateStarState(starBtn, isFavorited(fav.getKey()));
+
+                    final TextView finalStar = starBtn;
+                    final FavoriteAttachment finalFav = fav;
+                    finalStar.setOnClickListener(v -> {
+                        boolean nowFav = toggleFavorite(finalFav, "gifs");
+                        updateStarState(finalStar, nowFav);
+                    });
+                    finalStar.setOnLongClickListener(v -> {
+                        FavoriteAttachment saved = ensureFavorite(finalFav, "gifs");
+                        updateStarState(finalStar, true);
+                        showTagEditor(cardView.getContext(), saved, "gifs", null);
+                        return true;
+                    });
+                } catch (Throwable t) {
+                    logger.error("Error in GIF adapter bind hook", t);
+                }
+            }));
+
+        } catch (Throwable t) {
+            logger.error("Could not patch GIF picker star button", t);
+        }
+    }
+
+    private TextView createGifStarButton(Context ctx) {
+        TextView star = new TextView(ctx);
+        star.setTag(FAV_GIF_STAR_TAG);
+        star.setId(View.generateViewId());
+        star.setText("\u2605");
+        star.setTextSize(13f);
+        star.setGravity(Gravity.CENTER);
+        star.setTypeface(Typeface.DEFAULT_BOLD);
+        star.setIncludeFontPadding(false);
+        star.setBackground(makeStarBackground(Color.argb(170, 20, 21, 25)));
+        star.setElevation(DimenUtils.dpToPx(4));
+        star.setClickable(true);
+        star.setFocusable(true);
+        return star;
+    }
+
+    /* ── Expression tray favorites tab ──────────────────────────────────── */
 
     private void patchExpressionSegmentedControl() throws NoSuchMethodException {
         patcher.patch(
@@ -437,6 +562,7 @@ public class MediaFavorites extends Plugin {
         }
     }
 
+    /** 4 tabs: Images | GIFs | Videos | Audio */
     private LinearLayout createFavTypeTabs(Context ctx, TypeChangeListener listener) {
         LinearLayout favTabs = new LinearLayout(ctx);
         favTabs.setTag(FAV_TYPE_TABS_TAG);
@@ -446,8 +572,8 @@ public class MediaFavorites extends Plugin {
             DimenUtils.dpToPx(12), DimenUtils.dpToPx(8),
             DimenUtils.dpToPx(12), DimenUtils.dpToPx(6));
 
-        String[] labels = {"Images", "Videos", "Audio"};
-        String[] keys = {"images", "videos", "audio"};
+        String[] labels = {"Images", "GIFs", "Videos", "Audio"};
+        String[] keys   = {"images", "gifs", "videos", "audio"};
 
         for (int i = 0; i < labels.length; i++) {
             final String key = keys[i];
@@ -511,8 +637,9 @@ public class MediaFavorites extends Plugin {
 
     private int getActiveFavTypeIndex() {
         if ("images".equals(activeFavType)) return 0;
-        if ("videos".equals(activeFavType)) return 1;
-        if ("audio".equals(activeFavType)) return 2;
+        if ("gifs".equals(activeFavType))   return 1;
+        if ("videos".equals(activeFavType)) return 2;
+        if ("audio".equals(activeFavType))  return 3;
         return -1;
     }
 
@@ -535,12 +662,12 @@ public class MediaFavorites extends Plugin {
         }
         contentContainer.setVisibility(View.VISIBLE);
 
-        // Hide Discord's content views
-        View emojiContent = findViewByResourceEntryName(root, "expression_tray_emoji_picker_content");
-        View gifContent = findViewByResourceEntryName(root, "expression_tray_gif_picker_content");
+        // Hide Discord's own content views
+        View emojiContent   = findViewByResourceEntryName(root, "expression_tray_emoji_picker_content");
+        View gifContent     = findViewByResourceEntryName(root, "expression_tray_gif_picker_content");
         View stickerContent = findViewByResourceEntryName(root, "expression_tray_sticker_picker_content");
-        if (emojiContent != null) emojiContent.setVisibility(View.GONE);
-        if (gifContent != null) gifContent.setVisibility(View.GONE);
+        if (emojiContent   != null) emojiContent.setVisibility(View.GONE);
+        if (gifContent     != null) gifContent.setVisibility(View.GONE);
         if (stickerContent != null) stickerContent.setVisibility(View.GONE);
 
         FrameLayout favContent = contentContainer.findViewWithTag(FAV_CONTENT_TAG);
@@ -555,10 +682,13 @@ public class MediaFavorites extends Plugin {
         favContent.addView(page, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-        page.addView(createFavTypeTabs(ctx, key -> showFavContent(trayRoot, key)), new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        page.addView(createFavTypeTabs(ctx, key -> showFavContent(trayRoot, key)),
+                new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        addMediaGrid(ctx, page, allItems, list, () -> showFavContent(trayRoot, activeFavType), null, true);
+        addMediaGrid(ctx, page, allItems, list,
+                () -> showFavContent(trayRoot, activeFavType),
+                null, true, trayRoot);
     }
 
     private void addMediaGrid(
@@ -568,11 +698,12 @@ public class MediaFavorites extends Plugin {
             List<FavoriteAttachment> list,
             Runnable refreshAction,
             Runnable afterClick,
-            boolean fillRemainingHeight
+            boolean fillRemainingHeight,
+            View trayRoot
     ) {
         if (allItems.isEmpty()) {
             TextView empty = new TextView(ctx);
-            empty.setText("No favorites yet\n\nTap \u2605 on attachments in chat\nto add them here.");
+            empty.setText(getEmptyMessage(activeFavType));
             empty.setTextColor(ColorCompat.getThemedColor(ctx,
                 com.lytefast.flexinput.R.b.colorInteractiveMuted));
             empty.setTextSize(14f);
@@ -592,7 +723,11 @@ public class MediaFavorites extends Plugin {
         final FavoriteGridAdapter adapter = new FavoriteGridAdapter(
             list,
             fav -> {
-                addFavoriteToDraft(ctx, fav);
+                if ("gifs".equals(activeFavType)) {
+                    sendGifFavorite(fav, trayRoot);
+                } else {
+                    addFavoriteToDraft(ctx, fav);
+                }
                 if (afterClick != null) afterClick.run();
             },
             fav -> showTagEditor(ctx, fav, activeFavType, refreshAction)
@@ -605,8 +740,57 @@ public class MediaFavorites extends Plugin {
                 fillRemainingHeight ? 1f : 0f));
     }
 
+    private static String getEmptyMessage(String type) {
+        if ("gifs".equals(type)) {
+            return "No GIF favorites yet\n\nTap \u2605 on GIFs in the GIF picker\nto add them here.";
+        }
+        return "No favorites yet\n\nTap \u2605 on attachments in chat\nto add them here.";
+    }
+
+    /** Send a favorited GIF via the captured GIF select callback (same path as tapping a GIF normally). */
+    private void sendGifFavorite(FavoriteAttachment fav, View trayRoot) {
+        Function1 callback = currentGifSelectCallback;
+        if (callback == null) {
+            Utils.showToast("Open the GIF picker and browse GIFs first, then try again");
+            return;
+        }
+
+        try {
+            String gifImageUrl = fav.proxy_url != null ? fav.proxy_url : fav.url;
+            String tenorGifUrl = fav.url     != null ? fav.url       : fav.proxy_url;
+            int width  = fav.width  > 0 ? fav.width  : 100;
+            int height = fav.height > 0 ? fav.height : 100;
+
+            ModelGif modelGif = new ModelGif(gifImageUrl, tenorGifUrl, width, height);
+
+            // Construct GifAdapterItem.GifItem reflectively (inner class may not be public)
+            Class<?> gifItemClass = Class.forName(
+                "com.discord.widgets.chat.input.gifpicker.GifAdapterItem$GifItem");
+            Constructor<?> ctor = gifItemClass.getDeclaredConstructor(ModelGif.class, String.class);
+            ctor.setAccessible(true);
+            Object gifItem = ctor.newInstance(modelGif, "");
+
+            // Fire the callback — equivalent to viewModel.selectGif(gifItem)
+            callback.invoke(gifItem);
+
+            // Restore the expression tray to show the native GIF picker tab
+            if (trayRoot != null) {
+                View resolvedRoot = findExpressionTrayRoot(trayRoot);
+                hideFavContent(resolvedRoot);
+                View segCtrlView = findViewByResourceEntryName(
+                    resolvedRoot, "expression_tray_segmented_control");
+                if (segCtrlView instanceof SegmentedControlContainer) {
+                    restoreBuiltInExpressionTab((SegmentedControlContainer) segCtrlView, 1);
+                }
+            }
+        } catch (Throwable t) {
+            logger.error("Error sending GIF favorite", t);
+            Utils.showToast("Could not send GIF");
+        }
+    }
+
     private void configureDefaultSearchBar(View root) {
-        View searchBar = findViewByResourceEntryName(root, "expression_tray_search_bar");
+        View searchBar    = findViewByResourceEntryName(root, "expression_tray_search_bar");
         View searchButton = findViewByResourceEntryName(root, "expression_tray_search_button");
         if (searchBar != null) {
             searchBar.setContentDescription("Search Media");
@@ -732,7 +916,7 @@ public class MediaFavorites extends Plugin {
             plugin.addMediaGrid(ctx, mediaContainer, allItems, list, () -> {
                 renderMediaContent(ctx);
                 plugin.showFavContent(trayRoot, activeFavType);
-            }, this::dismiss, false);
+            }, this::dismiss, false, trayRoot);
         }
     }
 
@@ -889,7 +1073,7 @@ public class MediaFavorites extends Plugin {
         return tags;
     }
 
-    /* ── Favorites CRUD ─────────────────────────────────────── */
+    /* ── Favorites CRUD ─────────────────────────────────────────────────── */
 
     public static FavoritesData getFavorites(SettingsAPI settings) {
         try {
@@ -953,7 +1137,13 @@ public class MediaFavorites extends Plugin {
         SettingsAPI s = instance != null ? instance.settings : null;
         if (s == null || url == null) return false;
         FavoritesData data = getFavorites(s);
-        for (List<FavoriteAttachment> list : new List[]{data.images, data.videos, data.audio}) {
+        List[] allLists = {
+            data.images != null ? data.images : Collections.emptyList(),
+            data.gifs   != null ? data.gifs   : Collections.emptyList(),
+            data.videos != null ? data.videos : Collections.emptyList(),
+            data.audio  != null ? data.audio  : Collections.emptyList()
+        };
+        for (List<FavoriteAttachment> list : allLists) {
             for (FavoriteAttachment f : list) {
                 if (url.equals(f.getKey())) return true;
             }
@@ -986,10 +1176,21 @@ public class MediaFavorites extends Plugin {
 
     public static List<FavoriteAttachment> getListForType(FavoritesData data, String type) {
         switch (type) {
-            case "images": case "image": return data.images;
-            case "videos": case "video": return data.videos;
-            case "audio": return data.audio;
-            default: return data.images;
+            case "images": case "image":
+                if (data.images == null) data.images = new ArrayList<>();
+                return data.images;
+            case "gifs": case "gif":
+                if (data.gifs == null) data.gifs = new ArrayList<>();
+                return data.gifs;
+            case "videos": case "video":
+                if (data.videos == null) data.videos = new ArrayList<>();
+                return data.videos;
+            case "audio":
+                if (data.audio == null) data.audio = new ArrayList<>();
+                return data.audio;
+            default:
+                if (data.images == null) data.images = new ArrayList<>();
+                return data.images;
         }
     }
 
