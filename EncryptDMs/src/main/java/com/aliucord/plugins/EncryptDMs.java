@@ -4,6 +4,7 @@ import static java.util.Collections.emptyList;
 
 import android.content.Context;
 import android.graphics.drawable.Drawable;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -31,6 +32,13 @@ import com.discord.utilities.rest.RestAPI;
 import com.discord.utilities.time.ClockFactory;
 import com.discord.widgets.channels.list.WidgetChannelsListItemChannelActions;
 import com.discord.widgets.chat.list.actions.WidgetChatListActions;
+import com.discord.widgets.chat.list.adapter.WidgetChatListAdapterItemMessage;
+import com.discord.widgets.chat.list.entries.ChatListEntry;
+import com.discord.widgets.chat.list.entries.MessageEntry;
+import com.discord.widgets.home.WidgetHome;
+import com.discord.widgets.home.WidgetHomeHeaderManager;
+import com.discord.widgets.home.WidgetHomeModel;
+import com.discord.databinding.WidgetHomeBinding;
 import com.google.gson.reflect.TypeToken;
 import com.lytefast.flexinput.R;
 
@@ -58,6 +66,7 @@ public class EncryptDMs extends Plugin {
     private final int acceptKeyViewId = View.generateViewId();
     private final int channelActionViewId = View.generateViewId();
     private final int channelToggleViewId = View.generateViewId();
+    private final int topBarIndicatorId = View.generateViewId();
 
     private long me;
     private String publicKey;
@@ -67,6 +76,7 @@ public class EncryptDMs extends Plugin {
     private HashMap<Long, String> userKeys;
     private HashMap<Long, HashMap<Long, String>> channelKeys;
     private HashMap<Long, Boolean> enabledChannels;
+    private final HashMap<Long, Boolean> decryptedMessages = new HashMap<>();
 
     public static class Payload {
         public int v = 1;
@@ -90,6 +100,8 @@ public class EncryptDMs extends Plugin {
         patchMessageConstruction();
         patchMessageActions();
         patchChannelActions();
+        patchMessageItemUi();
+        patchTopBarIndicator();
         registerCommands();
     }
 
@@ -213,6 +225,75 @@ public class EncryptDMs extends Plugin {
         }));
     }
 
+    private void patchMessageItemUi() throws NoSuchMethodException {
+        patcher.patch(WidgetChatListAdapterItemMessage.class.getDeclaredMethod("onConfigure", int.class, ChatListEntry.class), new PreHook(cf -> {
+            try {
+                ChatListEntry entry = (ChatListEntry) cf.args[1];
+                if (!(entry instanceof MessageEntry)) return;
+
+                Message message = ((MessageEntry) entry).getMessage();
+                if (message == null || message.getContent() == null || !message.getContent().startsWith(ENC_PREFIX)) return;
+
+                String decrypted = decryptContent(message.getContent());
+                if (decrypted != null) {
+                    ReflectUtils.setFinalField(message, "content", decrypted);
+                    decryptedMessages.put(message.getId(), true);
+                }
+            } catch (Throwable e) {
+                logger.error(e);
+            }
+        }));
+
+        patcher.patch(WidgetChatListAdapterItemMessage.class.getDeclaredMethod("onConfigure", int.class, ChatListEntry.class), new Hook(cf -> {
+            try {
+                ChatListEntry entry = (ChatListEntry) cf.args[1];
+                if (!(entry instanceof MessageEntry)) return;
+
+                Message message = ((MessageEntry) entry).getMessage();
+                WidgetChatListAdapterItemMessage item = (WidgetChatListAdapterItemMessage) cf.thisObject;
+
+                TextView itemText = (TextView) ReflectUtils.getField(item, "itemText");
+                if (itemText != null) {
+                    if (decryptedMessages.containsKey(message.getId())) {
+                        itemText.setIncludeFontPadding(false);
+                        itemText.setMinHeight(0);
+                        itemText.requestLayout();
+                    } else {
+                        itemText.setIncludeFontPadding(true);
+                    }
+                }
+            } catch (Throwable e) {
+                logger.error(e);
+            }
+        }));
+    }
+
+    private void patchTopBarIndicator() throws NoSuchMethodException {
+        patcher.patch(WidgetHomeHeaderManager.class.getDeclaredMethod("configure", WidgetHome.class, WidgetHomeModel.class, WidgetHomeBinding.class), new Hook(cf -> {
+            try {
+                WidgetHome home = (WidgetHome) cf.args[0];
+                WidgetHomeModel model = (WidgetHomeModel) cf.args[1];
+
+                var toolbar = home.getToolbar();
+                var menu = toolbar.getMenu();
+                menu.removeItem(topBarIndicatorId);
+
+                long channelId = model.getChannelId();
+                if (!shouldShowTopBarIndicator(channelId)) return;
+
+                MenuItem item = menu.add(0, topBarIndicatorId, 0, "Encrypted Chat");
+                item.setIcon(lockIcon);
+                item.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+                item.setOnMenuItemClickListener(menuItem -> {
+                    Utils.showToast("Encrypted chat is on");
+                    return true;
+                });
+            } catch (Throwable e) {
+                logger.error(e);
+            }
+        }));
+    }
+
     private void registerCommands() {
         commands.registerCommand("encryptkey", "Sends your EncryptDMs public key to this chat", ctx ->
                 new CommandsAPI.CommandResult(KEY_PREFIX + settings.getString(PUBLIC_KEY, publicKey), null, true)
@@ -298,10 +379,22 @@ public class EncryptDMs extends Plugin {
             else content = ((com.discord.api.message.Message) message).i();
 
             String decrypted = decryptContent(content);
-            if (decrypted != null) ReflectUtils.setFinalField(message, "content", decrypted);
+            if (decrypted != null) {
+                ReflectUtils.setFinalField(message, "content", decrypted);
+                markDecryptedMessage(message);
+            }
         } catch (Throwable e) {
             logger.error(e);
         }
+    }
+
+    private void markDecryptedMessage(Object message) {
+        try {
+            long id;
+            if (message instanceof Message) id = ((Message) message).getId();
+            else id = ((com.discord.api.message.Message) message).o();
+            decryptedMessages.put(id, true);
+        } catch (Throwable ignored) {}
     }
 
     private String decryptContent(String content) {
@@ -378,6 +471,13 @@ public class EncryptDMs extends Plugin {
     private boolean isEnabled(long channelId) {
         Boolean enabled = enabledChannels.get(channelId);
         return enabled != null && enabled;
+    }
+
+    private boolean shouldShowTopBarIndicator(long channelId) {
+        if (!isEnabled(channelId)) return false;
+        HashMap<Long, String> keys = getKnownKeysForChannel(channelId);
+        for (Long id : keys.keySet()) if (id != me) return true;
+        return false;
     }
 
     private void setEnabled(long channelId, boolean enabled) {

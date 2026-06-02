@@ -3,6 +3,7 @@ package com.aliucord.plugins;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
+import android.util.SparseArray;
 import android.util.TypedValue;
 
 import com.aliucord.annotations.AliucordPlugin;
@@ -16,6 +17,7 @@ import de.robv.android.xposed.XC_MethodHook.MethodHookParam;
 @AliucordPlugin
 @SuppressWarnings("unused")
 public class NewIcons extends Plugin {
+    private final SparseArray<Drawable.ConstantState> replacementStates = new SparseArray<>();
     private Resources pluginResources;
     private int loaderResourcesArg = -1;
     private int loaderIdArg = -1;
@@ -41,6 +43,7 @@ public class NewIcons extends Plugin {
     public void stop(Context context) throws Throwable {
         patcher.unpatchAll();
         commands.unregisterAll();
+        replacementStates.clear();
         pluginResources = null;
         loaderResourcesArg = -1;
         loaderIdArg = -1;
@@ -107,7 +110,17 @@ public class NewIcons extends Plugin {
         if (pluginId == 0) return null;
 
         try {
-            return pluginResources.getDrawable(pluginId, null).mutate();
+            Drawable.ConstantState state = replacementStates.get(pluginId);
+            if (state != null) {
+                return state.newDrawable(pluginResources);
+            }
+
+            Drawable drawable = pluginResources.getDrawable(pluginId, null);
+            state = drawable.getConstantState();
+            if (state == null) return drawable;
+
+            replacementStates.put(pluginId, state);
+            return state.newDrawable(pluginResources);
         } catch (Throwable t) {
             logger.warn("Disabled broken replacement for drawable id " + discordId, t);
             return null;
