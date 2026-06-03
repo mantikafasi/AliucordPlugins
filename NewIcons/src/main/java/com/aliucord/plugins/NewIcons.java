@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
 import android.util.SparseArray;
+import android.util.SparseIntArray;
 import android.util.TypedValue;
 
 import com.aliucord.annotations.AliucordPlugin;
@@ -18,7 +19,9 @@ import de.robv.android.xposed.XC_MethodHook.MethodHookParam;
 @SuppressWarnings("unused")
 public class NewIcons extends Plugin {
     private final SparseArray<Drawable.ConstantState> replacementStates = new SparseArray<>();
+    private final SparseIntArray resolvedPluginIds = new SparseIntArray();
     private Resources pluginResources;
+    private String pluginPackageName;
     private int loaderResourcesArg = -1;
     private int loaderIdArg = -1;
 
@@ -29,6 +32,7 @@ public class NewIcons extends Plugin {
     @Override
     public void start(Context context) throws Throwable {
         pluginResources = resources;
+        pluginPackageName = getClass().getPackage().getName();
 
         try {
             Method loader = findLoadDrawableForCookieMethod();
@@ -44,7 +48,9 @@ public class NewIcons extends Plugin {
         patcher.unpatchAll();
         commands.unregisterAll();
         replacementStates.clear();
+        resolvedPluginIds.clear();
         pluginResources = null;
+        pluginPackageName = null;
         loaderResourcesArg = -1;
         loaderIdArg = -1;
     }
@@ -106,24 +112,40 @@ public class NewIcons extends Plugin {
     private Drawable getReplacementDrawable(Resources requestResources, int discordId) {
         if (pluginResources == null || requestResources == pluginResources) return null;
 
-        int pluginId = NewIconMap.pluginIdFor(discordId);
-        if (pluginId == 0) return null;
-
         try {
-            Drawable.ConstantState state = replacementStates.get(pluginId);
+            Drawable.ConstantState state = replacementStates.get(discordId);
             if (state != null) {
                 return state.newDrawable(pluginResources);
             }
+
+            int pluginId = getPluginDrawableId(discordId);
+            if (pluginId <= 0) return null;
 
             Drawable drawable = pluginResources.getDrawable(pluginId, null);
             state = drawable.getConstantState();
             if (state == null) return drawable;
 
-            replacementStates.put(pluginId, state);
+            replacementStates.put(discordId, state);
             return state.newDrawable(pluginResources);
         } catch (Throwable t) {
+            resolvedPluginIds.put(discordId, -1);
             logger.warn("Disabled broken replacement for drawable id " + discordId, t);
             return null;
         }
+    }
+
+    private int getPluginDrawableId(int discordId) {
+        int cached = resolvedPluginIds.get(discordId, 0);
+        if (cached != 0) return cached;
+
+        String name = NewIconMap.nameFor(discordId);
+        if (name == null || pluginPackageName == null) {
+            resolvedPluginIds.put(discordId, -1);
+            return -1;
+        }
+
+        int pluginId = pluginResources.getIdentifier(name, "drawable", pluginPackageName);
+        resolvedPluginIds.put(discordId, pluginId != 0 ? pluginId : -1);
+        return pluginId;
     }
 }

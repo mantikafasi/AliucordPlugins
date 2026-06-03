@@ -1,4 +1,4 @@
-version = "1.0.1"
+version = "1.0.2"
 description = "Replaces Discord drawable resources with packaged new icons"
 
 android {
