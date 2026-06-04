@@ -7,6 +7,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.ProgressBar;
@@ -37,6 +38,8 @@ public class ChannelTabsSheet extends AppFragment {
     static final String ARG_GUILD_ID = "guild_id";
     static final String ARG_CHANNEL_ID = "channel_id";
     private static final int PAGE_SIZE = 25;
+    private static final int VIEW_TYPE_FOOTER = 100;
+    private static final int VIEW_TYPE_MEDIA_GRID = 101;
     private long guildId;
     private long channelId;
 
@@ -119,6 +122,7 @@ public class ChannelTabsSheet extends AppFragment {
             guildId = args.getLong(ARG_GUILD_ID);
             channelId = args.getLong(ARG_CHANNEL_ID);
         }
+        isMediaGrid = ChannelTabs.isMediaGridMode();
         setActionBarTitle(channelId == 0 ? "Server Content" : "Channel Content");
         setActionBarDisplayHomeAsUpEnabled(true);
         setOnBackPressed(() -> {
@@ -139,15 +143,47 @@ public class ChannelTabsSheet extends AppFragment {
                 LinearLayout.LayoutParams.WRAP_CONTENT
         ));
 
+        ImageButton backButton = new ImageButton(ctx);
+        backButton.setContentDescription("Back");
+        backButton.setPadding(DimenUtils.dpToPx(12), DimenUtils.dpToPx(12), DimenUtils.dpToPx(12), DimenUtils.dpToPx(12));
+        backButton.setScaleType(android.widget.ImageView.ScaleType.CENTER);
+        backButton.setBackgroundResource(resolveSelectableBorderless(ctx));
+        backButton.setOnClickListener(v -> closePage());
+
+        android.graphics.drawable.Drawable backIcon = resolveBackIcon(ctx);
+        if (backIcon != null) {
+            backIcon = backIcon.mutate();
+            backIcon.setTint(ColorCompat.getThemedColor(ctx, com.lytefast.flexinput.R.b.colorInteractiveNormal));
+            backButton.setImageDrawable(backIcon);
+        }
+        headerLayout.addView(backButton, new LinearLayout.LayoutParams(
+                DimenUtils.dpToPx(48),
+                DimenUtils.dpToPx(48)
+        ));
+
         TextView title = new TextView(ctx, null, 0, com.lytefast.flexinput.R.i.UiKit_Settings_Item_Header);
-        title.setText(channelId == 0 ? "<  Server Content" : "<  Channel Content");
+        title.setText(channelId == 0 ? "Server Content" : "Channel Content");
         title.setGravity(Gravity.CENTER_VERTICAL);
-        title.setPadding(DimenUtils.dpToPx(4), DimenUtils.dpToPx(16), 0, DimenUtils.dpToPx(12));
-        title.setOnClickListener(v -> closePage());
+        title.setPadding(0, DimenUtils.dpToPx(16), 0, DimenUtils.dpToPx(12));
         title.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
         headerLayout.addView(title);
 
-        gridToggleBtn = null;
+        gridToggleBtn = new TextView(ctx);
+        gridToggleBtn.setGravity(Gravity.CENTER);
+        gridToggleBtn.setTextSize(13f);
+        gridToggleBtn.setTypeface(Typeface.DEFAULT_BOLD);
+        gridToggleBtn.setPadding(DimenUtils.dpToPx(12), DimenUtils.dpToPx(8), DimenUtils.dpToPx(12), DimenUtils.dpToPx(8));
+        gridToggleBtn.setTextColor(ColorCompat.getThemedColor(ctx, com.lytefast.flexinput.R.b.colorInteractiveNormal));
+        gridToggleBtn.setOnClickListener(v -> {
+            isMediaGrid = !isMediaGrid;
+            ChannelTabs.setMediaGridMode(isMediaGrid);
+            updateGridToggleStyle();
+            refreshMediaLayout();
+        });
+        headerLayout.addView(gridToggleBtn, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        ));
         root.addView(headerLayout);
 
         LinearLayout tabsLayout = new LinearLayout(ctx);
@@ -194,6 +230,7 @@ public class ChannelTabsSheet extends AppFragment {
         root.addView(viewPager);
 
         updateTabStyles();
+        updateGridToggleStyle();
     }
 
     private TextView createTabButton(android.content.Context ctx, String text, Tab tab) {
@@ -235,6 +272,7 @@ public class ChannelTabsSheet extends AppFragment {
         setTabButtonStyle(mediaTabButton, currentTab == Tab.MEDIA, activeColor, inactiveColor, activeTextColor, inactiveTextColor);
         setTabButtonStyle(filesTabButton, currentTab == Tab.FILES, activeColor, inactiveColor, activeTextColor, inactiveTextColor);
         setTabButtonStyle(linksTabButton, currentTab == Tab.LINKS, activeColor, inactiveColor, activeTextColor, inactiveTextColor);
+        updateGridToggleStyle();
     }
 
     private void setTabButtonStyle(TextView button, boolean selected, int activeBg, int inactiveBg, int activeText, int inactiveText) {
@@ -249,14 +287,55 @@ public class ChannelTabsSheet extends AppFragment {
         button.setTextColor(selected ? activeText : inactiveText);
     }
 
+    private void updateGridToggleStyle() {
+        if (gridToggleBtn == null) return;
+        android.content.Context ctx = gridToggleBtn.getContext();
+        gridToggleBtn.setText(isMediaGrid ? "List" : "Grid");
+        gridToggleBtn.setVisibility(currentTab == Tab.MEDIA ? View.VISIBLE : View.GONE);
+
+        int bgColor = ColorCompat.getThemedColor(ctx, isMediaGrid
+                ? com.lytefast.flexinput.R.b.colorBackgroundSecondary
+                : com.lytefast.flexinput.R.b.colorBackgroundTertiary);
+        int textColor = ColorCompat.getThemedColor(ctx, isMediaGrid
+                ? com.lytefast.flexinput.R.b.colorInteractiveActive
+                : com.lytefast.flexinput.R.b.colorInteractiveNormal);
+
+        android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
+        bg.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+        bg.setCornerRadius(DimenUtils.dpToPx(16));
+        bg.setColor(bgColor);
+        gridToggleBtn.setBackground(bg);
+        gridToggleBtn.setTextColor(textColor);
+    }
+
+    private int resolveSelectableBorderless(android.content.Context ctx) {
+        android.util.TypedValue typedValue = new android.util.TypedValue();
+        if (ctx.getTheme().resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, typedValue, true)) {
+            return typedValue.resourceId;
+        }
+        if (ctx.getTheme().resolveAttribute(android.R.attr.selectableItemBackground, typedValue, true)) {
+            return typedValue.resourceId;
+        }
+        return 0;
+    }
+
+    private android.graphics.drawable.Drawable resolveBackIcon(android.content.Context ctx) {
+        android.util.TypedValue typedValue = new android.util.TypedValue();
+        int backAttr = Utils.getResId("ic_action_bar_back", "attr");
+        if (backAttr != 0 && ctx.getTheme().resolveAttribute(backAttr, typedValue, true) && typedValue.resourceId != 0) {
+            android.graphics.drawable.Drawable icon = androidx.core.content.ContextCompat.getDrawable(ctx, typedValue.resourceId);
+            if (icon != null) return icon;
+        }
+
+        int backDrawable = Utils.getResId("ic_arrow_back_white_24dp", "drawable");
+        if (backDrawable == 0) backDrawable = Utils.getResId("ic_arrow_back_dark_grey_24dp", "drawable");
+        return backDrawable == 0 ? null : androidx.core.content.ContextCompat.getDrawable(ctx, backDrawable);
+    }
+
     private void closePage() {
         try {
-            getParentFragmentManager().popBackStack();
+            getParentFragmentManager().beginTransaction().remove(this).commitAllowingStateLoss();
         } catch (Throwable ignored) {
-            try {
-                getParentFragmentManager().beginTransaction().remove(this).commitAllowingStateLoss();
-            } catch (Throwable ignoredAgain) {
-            }
         }
     }
 
@@ -270,7 +349,7 @@ public class ChannelTabsSheet extends AppFragment {
             glm.setSpanSizeLookup(new androidx.recyclerview.widget.GridLayoutManager.SpanSizeLookup() {
                 @Override
                 public int getSpanSize(int position) {
-                    if (state.adapter != null && state.adapter.getItemViewType(position) == 100) {
+                    if (state.adapter != null && state.adapter.getItemViewType(position) == VIEW_TYPE_FOOTER) {
                         return 3;
                     }
                     return 1;
@@ -281,6 +360,7 @@ public class ChannelTabsSheet extends AppFragment {
             state.recycler.setLayoutManager(new androidx.recyclerview.widget.LinearLayoutManager(ctx));
         }
         if (state.adapter != null) {
+            state.recycler.getRecycledViewPool().clear();
             state.adapter.notifyDataSetChanged();
         }
     }
@@ -577,7 +657,7 @@ public class ChannelTabsSheet extends AppFragment {
                 glm.setSpanSizeLookup(new androidx.recyclerview.widget.GridLayoutManager.SpanSizeLookup() {
                     @Override
                     public int getSpanSize(int position) {
-                        if (state.adapter != null && state.adapter.getItemViewType(position) == 100) {
+                        if (state.adapter != null && state.adapter.getItemViewType(position) == VIEW_TYPE_FOOTER) {
                             return 3;
                         }
                         return 1;
@@ -831,7 +911,10 @@ public class ChannelTabsSheet extends AppFragment {
         @Override
         public int getItemViewType(int position) {
             if (position == state.items.size()) {
-                return 100; // Spinner footer type
+                return VIEW_TYPE_FOOTER;
+            }
+            if (state.tab == Tab.MEDIA && isMediaGrid) {
+                return VIEW_TYPE_MEDIA_GRID;
             }
             return state.tab.ordinal();
         }
@@ -839,7 +922,7 @@ public class ChannelTabsSheet extends AppFragment {
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             android.content.Context ctx = parent.getContext();
-            if (viewType == 100) {
+            if (viewType == VIEW_TYPE_FOOTER) {
                 FrameLayout container = new FrameLayout(ctx);
                 container.setLayoutParams(new RecyclerView.LayoutParams(
                         RecyclerView.LayoutParams.MATCH_PARENT,
@@ -860,19 +943,17 @@ public class ChannelTabsSheet extends AppFragment {
                 }
                 container.addView(pb);
                 return new FooterViewHolder(container);
+            } else if (viewType == VIEW_TYPE_MEDIA_GRID) {
+                FrameLayout gridWrapper = new FrameLayout(ctx);
+                int screenWidth = ctx.getResources().getDisplayMetrics().widthPixels;
+                int size = (screenWidth - DimenUtils.dpToPx(24) - DimenUtils.dpToPx(8)) / 3;
+                RecyclerView.LayoutParams lp = new RecyclerView.LayoutParams(size, size);
+                lp.setMargins(DimenUtils.dpToPx(2), DimenUtils.dpToPx(2), DimenUtils.dpToPx(2), DimenUtils.dpToPx(2));
+                gridWrapper.setLayoutParams(lp);
+                return new MediaGridViewHolder(gridWrapper);
             } else if (viewType == Tab.MEDIA.ordinal()) {
-                if (isMediaGrid) {
-                    FrameLayout gridWrapper = new FrameLayout(ctx);
-                    int screenWidth = ctx.getResources().getDisplayMetrics().widthPixels;
-                    int size = (screenWidth - DimenUtils.dpToPx(24) - DimenUtils.dpToPx(8)) / 3;
-                    RecyclerView.LayoutParams lp = new RecyclerView.LayoutParams(size, size);
-                    lp.setMargins(DimenUtils.dpToPx(2), DimenUtils.dpToPx(2), DimenUtils.dpToPx(2), DimenUtils.dpToPx(2));
-                    gridWrapper.setLayoutParams(lp);
-                    return new MediaGridViewHolder(gridWrapper);
-                } else {
-                    LinearLayout container = createCardContainer(ctx);
-                    return new MediaViewHolder(container);
-                }
+                LinearLayout container = createCardContainer(ctx);
+                return new MediaViewHolder(container);
             } else if (viewType == Tab.FILES.ordinal()) {
                 LinearLayout container = createCardContainer(ctx);
                 return new FileViewHolder(container);
@@ -911,6 +992,7 @@ public class ChannelTabsSheet extends AppFragment {
 
     private class MediaGridViewHolder extends RecyclerView.ViewHolder {
         private final SimpleDraweeView image;
+        private final SimpleDraweeView avatar;
         private final TextView playBadge;
 
         MediaGridViewHolder(FrameLayout wrapper) {
@@ -932,6 +1014,50 @@ public class ChannelTabsSheet extends AppFragment {
             } catch (Throwable ignored) {}
 
             wrapper.addView(image, new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+            ));
+
+            FrameLayout avatarFrame = new FrameLayout(ctx);
+            android.graphics.drawable.GradientDrawable avatarBg = new android.graphics.drawable.GradientDrawable();
+            avatarBg.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+            avatarBg.setColor(ColorCompat.getThemedColor(ctx, com.lytefast.flexinput.R.b.colorBackgroundPrimary));
+            avatarFrame.setBackground(avatarBg);
+            avatarFrame.setPadding(DimenUtils.dpToPx(2), DimenUtils.dpToPx(2), DimenUtils.dpToPx(2), DimenUtils.dpToPx(2));
+            avatarFrame.setClipToOutline(true);
+            avatarFrame.setOutlineProvider(new android.view.ViewOutlineProvider() {
+                @Override
+                public void getOutline(android.view.View view, android.graphics.Outline outline) {
+                    int size = DimenUtils.dpToPx(26);
+                    outline.setOval(0, 0, size, size);
+                }
+            });
+
+            FrameLayout.LayoutParams avatarFrameParams = new FrameLayout.LayoutParams(
+                    DimenUtils.dpToPx(26),
+                    DimenUtils.dpToPx(26),
+                    Gravity.TOP | Gravity.START
+            );
+            avatarFrameParams.setMargins(DimenUtils.dpToPx(5), DimenUtils.dpToPx(5), 0, 0);
+            wrapper.addView(avatarFrame, avatarFrameParams);
+
+            avatar = new SimpleDraweeView(ctx);
+            try {
+                Object hierarchy = avatar.getHierarchy();
+                Class<?> genericHierarchyClass = Class.forName("com.facebook.drawee.generic.GenericDraweeHierarchy");
+                Class<?> roundingParamsClass = Class.forName("com.facebook.drawee.generic.RoundingParams");
+                Object roundingParams = roundingParamsClass.getMethod("asCircle").invoke(null);
+                genericHierarchyClass.getMethod("setRoundingParams", roundingParamsClass).invoke(hierarchy, roundingParams);
+            } catch (Throwable ignored) {}
+            avatar.setClipToOutline(true);
+            avatar.setOutlineProvider(new android.view.ViewOutlineProvider() {
+                @Override
+                public void getOutline(android.view.View view, android.graphics.Outline outline) {
+                    int size = DimenUtils.dpToPx(22);
+                    outline.setOval(0, 0, size, size);
+                }
+            });
+            avatarFrame.addView(avatar, new FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.MATCH_PARENT,
                     FrameLayout.LayoutParams.MATCH_PARENT
             ));
@@ -964,6 +1090,12 @@ public class ChannelTabsSheet extends AppFragment {
                 MGImages.setImage(image, item.previewUrl);
             } else {
                 image.setController(null);
+            }
+
+            if (item.authorAvatarUrl != null) {
+                avatar.setImageURI(android.net.Uri.parse(item.authorAvatarUrl));
+            } else {
+                avatar.setController(null);
             }
 
             if (item.video) {
