@@ -5,10 +5,10 @@
 This repo is an Aliucord plugin workspace. Build any plugin zip by replacing `PluginName` with the module directory name:
 
 ```bash
-env JAVA_HOME=/tmp/codex-jdk/jdk-21 \
+env JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 \
   ANDROID_HOME=/mnt/c/Users/manti/AppData/Local/Android/Sdk \
   ANDROID_SDK_ROOT=/mnt/c/Users/manti/AppData/Local/Android/Sdk \
-  bash -c 'tr -d "\r" < ./gradlew | bash -s -- --no-daemon -Dorg.gradle.java.home=/tmp/codex-jdk/jdk-21 :PluginName:make'
+  bash -c 'tr -d "\r" < ./gradlew | bash -s -- --no-daemon -Dorg.gradle.java.home=/usr/lib/jvm/java-21-openjdk-amd64 :PluginName:make'
 ```
 
 Successful output is written to:
@@ -24,10 +24,10 @@ For example, to build `PasswordLogin`, use `:PasswordLogin:make`.
 The intended deploy task is:
 
 ```bash
-env JAVA_HOME=/tmp/codex-jdk/jdk-21 \
+env JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 \
   ANDROID_HOME=/mnt/c/Users/manti/AppData/Local/Android/Sdk \
   ANDROID_SDK_ROOT=/mnt/c/Users/manti/AppData/Local/Android/Sdk \
-  bash -c 'tr -d "\r" < ./gradlew | bash -s -- --no-daemon -Dorg.gradle.java.home=/tmp/codex-jdk/jdk-21 :PluginName:deployWithAdb'
+  bash -c 'tr -d "\r" < ./gradlew | bash -s -- --no-daemon -Dorg.gradle.java.home=/usr/lib/jvm/java-21-openjdk-amd64 :PluginName:deployWithAdb'
 ```
 
 For example, to deploy `PasswordLogin`, use `:PasswordLogin:deployWithAdb`.

@@ -21,6 +21,7 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
+import com.aliucord.Http;
 import com.aliucord.Logger;
 import com.aliucord.Utils;
 import com.aliucord.annotations.AliucordPlugin;
@@ -49,6 +50,7 @@ import com.lytefast.flexinput.model.Attachment;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -56,7 +58,10 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import de.robv.android.xposed.XposedBridge;
 import kotlin.jvm.functions.Function1;
@@ -72,6 +77,8 @@ public class MediaFavorites extends Plugin {
     private static final String FAV_TYPE_TABS_TAG = "MediaFavoritesTypeTabs";
     private static final String FAV_CONTENT_TAG = "MediaFavoritesContent";
     private static final String CACHE_DIR = "mediafavorites";
+    private static final long CDN_REFRESH_WINDOW_MS = 10 * 60 * 1000L;
+    private static final Map<String, Boolean> REFRESHING_CDN_URLS = new ConcurrentHashMap<>();
 
     private static String activeFavType = "images";
     private static String mediaSearchQuery = "";
@@ -93,7 +100,7 @@ public class MediaFavorites extends Plugin {
         public long added_timestamp;
         public List<String> tags = new ArrayList<>();
 
-        public String getKey() { return url != null ? url : proxy_url; }
+        public String getKey() { return getFavoriteKey(url != null ? url : proxy_url); }
 
         public MessageAttachment toMessageAttachment() {
             if (rawJson == null) return null;
@@ -106,6 +113,15 @@ public class MediaFavorites extends Plugin {
         public List<FavoriteAttachment> gifs   = new ArrayList<>();
         public List<FavoriteAttachment> videos = new ArrayList<>();
         public List<FavoriteAttachment> audio  = new ArrayList<>();
+    }
+
+    private static class RefreshUrlsResponse {
+        public List<RefreshedUrl> refreshed_urls;
+    }
+
+    private static class RefreshedUrl {
+        public String original;
+        public String refreshed;
     }
 
     @Override
@@ -244,7 +260,7 @@ public class MediaFavorites extends Plugin {
                     if (starBtn == null) {
                         starBtn = createStarButton(root.getContext());
                     }
-                    attachStarButton(binding, starBtn);
+                    attachStarButton(binding, starBtn, "audio".equals(type));
 
                     final TextView fb = starBtn;
                     boolean isFav = isFavorited(fav.getKey());
@@ -305,20 +321,24 @@ public class MediaFavorites extends Plugin {
         return bg;
     }
 
-    private void attachStarButton(WidgetChatListAdapterItemAttachmentBinding binding, TextView starBtn) {
+    private void attachStarButton(WidgetChatListAdapterItemAttachmentBinding binding, TextView starBtn, boolean audio) {
         ViewGroup target = binding.h.getVisibility() == View.VISIBLE ? binding.h : binding.d;
+
+        int size = DimenUtils.dpToPx(28);
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(size, size);
+        lp.gravity = Gravity.TOP | Gravity.RIGHT;
+        lp.topMargin = DimenUtils.dpToPx(audio ? 8 : 6);
+        lp.rightMargin = DimenUtils.dpToPx(audio ? 42 : 6);
 
         if (starBtn.getParent() != target) {
             if (starBtn.getParent() instanceof ViewGroup) {
                 ((ViewGroup) starBtn.getParent()).removeView(starBtn);
             }
-            int size = DimenUtils.dpToPx(28);
-            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(size, size);
-            lp.gravity = Gravity.TOP | Gravity.RIGHT;
-            lp.topMargin = DimenUtils.dpToPx(6);
-            lp.rightMargin = DimenUtils.dpToPx(6);
             target.addView(starBtn, lp);
+        } else {
+            starBtn.setLayoutParams(lp);
         }
+        starBtn.bringToFront();
     }
 
     private void removeStarButton(View root) {
@@ -488,6 +508,7 @@ public class MediaFavorites extends Plugin {
         mediaSegment.setTag(FAV_SEGMENT_TAG);
         mediaSegment.setText("Media");
         mediaSegment.setContentDescription("Open Media Favorites");
+        flattenMediaSegment(mediaSegment);
         mediaSegment.a(false);
         mediaSegment.setOnClickListener(v -> {
             activeFavType = activeFavType == null ? "images" : activeFavType;
@@ -560,6 +581,16 @@ public class MediaFavorites extends Plugin {
                 ((CardSegment) child).a(child == mediaSegment);
             }
         }
+        flattenMediaSegment(mediaSegment);
+    }
+
+    private void flattenMediaSegment(CardSegment mediaSegment) {
+        mediaSegment.setCardElevation(0f);
+        mediaSegment.setMaxCardElevation(0f);
+        mediaSegment.setUseCompatPadding(false);
+        mediaSegment.setPreventCornerOverlap(false);
+        mediaSegment.setElevation(0f);
+        mediaSegment.setTranslationZ(0f);
     }
 
     /** 4 tabs: Images | GIFs | Videos | Audio */
@@ -689,6 +720,7 @@ public class MediaFavorites extends Plugin {
         addMediaGrid(ctx, page, allItems, list,
                 () -> showFavContent(trayRoot, activeFavType),
                 null, true, trayRoot);
+        refreshFavoritesIfNeeded(type, allItems, () -> showFavContent(trayRoot, activeFavType));
     }
 
     private void addMediaGrid(
@@ -723,10 +755,11 @@ public class MediaFavorites extends Plugin {
         final FavoriteGridAdapter adapter = new FavoriteGridAdapter(
             list,
             fav -> {
-                if ("gifs".equals(activeFavType)) {
+                String clickType = activeFavType;
+                if ("gifs".equals(clickType)) {
                     sendGifFavorite(fav, trayRoot);
                 } else {
-                    addFavoriteToDraft(ctx, fav);
+                    addFavoriteToDraft(ctx, fav, clickType);
                 }
                 if (afterClick != null) afterClick.run();
             },
@@ -917,23 +950,36 @@ public class MediaFavorites extends Plugin {
                 renderMediaContent(ctx);
                 plugin.showFavContent(trayRoot, activeFavType);
             }, this::dismiss, false, trayRoot);
+            plugin.refreshFavoritesIfNeeded(activeFavType, allItems, () -> {
+                renderMediaContent(ctx);
+                plugin.showFavContent(trayRoot, activeFavType);
+            });
         }
     }
 
-    private void addFavoriteToDraft(Context ctx, FavoriteAttachment fav) {
+    private void addFavoriteToDraft(Context ctx, FavoriteAttachment fav, String type) {
         WidgetChatInputAttachments chatAttachments = currentChatAttachments;
         if (chatAttachments == null) {
             Utils.showToast("Chat input is not ready");
             return;
         }
 
-        String mediaUrl = fav.url != null ? fav.url : fav.proxy_url;
+        String mediaUrl = getPreferredMediaUrl(fav);
         if (mediaUrl == null) return;
 
         Utils.showToast("Adding attachment...");
         Utils.threadPool.execute(() -> {
             try {
-                File file = downloadFavoriteToCache(ctx, fav, mediaUrl);
+                FavoriteAttachment refreshed = refreshFavoriteForUse(fav, type, false);
+                String refreshedUrl = getPreferredMediaUrl(refreshed);
+                File file;
+                try {
+                    file = downloadFavoriteToCache(ctx, refreshed, refreshedUrl);
+                } catch (IOException firstFailure) {
+                    refreshed = refreshFavoriteForUse(refreshed, type, true);
+                    refreshedUrl = getPreferredMediaUrl(refreshed);
+                    file = downloadFavoriteToCache(ctx, refreshed, refreshedUrl);
+                }
                 Attachment<Object> attachment = new Attachment<>(
                     System.currentTimeMillis(),
                     Uri.fromFile(file),
@@ -958,6 +1004,8 @@ public class MediaFavorites extends Plugin {
     }
 
     private File downloadFavoriteToCache(Context ctx, FavoriteAttachment fav, String mediaUrl) throws Exception {
+        if (mediaUrl == null) throw new IOException("Missing media URL");
+
         File dir = new File(ctx.getCacheDir(), CACHE_DIR);
         if (!dir.exists() && !dir.mkdirs()) {
             throw new IllegalStateException("Could not create media favorites cache");
@@ -971,6 +1019,9 @@ public class MediaFavorites extends Plugin {
         connection.setConnectTimeout(15000);
         connection.setReadTimeout(30000);
         connection.setRequestProperty("User-Agent", "Aliucord MediaFavorites");
+        int statusCode = connection.getResponseCode();
+        if (statusCode >= 400) throw new IOException("HTTP " + statusCode);
+
         try (InputStream input = connection.getInputStream();
              FileOutputStream output = new FileOutputStream(file)) {
             byte[] buffer = new byte[8192];
@@ -983,6 +1034,176 @@ public class MediaFavorites extends Plugin {
         }
 
         return file;
+    }
+
+    private static String getPreferredMediaUrl(FavoriteAttachment fav) {
+        if (fav == null) return null;
+        return fav.url != null ? fav.url : fav.proxy_url;
+    }
+
+    private void refreshFavoritesIfNeeded(String type, List<FavoriteAttachment> items, Runnable afterRefresh) {
+        List<String> urls = collectRefreshableUrls(items, false);
+        if (urls.isEmpty()) return;
+
+        Utils.threadPool.execute(() -> {
+            try {
+                Map<String, String> refreshed = refreshAttachmentUrls(urls);
+                if (!refreshed.isEmpty() && persistRefreshedUrls(type, refreshed) && afterRefresh != null) {
+                    Utils.mainThread.post(afterRefresh);
+                }
+            } catch (Throwable t) {
+                logger.error("Error refreshing media favorite URLs", t);
+            } finally {
+                for (String url : urls) REFRESHING_CDN_URLS.remove(url);
+            }
+        });
+    }
+
+    private FavoriteAttachment refreshFavoriteForUse(FavoriteAttachment fav, String type, boolean force) {
+        List<FavoriteAttachment> single = Collections.singletonList(fav);
+        List<String> urls = collectRefreshableUrls(single, force);
+        if (urls.isEmpty()) return fav;
+
+        try {
+            Map<String, String> refreshed = refreshAttachmentUrls(urls);
+            if (refreshed.isEmpty()) return fav;
+
+            String oldKey = fav.getKey();
+            boolean changed = applyRefreshedUrls(fav, refreshed);
+            if (changed) persistFavoriteUrlChanges(type, oldKey, fav);
+        } catch (Throwable t) {
+            logger.error("Error refreshing media favorite before use", t);
+        } finally {
+            for (String url : urls) REFRESHING_CDN_URLS.remove(url);
+        }
+        return fav;
+    }
+
+    private static List<String> collectRefreshableUrls(List<FavoriteAttachment> items, boolean force) {
+        if (items == null || items.isEmpty()) return Collections.emptyList();
+
+        List<String> urls = new ArrayList<>();
+        for (FavoriteAttachment fav : items) {
+            addRefreshableUrl(urls, fav == null ? null : fav.url, force);
+            addRefreshableUrl(urls, fav == null ? null : fav.proxy_url, force);
+        }
+        return urls;
+    }
+
+    private static void addRefreshableUrl(List<String> urls, String url, boolean force) {
+        if (url == null || url.isEmpty()) return;
+        if (!isDiscordCdnUrl(url)) return;
+        if (!force && !shouldRefreshCdnUrl(url)) return;
+        if (!force && REFRESHING_CDN_URLS.put(url, true) != null) return;
+        if (force) REFRESHING_CDN_URLS.put(url, true);
+        if (!urls.contains(url)) urls.add(url);
+    }
+
+    private static boolean shouldRefreshCdnUrl(String url) {
+        long expiresAt = getCdnUrlExpiryMillis(url);
+        return expiresAt > 0 && expiresAt <= System.currentTimeMillis() + CDN_REFRESH_WINDOW_MS;
+    }
+
+    private static long getCdnUrlExpiryMillis(String url) {
+        try {
+            String ex = Uri.parse(url).getQueryParameter("ex");
+            if (ex == null || ex.isEmpty()) return 0L;
+            return Long.parseLong(ex, 16) * 1000L;
+        } catch (Throwable ignored) {
+            return 0L;
+        }
+    }
+
+    private static Map<String, String> refreshAttachmentUrls(List<String> urls) throws IOException {
+        Map<String, Object> body = new HashMap<>();
+        body.put("attachment_urls", urls);
+
+        try (Http.Response response = Http.Request
+                .newDiscordRNRequest("/attachments/refresh-urls", "POST")
+                .executeWithJson(body)) {
+            response.assertOk();
+            RefreshUrlsResponse parsed = response.json(RefreshUrlsResponse.class);
+            Map<String, String> refreshed = new HashMap<>();
+            if (parsed == null || parsed.refreshed_urls == null) return refreshed;
+
+            for (RefreshedUrl entry : parsed.refreshed_urls) {
+                if (entry == null || entry.original == null || entry.refreshed == null) continue;
+                refreshed.put(entry.original, entry.refreshed);
+                refreshed.put(getFavoriteKey(entry.original), entry.refreshed);
+            }
+            return refreshed;
+        }
+    }
+
+    private static boolean persistRefreshedUrls(String type, Map<String, String> refreshed) {
+        SettingsAPI s = instance != null ? instance.settings : null;
+        if (s == null || refreshed == null || refreshed.isEmpty()) return false;
+
+        FavoritesData data = getFavorites(s);
+        boolean changed = false;
+        for (FavoriteAttachment fav : getListForType(data, type)) {
+            changed |= applyRefreshedUrls(fav, refreshed);
+        }
+        if (changed) saveFavorites(s, data);
+        return changed;
+    }
+
+    private static void persistFavoriteUrlChanges(String type, String oldKey, FavoriteAttachment updated) {
+        SettingsAPI s = instance != null ? instance.settings : null;
+        if (s == null || updated == null || oldKey == null) return;
+
+        FavoritesData data = getFavorites(s);
+        for (FavoriteAttachment fav : getListForType(data, type)) {
+            if (oldKey.equals(fav.getKey())) {
+                fav.url = updated.url;
+                fav.proxy_url = updated.proxy_url;
+                saveFavorites(s, data);
+                return;
+            }
+        }
+    }
+
+    private static boolean applyRefreshedUrls(FavoriteAttachment fav, Map<String, String> refreshed) {
+        if (fav == null || refreshed == null || refreshed.isEmpty()) return false;
+
+        boolean changed = false;
+        String refreshedUrl = findRefreshedUrl(fav.url, refreshed);
+        if (refreshedUrl != null && !refreshedUrl.equals(fav.url)) {
+            fav.url = refreshedUrl;
+            changed = true;
+        }
+
+        String refreshedProxyUrl = findRefreshedUrl(fav.proxy_url, refreshed);
+        if (refreshedProxyUrl != null && !refreshedProxyUrl.equals(fav.proxy_url)) {
+            fav.proxy_url = refreshedProxyUrl;
+            changed = true;
+        }
+        return changed;
+    }
+
+    private static String findRefreshedUrl(String url, Map<String, String> refreshed) {
+        if (url == null) return null;
+        String direct = refreshed.get(url);
+        return direct != null ? direct : refreshed.get(getFavoriteKey(url));
+    }
+
+    private static boolean isDiscordCdnUrl(String url) {
+        if (url == null) return false;
+        String lower = url.toLowerCase();
+        return lower.contains("cdn.discordapp.com/attachments/")
+            || lower.contains("media.discordapp.net/attachments/");
+    }
+
+    private static String getFavoriteKey(String url) {
+        if (url == null) return null;
+        if (!isDiscordCdnUrl(url)) return url;
+
+        int cut = url.length();
+        int query = url.indexOf('?');
+        int fragment = url.indexOf('#');
+        if (query >= 0) cut = Math.min(cut, query);
+        if (fragment >= 0) cut = Math.min(cut, fragment);
+        return url.substring(0, cut);
     }
 
     private static String sanitizeFilename(String filename) {
