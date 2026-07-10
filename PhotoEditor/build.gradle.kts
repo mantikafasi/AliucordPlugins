@@ -25,6 +25,9 @@ aliucord {
         * Built a searchable font engine that recursively parses .ttf/.otf files from your system and local storage
         * Added a live font size slider and toggleable Bold, Italic, and Underline buttons
         * The font dropdown is now fully theme-aware and flawlessly floats over the keyboard
+        * Created a powerful new Custom Filter engine that lets you build your own effects
+        * Added Brightness, Contrast, Saturation, Hue, Temperature, and Tint sliders that can all be layered simultaneously
+        * Fixed OpenGL occlusion bugs so live previews work instantly with custom ColorMatrix filters
         * Replaced awkward placeholder icons with native Discord vectors
         * The editor now instantly boots up with the Pen tool active and ready to draw
         * Smoother animations and ripples

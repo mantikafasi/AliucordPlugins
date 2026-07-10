@@ -96,7 +96,7 @@ public class PhotoEditorPlugin extends Plugin {
         void onSpoilerToggled(boolean isSpoiler);
     }
 
-    private View createToolbar(Context context, PhotoEditor editor, PhotoEditorView editorView, Dialog dialog, Attachment<?>[] currentAttachment, EditRequest editRequest, PhotoFilter[] sessionFilter) {
+    private View createToolbar(Context context, PhotoEditor editor, PhotoEditorView editorView, Dialog dialog, Attachment<?>[] currentAttachment, EditRequest editRequest, PhotoFilter[] sessionFilter, boolean[] isCustomFilter, float[] customFilterValues) {
         LinearLayout rootContainer = new LinearLayout(context);
         rootContainer.setOrientation(LinearLayout.VERTICAL);
         rootContainer.setBackgroundColor(0xff1e1f22);
@@ -245,6 +245,14 @@ public class PhotoEditorPlugin extends Plugin {
             filterButtons.add(fBtn);
             fBtn.setOnClickListener(v -> {
                 selectOnly(filterButtons, fBtn);
+                isCustomFilter[0] = false;
+                for (int i=0; i<editorView.getChildCount(); i++) {
+                    android.view.View child = editorView.getChildAt(i);
+                    if (child.getClass().getName().contains("ImageFilterView")) {
+                        child.setVisibility(android.view.View.VISIBLE);
+                    }
+                }
+                editorView.getSource().clearColorFilter();
                 sessionFilter[0] = filter;
                 selectedFilter = filter;
                 editor.setFilterEffect(filter);
@@ -254,6 +262,21 @@ public class PhotoEditorPlugin extends Plugin {
                     Toast.makeText(context, "This filter requires Android 7.0+ to save properly", Toast.LENGTH_LONG).show();
             });
             filterToolbar.addView(fBtn);
+            
+            if (filter == PhotoFilter.NONE) {
+                View customBtn = iconButton(context, "Custom", null, null);
+                customBtn.setTag("CUSTOM");
+                filterButtons.add(customBtn);
+                customBtn.setOnClickListener(v -> {
+                    selectOnly(filterButtons, customBtn);
+                    isCustomFilter[0] = true;
+                    editor.setFilterEffect(PhotoFilter.NONE);
+                    sessionFilter[0] = PhotoFilter.NONE;
+                    selectedFilter = PhotoFilter.NONE;
+                    showCustomFilterDialog(context, editorView, customFilterValues);
+                });
+                filterToolbar.addView(customBtn);
+            }
         }
 
         // --- MAIN TOOLBAR ---
@@ -359,7 +382,11 @@ public class PhotoEditorPlugin extends Plugin {
         View cropMainBtn = iconButton(context, "Crop", "ucrop_ic_crop", v -> showCropDialog(context, editorView));
         mainToolbar.addView(cropMainBtn);
 
-        View filterMainBtn = iconButton(context, "Filter", "ic_filter_list_grey_24dp", null);
+        int filterIconId = Utils.getResId("ic_flare_24dp", "drawable");
+        if (filterIconId == 0) filterIconId = Utils.getResId("ic_auto_fix_high", "drawable");
+        if (filterIconId == 0) filterIconId = Utils.getResId("ic_filter_list_grey_24dp", "drawable");
+        String filterIconName = filterIconId != 0 ? context.getResources().getResourceEntryName(filterIconId) : "ic_filter_list_grey_24dp";
+        View filterMainBtn = iconButton(context, "Filter", filterIconName, null);
         filterMainBtn.setOnClickListener(v -> {
             selectOnly(mainButtons, filterMainBtn);
             subToolbarContainer.removeAllViews();
@@ -367,7 +394,8 @@ public class PhotoEditorPlugin extends Plugin {
             subToolbarContainer.setVisibility(View.VISIBLE);
             editor.setBrushDrawingMode(false);
             for (int i=0; i<filterButtons.size(); i++) {
-                if (filterButtons.get(i).getTag() == sessionFilter[0]) {
+                Object tag = filterButtons.get(i).getTag();
+                if ((isCustomFilter[0] && "CUSTOM".equals(tag)) || (!isCustomFilter[0] && tag == sessionFilter[0])) {
                     selectOnly(filterButtons, filterButtons.get(i));
                     break;
                 }
@@ -823,6 +851,8 @@ public class PhotoEditorPlugin extends Plugin {
 
         final Attachment<?>[] currentAttachment = {attachment};
         final PhotoFilter[] sessionFilter = {PhotoFilter.NONE};
+        final boolean[] isCustomFilter = {false};
+        final float[] customFilterValues = new float[]{0f, 1f, 1f, 0f, 0f, 0f}; // Brightness, Contrast, Saturation, Hue, Temp, Tint
 
         FrameLayout spoilerOverlay = new FrameLayout(activity);
         spoilerOverlay.setBackgroundColor(0x99000000);
@@ -891,7 +921,7 @@ public class PhotoEditorPlugin extends Plugin {
         saveBtn.setPadding(dp(8), dp(8), dp(8), dp(8));
         addRippleBorderless(saveBtn);
         addPressAnimation(saveBtn);
-        saveBtn.setOnClickListener(v -> saveImage(activity, editor, editorView, currentAttachment, editRequest, dialog, sessionFilter));
+        saveBtn.setOnClickListener(v -> saveImage(activity, editor, editorView, currentAttachment, editRequest, dialog, sessionFilter, isCustomFilter, customFilterValues));
         
         LinearLayout.LayoutParams saveParams = new LinearLayout.LayoutParams(dp(40), dp(40));
         saveParams.setMargins(dp(8), 0, 0, 0);
@@ -928,7 +958,7 @@ public class PhotoEditorPlugin extends Plugin {
                 Gravity.CENTER
         ));
 
-        content.addView(createToolbar(activity, editor, editorView, dialog, currentAttachment, editRequest, sessionFilter), new LinearLayout.LayoutParams(
+        content.addView(createToolbar(activity, editor, editorView, dialog, currentAttachment, editRequest, sessionFilter, isCustomFilter, customFilterValues), new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
         ));
@@ -1517,8 +1547,10 @@ public class PhotoEditorPlugin extends Plugin {
                         if (f.isDirectory()) {
                             scan(f, depth + 1);
                         } else if (f.isFile() && (f.getName().endsWith(".ttf") || f.getName().endsWith(".otf"))) {
-                            fontList.add(f.getName());
-                            fontPathMap.put(f.getName(), f.getAbsolutePath());
+                            String name = f.getName();
+                            String cleanName = name.substring(0, name.lastIndexOf('.'));
+                            fontList.add(cleanName);
+                            fontPathMap.put(cleanName, f.getAbsolutePath());
                         }
                     }
                 }
@@ -2897,7 +2929,7 @@ public class PhotoEditorPlugin extends Plugin {
         }
     }
 
-        private void saveImage(Context context, PhotoEditor editor, PhotoEditorView editorView, Attachment<?>[] currentAttachment, EditRequest editRequest, Dialog dialog, PhotoFilter[] sessionFilter) {
+    private void saveImage(Context context, PhotoEditor editor, PhotoEditorView editorView, Attachment<?>[] currentAttachment, EditRequest editRequest, Dialog dialog, PhotoFilter[] sessionFilter, boolean[] isCustomFilter, float[] customFilterValues) {
         try {
             editor.clearHelperBox();
 
@@ -2958,7 +2990,7 @@ public class PhotoEditorPlugin extends Plugin {
             Canvas canvas = new Canvas(saveBitmap);
 
             Paint srcPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
-            float[] matrix = getColorMatrixForFilter(activeFilter);
+            float[] matrix = isCustomFilter != null && isCustomFilter[0] ? buildCustomMatrix(customFilterValues) : getColorMatrixForFilter(activeFilter);
             if (matrix != null) {
                 srcPaint.setColorFilter(new android.graphics.ColorMatrixColorFilter(matrix));
             }
@@ -3241,6 +3273,170 @@ public class PhotoEditorPlugin extends Plugin {
             }
             return false;
         });
+    }
+
+    private float[] buildCustomMatrix(float[] values) {
+        float brightness = values[0];
+        float contrast = values[1];
+        float saturation = values[2];
+        float hue = values[3];
+        float temp = values[4];
+        float tint = values[5];
+
+        android.graphics.ColorMatrix cm = new android.graphics.ColorMatrix();
+        
+        // Brightness & Contrast
+        float t = (1f - contrast) * 128f + brightness;
+        android.graphics.ColorMatrix cmContrast = new android.graphics.ColorMatrix(new float[]{
+            contrast, 0, 0, 0, t,
+            0, contrast, 0, 0, t,
+            0, 0, contrast, 0, t,
+            0, 0, 0, 1, 0
+        });
+        cm.postConcat(cmContrast);
+
+        // Saturation
+        android.graphics.ColorMatrix cmSat = new android.graphics.ColorMatrix();
+        cmSat.setSaturation(saturation);
+        cm.postConcat(cmSat);
+
+        // Hue
+        if (hue != 0f) {
+            float cos = (float) Math.cos(hue * Math.PI / 180f);
+            float sin = (float) Math.sin(hue * Math.PI / 180f);
+            float lumR = 0.213f, lumG = 0.715f, lumB = 0.072f;
+            android.graphics.ColorMatrix cmHue = new android.graphics.ColorMatrix(new float[]{
+                lumR + cos * (1 - lumR) + sin * (-lumR), lumG + cos * (-lumG) + sin * (-lumG), lumB + cos * (-lumB) + sin * (1 - lumB), 0, 0,
+                lumR + cos * (-lumR) + sin * (0.143f), lumG + cos * (1 - lumG) + sin * (0.140f), lumB + cos * (-lumB) + sin * (-0.283f), 0, 0,
+                lumR + cos * (-lumR) + sin * (-(1 - lumR)), lumG + cos * (-lumG) + sin * (lumG), lumB + cos * (1 - lumB) + sin * (lumB), 0, 0,
+                0, 0, 0, 1, 0
+            });
+            cm.postConcat(cmHue);
+        }
+
+        // Temperature (Warm/Cool) & Tint (Green/Magenta)
+        if (temp != 0f || tint != 0f) {
+            float rTemp = temp > 0 ? temp * 0.1f : 0;
+            float bTemp = temp < 0 ? -temp * 0.1f : 0;
+            float gTint = tint > 0 ? tint * 0.1f : 0;
+            float rTint = tint < 0 ? -tint * 0.1f : 0;
+            float bTint = tint < 0 ? -tint * 0.1f : 0;
+            
+            android.graphics.ColorMatrix cmTempTint = new android.graphics.ColorMatrix(new float[]{
+                1f + rTemp + rTint, 0, 0, 0, 0,
+                0, 1f + gTint, 0, 0, 0,
+                0, 0, 1f + bTemp + bTint, 0, 0,
+                0, 0, 0, 1, 0
+            });
+            cm.postConcat(cmTempTint);
+        }
+
+        return cm.getArray();
+    }
+
+    private void showCustomFilterDialog(Context context, PhotoEditorView editorView, float[] customFilterValues) {
+        Dialog dialog = new Dialog(context);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        LinearLayout layout = createBottomSheetContainer(context);
+        android.widget.ScrollView scrollContent = new android.widget.ScrollView(context);
+        LinearLayout content = new LinearLayout(context);
+        content.setOrientation(LinearLayout.VERTICAL);
+
+        Runnable updateFilter = () -> {
+            for (int i=0; i<editorView.getChildCount(); i++) {
+                android.view.View child = editorView.getChildAt(i);
+                if (child.getClass().getName().contains("ImageFilterView")) {
+                    child.setVisibility(android.view.View.GONE);
+                }
+            }
+            float[] matrix = buildCustomMatrix(customFilterValues);
+            editorView.getSource().setColorFilter(new android.graphics.ColorMatrixColorFilter(matrix));
+        };
+
+        String[] labels = {"Brightness", "Contrast", "Saturation", "Hue", "Temperature", "Tint"};
+        float[] mins = {-100f, 0f, 0f, -180f, -50f, -50f};
+        float[] maxs = {100f, 2f, 2f, 180f, 50f, 50f};
+        float[] defaults = {0f, 1f, 1f, 0f, 0f, 0f};
+
+        for (int i = 0; i < 6; i++) {
+            final int index = i;
+            LinearLayout row = new LinearLayout(context);
+            row.setOrientation(LinearLayout.VERTICAL);
+            row.setPadding(0, 0, 0, dp(16));
+
+            LinearLayout header = new LinearLayout(context);
+            header.setOrientation(LinearLayout.HORIZONTAL);
+            
+            TextView label = new TextView(context);
+            label.setText(labels[i]);
+            label.setTextColor(Color.WHITE);
+            label.setTextSize(14f);
+            
+            TextView valueText = new TextView(context);
+            valueText.setText(String.format(java.util.Locale.US, "%.2f", customFilterValues[i]));
+            valueText.setTextColor(Color.GRAY);
+            valueText.setTextSize(12f);
+            
+            LinearLayout.LayoutParams lblParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+            header.addView(label, lblParams);
+            header.addView(valueText);
+            
+            row.addView(header);
+
+            android.widget.SeekBar slider = new android.widget.SeekBar(context);
+            slider.setMax(200); // Normalize to 0-200
+            
+            float current = customFilterValues[i];
+            float range = maxs[i] - mins[i];
+            int progress = (int) (((current - mins[i]) / range) * 200f);
+            slider.setProgress(progress);
+
+            slider.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(android.widget.SeekBar seekBar, int prog, boolean fromUser) {
+                    if (fromUser) {
+                        float val = mins[index] + ((float) prog / 200f) * range;
+                        customFilterValues[index] = val;
+                        valueText.setText(String.format(java.util.Locale.US, "%.2f", val));
+                        updateFilter.run();
+                    }
+                }
+                @Override public void onStartTrackingTouch(android.widget.SeekBar seekBar) {}
+                @Override public void onStopTrackingTouch(android.widget.SeekBar seekBar) {}
+            });
+            row.addView(slider);
+            content.addView(row);
+        }
+        
+        TextView resetBtn = new TextView(context);
+        resetBtn.setText("Reset Custom Filter");
+        resetBtn.setTextColor(0xffda373c);
+        resetBtn.setTextSize(14f);
+        resetBtn.setGravity(Gravity.CENTER);
+        resetBtn.setPadding(dp(16), dp(16), dp(16), dp(16));
+        resetBtn.setOnClickListener(v -> {
+            System.arraycopy(defaults, 0, customFilterValues, 0, defaults.length);
+            updateFilter.run();
+            dialog.dismiss();
+            showCustomFilterDialog(context, editorView, customFilterValues); // Reopen to refresh sliders
+        });
+        content.addView(resetBtn);
+
+        scrollContent.addView(content);
+        layout.addView(scrollContent, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                dp(300)
+        ));
+
+        dialog.setContentView(layout);
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            window.setGravity(Gravity.BOTTOM);
+            window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+        dialog.show();
     }
 
     private interface EditRequest {
