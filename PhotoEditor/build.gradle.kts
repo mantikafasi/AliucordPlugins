@@ -18,6 +18,7 @@ aliucord {
         * Moved the Save button to the top header for instant access without scrolling
         * Added a native Discord-style visual overlay for spoilers that hides when you touch the screen
         * Restructured the toolbar to make Undo, Redo, and Reset global actions instead of burying them
+        * Added dynamic state tracking so the Undo, Redo, and Reset buttons automatically grey out when there's nothing to undo
         * Replaced awkward placeholder icons with native Discord vectors
         * The editor now instantly boots up with the Pen tool active and ready to draw
         * Smoother animations and ripples

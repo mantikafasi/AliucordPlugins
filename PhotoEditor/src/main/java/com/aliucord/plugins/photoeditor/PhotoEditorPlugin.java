@@ -229,7 +229,7 @@ public class PhotoEditorPlugin extends Plugin {
         }
 
         // --- MAIN TOOLBAR ---
-        mainToolbar.addView(iconButton(context, "Undo", "ic_reply_24dp", v -> {
+        View undoMainBtn = iconButton(context, "Undo", "ic_reply_24dp", v -> {
             boolean undidOverlay = false;
             for (int i = editorView.getChildCount() - 1; i >= 0; i--) {
                 View child = editorView.getChildAt(i);
@@ -241,7 +241,8 @@ public class PhotoEditorPlugin extends Plugin {
                 }
             }
             if (!undidOverlay) editor.undo();
-        }));
+        });
+        mainToolbar.addView(undoMainBtn);
 
         View redoMainBtn = iconButton(context, "Redo", "ic_reply_24dp", v -> editor.redo());
         if (redoMainBtn instanceof android.view.ViewGroup && ((android.view.ViewGroup) redoMainBtn).getChildCount() > 0) {
@@ -249,7 +250,56 @@ public class PhotoEditorPlugin extends Plugin {
         }
         mainToolbar.addView(redoMainBtn);
 
-        mainToolbar.addView(iconButton(context, "Reset", "ic_refresh_white_a60_24dp", v -> clearAllEditorOverlays(editor, editorView)));
+        View clearMainBtn = iconButton(context, "Reset", "ucrop_ic_reset", v -> clearAllEditorOverlays(editor, editorView));
+        mainToolbar.addView(clearMainBtn);
+
+        Runnable stateUpdater = new Runnable() {
+            @Override
+            public void run() {
+                if (undoMainBtn.getParent() == null) return;
+                
+                boolean hasOverlay = false;
+                for (int i = 0; i < editorView.getChildCount(); i++) {
+                    View child = editorView.getChildAt(i);
+                    Object tag = child.getTag();
+                    if (OVERLAY_IMAGE.equals(tag) || OVERLAY_TEXT.equals(tag) || OVERLAY_EMOJI.equals(tag)) {
+                        hasOverlay = true;
+                        break;
+                    }
+                }
+                
+                boolean canUndo = false;
+                boolean canRedo = false;
+                try {
+                    java.lang.reflect.Method isUndoAvailable = editor.getClass().getDeclaredMethod("isUndoAvailable");
+                    canUndo = (boolean) isUndoAvailable.invoke(editor);
+                    java.lang.reflect.Method isRedoAvailable = editor.getClass().getDeclaredMethod("isRedoAvailable");
+                    canRedo = (boolean) isRedoAvailable.invoke(editor);
+                } catch (Throwable ignored) {}
+                
+                boolean undoActive = hasOverlay || canUndo;
+                boolean redoActive = canRedo;
+                boolean clearActive = hasOverlay || canUndo || canRedo;
+                
+                if (undoMainBtn instanceof android.view.ViewGroup && ((android.view.ViewGroup) undoMainBtn).getChildCount() > 0) {
+                    ((android.view.ViewGroup) undoMainBtn).getChildAt(0).setAlpha(undoActive ? 1f : 0.3f);
+                }
+                undoMainBtn.setEnabled(undoActive);
+
+                if (redoMainBtn instanceof android.view.ViewGroup && ((android.view.ViewGroup) redoMainBtn).getChildCount() > 0) {
+                    ((android.view.ViewGroup) redoMainBtn).getChildAt(0).setAlpha(redoActive ? 1f : 0.3f);
+                }
+                redoMainBtn.setEnabled(redoActive);
+
+                if (clearMainBtn instanceof android.view.ViewGroup && ((android.view.ViewGroup) clearMainBtn).getChildCount() > 0) {
+                    ((android.view.ViewGroup) clearMainBtn).getChildAt(0).setAlpha(clearActive ? 1f : 0.3f);
+                }
+                clearMainBtn.setEnabled(clearActive);
+
+                undoMainBtn.postDelayed(this, 100);
+            }
+        };
+        undoMainBtn.post(stateUpdater);
 
         mainToolbar.addView(groupSeparator(context));
 
