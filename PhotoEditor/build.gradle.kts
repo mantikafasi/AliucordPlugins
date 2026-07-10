@@ -11,14 +11,14 @@ aliucord {
 
     changelog.set(
         """
-        # 1.1.0-dev
-        * Revamped UI with a categorized sub-toolbar
-        * Tap images to edit them instantly (no more bottom sheet!)
+        # 2.0.0-dev
+        * Added a dedicated Settings Page for the plugin!
+        * Tapping an image to edit it instantly is now an optional toggle in settings (Classic Bottom Sheet is back to being the default)
         * Added Delete & Spoiler buttons right inside the editor
         * Added a native Discord-style visual overlay for spoilers that hides when you touch the screen
         * Smoother animations and ripples
         * Fixed critical bug where selecting a sticker in the editor sent it to chat (caused by conflict with the FakeStickers plugin)
-        * Fixed "Could not open image editor" crashes caused by invalid window tokens
+        * Fixed "Could not open image editor" crashes caused by invalid window tokens by completely bulletproofing Activity fetching
         """.trimIndent(),
     )
 
@@ -37,3 +37,8 @@ dependencies {
     }
     compileOnly("org.jetbrains.kotlin:kotlin-stdlib:2.2.0")
 }
+
+
+
+
+

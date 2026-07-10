@@ -88,11 +88,15 @@ import kotlin.Unit;
 @SuppressWarnings("unused")
 public class PhotoEditorPlugin extends Plugin {
 
+    public PhotoEditorPlugin() {
+        settingsTab = new SettingsTab(PhotoEditorSettings.class, SettingsTab.Type.BOTTOM_SHEET).withArgs(settings);
+    }
+
     public interface SpoilerToggleListener {
         void onSpoilerToggled(boolean isSpoiler);
     }
 
-    private View createToolbar(Context context, PhotoEditor editor, PhotoEditorView editorView, Dialog dialog, Attachment<?> attachment, EditRequest editRequest) {
+    private View createToolbar(Context context, PhotoEditor editor, PhotoEditorView editorView, Dialog dialog, Attachment<?>[] currentAttachment, EditRequest editRequest) {
         LinearLayout rootContainer = new LinearLayout(context);
         rootContainer.setOrientation(LinearLayout.VERTICAL);
         rootContainer.setBackgroundColor(0xff1e1f22);
@@ -290,7 +294,7 @@ public class PhotoEditorPlugin extends Plugin {
         mainToolbar.addView(filterMainBtn);
 
         mainToolbar.addView(groupSeparator(context));
-        View saveBtn = iconButton(context, "Save", "ic_check_circle_24dp", v -> saveImage(context, editor, editorView, attachment, editRequest, dialog, sessionFilter));
+        View saveBtn = iconButton(context, "Save", "ic_check_circle_24dp", v -> saveImage(context, editor, editorView, currentAttachment, editRequest, dialog, sessionFilter));
         mainToolbar.addView(saveBtn);
 
         // Initial state
@@ -350,6 +354,7 @@ public class PhotoEditorPlugin extends Plugin {
         }
     };
     private WeakReference<WidgetChatInputAttachments> latestChatInputAttachments = new WeakReference<>(null);
+    private WeakReference<SelectionAggregator<?>> latestAggregator = new WeakReference<>(null);
     private boolean editorStickerPickerOpen;
     private int brushColor = Color.WHITE;
     private int textColor = Color.WHITE;
@@ -368,11 +373,12 @@ public class PhotoEditorPlugin extends Plugin {
                 new InsteadHook(callFrame -> {
                     SelectionAggregator<?> aggregator = (SelectionAggregator<?>) callFrame.args[0];
                     Attachment<?> attachment = (Attachment<?>) callFrame.args[1];
+                    latestAggregator = new WeakReference<>(aggregator);
                     registerEditRequest(aggregator, attachment);
 
-                    FragmentActivity activity = findFragmentActivity(com.aliucord.Utils.getAppActivity());
-                    if (activity != null && isLikelyImage(attachment)) {
-                        com.aliucord.Utils.mainThread.post(() -> openEditor(activity, attachment, editRequests.get(attachment), aggregator));
+                    FragmentActivity activity = findFragmentActivity(getRealActivity());
+                    if (settings.getBool("quick_edit", false) && activity != null && isLikelyImage(attachment)) {
+                        com.aliucord.Utils.mainThread.postDelayed(() -> openEditor(activity, attachment, editRequests.get(attachment), aggregator), 160);
                         return null;
                     }
                     try {
@@ -465,10 +471,14 @@ public class PhotoEditorPlugin extends Plugin {
     }
 
     private void registerEditRequest(SelectionAggregator<?> aggregator, Attachment<?> attachment) {
-        if (aggregator == null || attachment == null)
-            return;
-
-        editRequests.put(attachment, edited -> replaceAttachment(aggregator, attachment, edited));
+        if (aggregator == null || attachment == null) return;
+        editRequests.put(attachment, (oldAttachment, newAttachment) -> {
+            try {
+                replaceAttachment(aggregator, oldAttachment, newAttachment);
+            } catch (Throwable t) {
+                logger.error("Failed to replace attachment", t);
+            }
+        });
     }
 
     private void registerSentImageContext(AttachmentEntry entry) {
@@ -554,7 +564,7 @@ public class PhotoEditorPlugin extends Plugin {
     private void openSentImageEditor(Context context, SentImageContext sentImageContext) {
         FragmentActivity activity = findFragmentActivity(context);
         if (activity == null)
-            activity = findFragmentActivity(Utils.getAppActivity());
+            activity = findFragmentActivity(getRealActivity());
         if (activity == null || activity.isFinishing() || activity.isDestroyed()) {
             Toast.makeText(context, "Could not open image editor", Toast.LENGTH_SHORT).show();
             return;
@@ -572,7 +582,7 @@ public class PhotoEditorPlugin extends Plugin {
                         null,
                         false
                 );
-                Utils.mainThread.post(() -> openEditor(finalActivity, attachment, edited -> addEditedReplyAttachment(finalActivity, sentImageContext.message, edited), null));
+                Utils.mainThread.post(() -> openEditor(finalActivity, attachment, (oldAttachment, newAttachment) -> addEditedReplyAttachment(finalActivity, sentImageContext.message, newAttachment), null));
             } catch (Throwable throwable) {
                 logger.error("Failed to download sent image for editing", throwable);
                 Utils.mainThread.post(() -> Toast.makeText(context, "Failed to load image for editing", Toast.LENGTH_SHORT).show());
@@ -659,7 +669,7 @@ public class PhotoEditorPlugin extends Plugin {
             edit.setOnClickListener(view -> {
                 FragmentActivity activity = findFragmentActivity(view.getContext());
                 sheet.dismiss();
-                Utils.mainThread.postDelayed(() -> openEditor(activity, attachment, editRequest, null), 160);
+                com.aliucord.Utils.mainThread.postDelayed(() -> openEditor(activity, attachment, editRequest, latestAggregator.get()), 160);
             });
 
             ConstraintLayout.LayoutParams params = new ConstraintLayout.LayoutParams(
@@ -686,13 +696,35 @@ public class PhotoEditorPlugin extends Plugin {
         return remove != null && remove.getParent() instanceof ViewGroup ? (ViewGroup) remove.getParent() : null;
     }
 
-    private void openEditor(Activity passedActivity, Attachment<?> attachment, EditRequest editRequest, SelectionAggregator<?> aggregator) {
-        Activity activity = com.aliucord.Utils.getAppActivity();
-        if (activity == null) {
-            activity = passedActivity;
+    private Activity getRealActivity() {
+        try {
+            Class<?> activityThreadClass = Class.forName("android.app.ActivityThread");
+            Object activityThread = activityThreadClass.getMethod("currentActivityThread").invoke(null);
+            java.lang.reflect.Field activitiesField = activityThreadClass.getDeclaredField("mActivities");
+            activitiesField.setAccessible(true);
+            java.util.Map<?, ?> activities = (java.util.Map<?, ?>) activitiesField.get(activityThread);
+            
+            for (Object activityRecord : activities.values()) {
+                java.lang.reflect.Field activityField = activityRecord.getClass().getDeclaredField("activity");
+                activityField.setAccessible(true);
+                Activity activity = (Activity) activityField.get(activityRecord);
+                if (activity != null && !activity.isFinishing() && (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.JELLY_BEAN_MR1 || !activity.isDestroyed())) {
+                    return activity;
+                }
+            }
+        } catch (Throwable t) {
+            logger.error("Failed to get active activity from ActivityThread", t);
         }
-        if (activity == null) {
-            android.widget.Toast.makeText(com.aliucord.Utils.getAppActivity(), "Could not open image editor (activity null)", android.widget.Toast.LENGTH_SHORT).show();
+        return com.aliucord.Utils.getAppActivity();
+    }
+
+    private void openEditor(Activity passedActivity, Attachment<?> attachment, EditRequest editRequest, SelectionAggregator<?> aggregator) {
+        Activity activity = passedActivity;
+        if (activity == null || activity.isFinishing() || (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1 && activity.isDestroyed())) {
+            activity = getRealActivity();
+        }
+        if (activity == null || activity.isFinishing() || (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1 && activity.isDestroyed())) {
+            android.widget.Toast.makeText(getRealActivity(), "Could not open image editor (activity null or destroyed)", android.widget.Toast.LENGTH_SHORT).show();
             return;
         }
         if (attachment.getUri() == null) {
@@ -707,6 +739,8 @@ public class PhotoEditorPlugin extends Plugin {
                 .setPinchTextScalable(true)
                 .setClipSourceImage(false)
                 .build();
+
+        final Attachment<?>[] currentAttachment = {attachment};
 
         FrameLayout spoilerOverlay = new FrameLayout(activity);
         spoilerOverlay.setBackgroundColor(0x99000000);
@@ -753,7 +787,7 @@ public class PhotoEditorPlugin extends Plugin {
                 ViewGroup.LayoutParams.MATCH_PARENT
         ));
 
-        View header = createHeader(activity, attachment, aggregator, view -> dialog.dismiss(), isSpoiler -> {
+        View header = createHeader(activity, currentAttachment, aggregator, view -> dialog.dismiss(), isSpoiler -> {
             if (isSpoiler) {
                 spoilerOverlay.setVisibility(View.VISIBLE);
                 spoilerOverlay.setAlpha(0f);
@@ -798,7 +832,7 @@ public class PhotoEditorPlugin extends Plugin {
                 Gravity.CENTER
         ));
 
-        content.addView(createToolbar(activity, editor, editorView, dialog, attachment, editRequest), new LinearLayout.LayoutParams(
+        content.addView(createToolbar(activity, editor, editorView, dialog, currentAttachment, editRequest), new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
         ));
@@ -814,7 +848,7 @@ public class PhotoEditorPlugin extends Plugin {
             Window shownWindow = dialog.getWindow();
             if (shownWindow != null)
                 shownWindow.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-            loadImage(attachment.getUri(), editorView, editorHolder, progressBar);
+            loadImage(currentAttachment[0].getUri(), editorView, editorHolder, progressBar);
             applyBrush(editor);
         });
         dialog.setOnDismissListener(ignored -> {
@@ -830,7 +864,7 @@ public class PhotoEditorPlugin extends Plugin {
         }
     }
 
-    private View createHeader(Context context, Attachment<?> attachment, SelectionAggregator<?> aggregator, View.OnClickListener onClose, SpoilerToggleListener spoilerListener) {
+    private View createHeader(Context context, Attachment<?>[] currentAttachment, SelectionAggregator<?> aggregator, View.OnClickListener onClose, SpoilerToggleListener spoilerListener) {
         LinearLayout header = new LinearLayout(context);
         header.setOrientation(LinearLayout.HORIZONTAL);
         header.setGravity(Gravity.CENTER_VERTICAL);
@@ -855,7 +889,7 @@ public class PhotoEditorPlugin extends Plugin {
         header.addView(closeBtn);
 
         TextView title = new TextView(context);
-        String displayName = attachment.getDisplayName();
+        String displayName = currentAttachment[0].getDisplayName();
         title.setText(displayName == null ? "PhotoEditor" : displayName);
         title.setTextColor(Color.WHITE);
         title.setTextSize(16f);
@@ -874,7 +908,7 @@ public class PhotoEditorPlugin extends Plugin {
             if (eyeOpenId == 0) eyeOpenId = android.R.drawable.ic_menu_view;
             if (eyeClosedId == 0) eyeClosedId = android.R.drawable.ic_menu_view;
 
-            boolean[] isSpoiler = {attachment.getSpoiler()};
+            boolean[] isSpoiler = {currentAttachment[0].getSpoiler()};
             spoilerBtn.setImageResource(isSpoiler[0] ? eyeClosedId : eyeOpenId);
             spoilerBtn.setColorFilter(isSpoiler[0] ? 0xffda373c : Color.WHITE);
             spoilerBtn.setPadding(dp(8), dp(8), dp(8), dp(8));
@@ -891,13 +925,14 @@ public class PhotoEditorPlugin extends Plugin {
                 
                 try {
                     Attachment<?> edited = new Attachment<>(
-                            attachment.getId(),
-                            attachment.getUri(),
-                            attachment.getDisplayName(),
+                            currentAttachment[0].getId(),
+                            currentAttachment[0].getUri(),
+                            currentAttachment[0].getDisplayName(),
                             null,
                             isSpoiler[0]
                     );
-                    replaceAttachment(aggregator, attachment, edited);
+                    replaceAttachment(aggregator, currentAttachment[0], edited);
+                    currentAttachment[0] = edited;
                     if (spoilerListener != null) {
                         spoilerListener.onSpoilerToggled(isSpoiler[0]);
                     }
@@ -923,7 +958,7 @@ public class PhotoEditorPlugin extends Plugin {
                 try {
                     java.lang.reflect.Method remove = SelectionAggregator.class.getDeclaredMethod("removeItem", Attachment.class);
                     remove.setAccessible(true);
-                    remove.invoke(aggregator, attachment);
+                    remove.invoke(aggregator, currentAttachment[0]);
                     onClose.onClick(v);
                 } catch (Throwable t) {
                     logger.error("Failed to delete attachment", t);
@@ -1106,7 +1141,8 @@ public class PhotoEditorPlugin extends Plugin {
     }
 
     private void showImagePicker(Context context, PhotoEditor editor, PhotoEditorView editorView) {
-        androidx.fragment.app.FragmentActivity activity = findFragmentActivity(com.aliucord.Utils.getAppActivity());
+        androidx.fragment.app.FragmentActivity activity = findFragmentActivity(context);
+        if (activity == null) activity = findFragmentActivity(getRealActivity());
         if (activity == null || activity.isFinishing() || activity.isDestroyed()) {
             android.widget.Toast.makeText(context, "Could not open image picker", android.widget.Toast.LENGTH_SHORT).show();
             return;
@@ -1349,7 +1385,7 @@ public class PhotoEditorPlugin extends Plugin {
     private void showDiscordEmojiPicker(Context context, PhotoEditor editor, PhotoEditorView editorView) {
         FragmentActivity activity = findFragmentActivity(context);
         if (activity == null)
-            activity = findFragmentActivity(Utils.getAppActivity());
+            activity = findFragmentActivity(getRealActivity());
 
         if (activity == null || activity.isFinishing() || activity.isDestroyed()) {
             Toast.makeText(context, "Could not open Discord emoji picker", Toast.LENGTH_SHORT).show();
@@ -1378,7 +1414,7 @@ public class PhotoEditorPlugin extends Plugin {
     private void showDiscordStickerPicker(Context context, PhotoEditor editor, PhotoEditorView editorView) {
         FragmentActivity activity = findFragmentActivity(context);
         if (activity == null)
-            activity = findFragmentActivity(Utils.getAppActivity());
+            activity = findFragmentActivity(getRealActivity());
 
         if (activity == null || activity.isFinishing() || activity.isDestroyed()) {
             Toast.makeText(context, "Could not open Discord sticker picker", Toast.LENGTH_SHORT).show();
@@ -1867,7 +1903,7 @@ public class PhotoEditorPlugin extends Plugin {
                 logger.error(throwable);
                 Utils.mainThread.post(() -> {
                     progressBar.setVisibility(View.GONE);
-                    Toast.makeText(Utils.getAppActivity(), "Failed to load image", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(editorView.getContext(), "Failed to load image", Toast.LENGTH_SHORT).show();
                 });
             }
         });
@@ -2329,7 +2365,7 @@ public class PhotoEditorPlugin extends Plugin {
         }
     }
 
-        private void saveImage(Context context, PhotoEditor editor, PhotoEditorView editorView, Attachment<?> original, EditRequest editRequest, Dialog dialog, PhotoFilter[] sessionFilter) {
+        private void saveImage(Context context, PhotoEditor editor, PhotoEditorView editorView, Attachment<?>[] currentAttachment, EditRequest editRequest, Dialog dialog, PhotoFilter[] sessionFilter) {
         try {
             editor.clearHelperBox();
 
@@ -2374,7 +2410,7 @@ public class PhotoEditorPlugin extends Plugin {
                                 child.draw(canvas);
                                 canvas.restore();
                             }
-                            writeBitmapToFile(context, original, editRequest, dialog, activeFilter, glBitmap);
+                            writeBitmapToFile(context, currentAttachment, editRequest, dialog, activeFilter, glBitmap);
                         } else {
                             Toast.makeText(context, "Failed to capture GL filter: " + copyResult, Toast.LENGTH_SHORT).show();
                         }
@@ -2415,16 +2451,17 @@ public class PhotoEditorPlugin extends Plugin {
             }
             canvas.restore();
 
-            writeBitmapToFile(context, original, editRequest, dialog, activeFilter, saveBitmap);
+            writeBitmapToFile(context, currentAttachment, editRequest, dialog, activeFilter, saveBitmap);
         } catch (Throwable throwable) {
             logger.error(throwable);
             Toast.makeText(context, "Failed to render image: " + throwable.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 
-    private void writeBitmapToFile(Context context, Attachment<?> original, EditRequest editRequest, Dialog dialog, PhotoFilter activeFilter, Bitmap finalBitmap) {
+    private void writeBitmapToFile(Context context, Attachment<?>[] currentAttachment, EditRequest editRequest, Dialog dialog, PhotoFilter activeFilter, Bitmap finalBitmap) {
         Utils.threadPool.execute(() -> {
             try {
+                Attachment<?> original = currentAttachment[0];
                 File output = nextOutputFile(context, original.getDisplayName());
                 try (FileOutputStream stream = new FileOutputStream(output)) {
                     finalBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
@@ -2441,7 +2478,7 @@ public class PhotoEditorPlugin extends Plugin {
                 String filterDesc = (activeFilter != null && activeFilter != PhotoFilter.NONE)
                         ? " (" + humanize(activeFilter.name()) + " filter)" : "";
                 Utils.mainThread.post(() -> {
-                    editRequest.onEdited(edited);
+                    editRequest.onEdited(original, edited);
                     Toast.makeText(context, "Saved" + filterDesc, Toast.LENGTH_SHORT).show();
                     dialog.dismiss();
                 });
@@ -2675,7 +2712,7 @@ public class PhotoEditorPlugin extends Plugin {
     }
 
     private interface EditRequest {
-        void onEdited(Attachment<?> edited);
+        void onEdited(Attachment<?> oldAttachment, Attachment<?> newAttachment);
     }
 
     private class SentImageContext {
