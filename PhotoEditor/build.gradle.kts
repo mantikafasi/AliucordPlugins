@@ -21,6 +21,10 @@ aliucord {
         * Added dynamic state tracking so the Undo, Redo, and Reset buttons automatically grey out when there's nothing to undo
         * Replaced the S/L brush size buttons with a dynamic slider, and locked the sub-toolbar in place to prevent accidental sliding
         * Added a Custom Color Picker modal featuring HSV sliders, live HEX input, and an Eyedropper tool with drag-to-preview
+        * Completely overhauled the Text Insertion Modal to feature a live preview input box and typography controls
+        * Built a searchable font engine that recursively parses .ttf/.otf files from your system and local storage
+        * Added a live font size slider and toggleable Bold, Italic, and Underline buttons
+        * The font dropdown is now fully theme-aware and flawlessly floats over the keyboard
         * Replaced awkward placeholder icons with native Discord vectors
         * The editor now instantly boots up with the Pen tool active and ready to draw
         * Smoother animations and ripples

@@ -1235,7 +1235,7 @@ public class PhotoEditorPlugin extends Plugin {
         
         android.widget.EditText hexInput = new android.widget.EditText(context);
         hexInput.setTextColor(Color.WHITE);
-        hexInput.setText(String.format("#%06X", (0xFFFFFF & initialColor)));
+        hexInput.setText(String.format("#%08X", initialColor));
         hexInput.setSingleLine(true);
         LinearLayout.LayoutParams hexParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         hexParams.setMargins(dp(16), 0, 0, 0);
@@ -1254,6 +1254,9 @@ public class PhotoEditorPlugin extends Plugin {
         
         TextView valLabel = new TextView(context); valLabel.setText("Lightness"); valLabel.setTextColor(Color.LTGRAY); valLabel.setPadding(0, dp(8), 0, 0); root.addView(valLabel);
         android.widget.SeekBar valSlider = new android.widget.SeekBar(context); valSlider.setMax(100); valSlider.setProgress((int) (hsv[2] * 100)); root.addView(valSlider);
+        
+        TextView alphaLabel = new TextView(context); alphaLabel.setText("Opacity"); alphaLabel.setTextColor(Color.LTGRAY); alphaLabel.setPadding(0, dp(8), 0, 0); root.addView(alphaLabel);
+        android.widget.SeekBar alphaSlider = new android.widget.SeekBar(context); alphaSlider.setMax(255); alphaSlider.setProgress(Color.alpha(initialColor)); root.addView(alphaSlider);
         
         // 4. Presets Horizontal Scroll
         android.widget.HorizontalScrollView presetScroll = new android.widget.HorizontalScrollView(context);
@@ -1274,6 +1277,7 @@ public class PhotoEditorPlugin extends Plugin {
                 hueSlider.setProgress((int) hsv[0]);
                 satSlider.setProgress((int) (hsv[1] * 100));
                 valSlider.setProgress((int) (hsv[2] * 100));
+                alphaSlider.setProgress(Color.alpha(c));
             });
             presetContainer.addView(swatch);
         }
@@ -1288,11 +1292,12 @@ public class PhotoEditorPlugin extends Plugin {
                 hsv[0] = hueSlider.getProgress();
                 hsv[1] = satSlider.getProgress() / 100f;
                 hsv[2] = valSlider.getProgress() / 100f;
-                currentColor[0] = Color.HSVToColor(hsv);
+                int alpha = alphaSlider.getProgress();
+                currentColor[0] = Color.HSVToColor(alpha, hsv);
                 boxBg.setColor(currentColor[0]);
                 previewBox.invalidate();
                 if (!hexInput.hasFocus()) {
-                    hexInput.setText(String.format("#%06X", (0xFFFFFF & currentColor[0])));
+                    hexInput.setText(String.format("#%08X", currentColor[0]));
                 }
             } catch (Exception e) {}
         };
@@ -1305,6 +1310,7 @@ public class PhotoEditorPlugin extends Plugin {
         hueSlider.setOnSeekBarChangeListener(sliderListener);
         satSlider.setOnSeekBarChangeListener(sliderListener);
         valSlider.setOnSeekBarChangeListener(sliderListener);
+        alphaSlider.setOnSeekBarChangeListener(sliderListener);
         
         hexInput.addTextChangedListener(new android.text.TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -1319,6 +1325,7 @@ public class PhotoEditorPlugin extends Plugin {
                         hueSlider.setProgress((int) hsv[0]);
                         satSlider.setProgress((int) (hsv[1] * 100));
                         valSlider.setProgress((int) (hsv[2] * 100));
+                        alphaSlider.setProgress(Color.alpha(c));
                     } catch (Exception ignored) {}
                 }
             }
@@ -1487,18 +1494,96 @@ public class PhotoEditorPlugin extends Plugin {
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
 
         LinearLayout layout = createBottomSheetContainer(context);
+        
+        // State variables
+        final int[] currentTextColor = {textColor};
+        final float[] currentTextSize = {28f};
+        final String[] currentFontFamily = {"sans-serif"};
+        final boolean[] isBold = {false};
+        final boolean[] isItalic = {false};
+        final boolean[] isUnderlined = {false};
+        final android.graphics.Typeface[] finalTypeface = {android.graphics.Typeface.DEFAULT};
+
+        final java.util.Map<String, String> fontPathMap = new java.util.HashMap<>();
+        String[] defaultFonts = {"sans-serif", "sans-serif-thin", "sans-serif-light", "sans-serif-medium", "sans-serif-black", "sans-serif-condensed", "sans-serif-condensed-light", "sans-serif-condensed-medium", "serif", "monospace", "serif-monospace", "casual", "cursive", "sans-serif-smallcaps"};
+        final java.util.List<String> fontList = new java.util.ArrayList<>(java.util.Arrays.asList(defaultFonts));
+        
+        class FontScanner {
+            void scan(java.io.File dir, int depth) {
+                if (depth > 2 || dir == null || !dir.exists() || !dir.isDirectory()) return;
+                java.io.File[] files = dir.listFiles();
+                if (files != null) {
+                    for (java.io.File f : files) {
+                        if (f.isDirectory()) {
+                            scan(f, depth + 1);
+                        } else if (f.isFile() && (f.getName().endsWith(".ttf") || f.getName().endsWith(".otf"))) {
+                            fontList.add(f.getName());
+                            fontPathMap.put(f.getName(), f.getAbsolutePath());
+                        }
+                    }
+                }
+            }
+        }
+        new FontScanner().scan(new java.io.File("/system/fonts"), 0);
+        new FontScanner().scan(new java.io.File(Environment.getExternalStorageDirectory(), "Fonts"), 0);
+        new FontScanner().scan(new java.io.File(Environment.getExternalStorageDirectory(), "Aliucord/fonts"), 0);
+
         EditText input = dialogInput(context, "Enter your text...");
         android.graphics.drawable.GradientDrawable inputBg = new android.graphics.drawable.GradientDrawable();
         inputBg.setColor(0xff1e1f22);
         inputBg.setCornerRadius(dp(8));
         inputBg.setStroke(dp(1), Color.parseColor("#3f4147"));
         input.setBackground(inputBg);
-        input.setTextColor(Color.WHITE);
+        input.setTextColor(currentTextColor[0]);
         input.setHintTextColor(Color.parseColor("#80848e"));
-        input.setTextSize(16f);
+        input.setTextSize(currentTextSize[0]);
         input.setMinLines(2);
         input.setGravity(Gravity.TOP | Gravity.START);
         input.setPadding(dp(12), dp(12), dp(12), dp(12));
+
+        Runnable updateTypeface = () -> {
+            int style = android.graphics.Typeface.NORMAL;
+            if (isBold[0] && isItalic[0]) style = android.graphics.Typeface.BOLD_ITALIC;
+            else if (isBold[0]) style = android.graphics.Typeface.BOLD;
+            else if (isItalic[0]) style = android.graphics.Typeface.ITALIC;
+            
+            try {
+                if (fontPathMap.containsKey(currentFontFamily[0])) {
+                    java.io.File f = new java.io.File(fontPathMap.get(currentFontFamily[0]));
+                    if (f.exists()) {
+                        finalTypeface[0] = android.graphics.Typeface.createFromFile(f);
+                        if (style != android.graphics.Typeface.NORMAL) {
+                            finalTypeface[0] = android.graphics.Typeface.create(finalTypeface[0], style);
+                        }
+                    } else {
+                        finalTypeface[0] = android.graphics.Typeface.create(currentFontFamily[0], style);
+                    }
+                } else if (currentFontFamily[0].endsWith(".ttf") || currentFontFamily[0].endsWith(".otf")) {
+                    java.io.File f = new java.io.File("/system/fonts/" + currentFontFamily[0]);
+                    if (f.exists()) {
+                        finalTypeface[0] = android.graphics.Typeface.createFromFile(f);
+                        if (style != android.graphics.Typeface.NORMAL) {
+                            finalTypeface[0] = android.graphics.Typeface.create(finalTypeface[0], style);
+                        }
+                    } else {
+                        finalTypeface[0] = android.graphics.Typeface.create(currentFontFamily[0], style);
+                    }
+                } else {
+                    finalTypeface[0] = android.graphics.Typeface.create(currentFontFamily[0], style);
+                }
+            } catch (Exception e) {
+                finalTypeface[0] = android.graphics.Typeface.create("sans-serif", style);
+            }
+            input.setTypeface(finalTypeface[0]);
+            input.setTextSize(currentTextSize[0]);
+            input.setTextColor(currentTextColor[0]);
+            
+            if (isUnderlined[0]) {
+                input.setPaintFlags(input.getPaintFlags() | android.graphics.Paint.UNDERLINE_TEXT_FLAG);
+            } else {
+                input.setPaintFlags(input.getPaintFlags() & ~android.graphics.Paint.UNDERLINE_TEXT_FLAG);
+            }
+        };
 
         LinearLayout.LayoutParams inputParams = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -1507,36 +1592,176 @@ public class PhotoEditorPlugin extends Plugin {
         inputParams.setMargins(0, 0, 0, dp(16));
         input.setLayoutParams(inputParams);
         layout.addView(input);
+        
+        // Wrap everything else in a ScrollView to prevent keyboard overlap
+        android.widget.ScrollView scrollView = new android.widget.ScrollView(context);
+        LinearLayout scrollContent = new LinearLayout(context);
+        scrollContent.setOrientation(LinearLayout.VERTICAL);
+        
+        // Font Selection Row
+        android.widget.AutoCompleteTextView fontSearch = new android.widget.AutoCompleteTextView(context);
+        
+        int bgColor = 0xff313338;
+        int textColorPrimary = Color.WHITE;
+        try {
+            android.util.TypedValue typedValue = new android.util.TypedValue();
+            int bgAttr = Utils.getResId("colorBackgroundFloating", "attr");
+            if (bgAttr != 0 && context.getTheme().resolveAttribute(bgAttr, typedValue, true)) {
+                bgColor = typedValue.data;
+            } else if (context.getTheme().resolveAttribute(android.R.attr.windowBackground, typedValue, true)) {
+                bgColor = typedValue.data;
+            }
+            
+            int textAttr = Utils.getResId("colorTextNormal", "attr");
+            if (textAttr != 0 && context.getTheme().resolveAttribute(textAttr, typedValue, true)) {
+                textColorPrimary = typedValue.data;
+            } else if (context.getTheme().resolveAttribute(android.R.attr.textColorPrimary, typedValue, true)) {
+                textColorPrimary = typedValue.data;
+            }
+        } catch (Exception ignored) {}
+        final int finalTextColor = textColorPrimary;
+        
+        fontSearch.setTextColor(textColorPrimary);
+        fontSearch.setHint("Search font (e.g., sans-serif)");
+        fontSearch.setHintTextColor(Color.GRAY);
+        fontSearch.setSingleLine(true);
+        fontSearch.setText("sans-serif");
+        fontSearch.setThreshold(0); // Show dropdown even when empty
+        fontSearch.setDropDownHeight(dp(150)); // Constrain height so it doesn't hide behind keyboard
+        fontSearch.setDropDownBackgroundDrawable(new android.graphics.drawable.ColorDrawable(bgColor)); // Match theme
+        fontSearch.setOnClickListener(v -> fontSearch.showDropDown());
+        fontSearch.setOnFocusChangeListener((v, hasFocus) -> { if (hasFocus) fontSearch.showDropDown(); });
+        android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<String>(context, android.R.layout.simple_dropdown_item_1line, fontList) {
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+                TextView view = (TextView) super.getView(position, convertView, parent);
+                view.setTextColor(finalTextColor);
+                return view;
+            }
+        };
+        fontSearch.setAdapter(adapter);
+        
+        fontSearch.addTextChangedListener(new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(android.text.Editable s) {
+                currentFontFamily[0] = s.toString().trim();
+                updateTypeface.run();
+            }
+        });
+        fontSearch.setOnItemClickListener((parent, view, position, id) -> {
+            currentFontFamily[0] = adapter.getItem(position);
+            updateTypeface.run();
+        });
+        
+        LinearLayout.LayoutParams searchParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        searchParams.setMargins(0, 0, 0, dp(12));
+        scrollContent.addView(fontSearch, searchParams);
+        
+        // Style Toggles Row
+        LinearLayout styleTogglesRow = new LinearLayout(context);
+        styleTogglesRow.setOrientation(LinearLayout.HORIZONTAL);
+        styleTogglesRow.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+        
+        // Bold Toggle
+        TextView boldToggle = new TextView(context);
+        boldToggle.setText("B");
+        boldToggle.setTextColor(Color.GRAY);
+        boldToggle.setTextSize(18f);
+        boldToggle.setTypeface(null, android.graphics.Typeface.BOLD);
+        boldToggle.setPadding(dp(8), dp(4), dp(16), dp(4));
+        boldToggle.setOnClickListener(v -> {
+            isBold[0] = !isBold[0];
+            boldToggle.setTextColor(isBold[0] ? Color.WHITE : Color.GRAY);
+            updateTypeface.run();
+        });
+        styleTogglesRow.addView(boldToggle);
+        
+        // Italic Toggle
+        TextView italicToggle = new TextView(context);
+        italicToggle.setText("I");
+        italicToggle.setTextColor(Color.GRAY);
+        italicToggle.setTextSize(18f);
+        italicToggle.setTypeface(null, android.graphics.Typeface.ITALIC);
+        italicToggle.setPadding(dp(16), dp(4), dp(16), dp(4));
+        italicToggle.setOnClickListener(v -> {
+            isItalic[0] = !isItalic[0];
+            italicToggle.setTextColor(isItalic[0] ? Color.WHITE : Color.GRAY);
+            updateTypeface.run();
+        });
+        styleTogglesRow.addView(italicToggle);
 
-        TextView colorLabel = new TextView(context);
-        colorLabel.setText("Color");
-        colorLabel.setTextColor(Color.parseColor("#b5bac1"));
-        colorLabel.setTextSize(12f);
-        colorLabel.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        colorLabel.setPadding(0, 0, 0, dp(8));
-        layout.addView(colorLabel);
-
-        LinearLayout colorRow = new LinearLayout(context);
-        colorRow.setOrientation(LinearLayout.HORIZONTAL);
-        colorRow.setGravity(Gravity.CENTER_VERTICAL);
-        List<View> textColorSwatches = new ArrayList<>();
-        for (int color : COLORS) {
-            View swatch = colorSwatch(context, color, view -> {
-                textColor = color;
-                selectColorOnly(textColorSwatches, color);
+        // Underline Toggle
+        TextView underlineToggle = new TextView(context);
+        underlineToggle.setText("U");
+        underlineToggle.setTextColor(Color.GRAY);
+        underlineToggle.setTextSize(18f);
+        underlineToggle.setPaintFlags(underlineToggle.getPaintFlags() | android.graphics.Paint.UNDERLINE_TEXT_FLAG);
+        underlineToggle.setPadding(dp(16), dp(4), dp(16), dp(4));
+        underlineToggle.setOnClickListener(v -> {
+            isUnderlined[0] = !isUnderlined[0];
+            underlineToggle.setTextColor(isUnderlined[0] ? Color.WHITE : Color.GRAY);
+            updateTypeface.run();
+        });
+        styleTogglesRow.addView(underlineToggle);
+        
+        LinearLayout.LayoutParams togglesRowParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        togglesRowParams.setMargins(0, 0, 0, dp(12));
+        scrollContent.addView(styleTogglesRow, togglesRowParams);
+        
+        // Size & Color Row
+        LinearLayout styleRow = new LinearLayout(context);
+        styleRow.setOrientation(LinearLayout.HORIZONTAL);
+        styleRow.setGravity(Gravity.CENTER_VERTICAL);
+        styleRow.setPadding(0, 0, 0, dp(16));
+        
+        TextView sizeLabel = new TextView(context);
+        sizeLabel.setText("Size " + (int) currentTextSize[0]);
+        sizeLabel.setTextColor(Color.parseColor("#b5bac1"));
+        sizeLabel.setTextSize(14f);
+        sizeLabel.setMinimumWidth(dp(65)); // Prevent layout jumping
+        styleRow.addView(sizeLabel);
+        
+        android.widget.SeekBar sizeSlider = new android.widget.SeekBar(context);
+        sizeSlider.setMax(110); // 10 to 120
+        sizeSlider.setProgress((int) currentTextSize[0] - 10);
+        sizeSlider.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(android.widget.SeekBar seekBar, int progress, boolean fromUser) {
+                currentTextSize[0] = progress + 10f;
+                sizeLabel.setText("Size " + (int) currentTextSize[0]);
+                updateTypeface.run();
+            }
+            @Override public void onStartTrackingTouch(android.widget.SeekBar seekBar) {}
+            @Override public void onStopTrackingTouch(android.widget.SeekBar seekBar) {}
+        });
+        LinearLayout.LayoutParams sliderParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        styleRow.addView(sizeSlider, sliderParams);
+        
+        View colorBtn = colorSwatch(context, currentTextColor[0], null);
+        colorBtn.setOnClickListener(v -> {
+            showColorPickerDialog(context, editorView, editor, currentTextColor[0], newColor -> {
+                currentTextColor[0] = newColor;
+                textColor = newColor; // Also sync global text color
+                setColorSwatchSelected(colorBtn, newColor, true);
+                updateTypeface.run();
             });
-            swatch.setTag(color);
-            textColorSwatches.add(swatch);
-            colorRow.addView(swatch);
-        }
-        selectColorOnly(textColorSwatches, textColor);
-        LinearLayout.LayoutParams colorParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-        );
-        colorParams.setMargins(0, 0, 0, dp(18));
-        layout.addView(colorRow, colorParams);
+        });
+        LinearLayout.LayoutParams colorBtnParams = new LinearLayout.LayoutParams(dp(32), dp(32));
+        colorBtnParams.setMargins(dp(12), 0, 0, 0);
+        colorBtn.setLayoutParams(colorBtnParams);
+        styleRow.addView(colorBtn);
+        
+        scrollContent.addView(styleRow);
+        
+        scrollView.addView(scrollContent);
+        LinearLayout.LayoutParams scrollParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        // We use weight=1f so that if the keyboard pushes it, it shrinks and becomes scrollable
+        scrollParams.weight = 1f;
+        layout.addView(scrollView, scrollParams);
 
+        updateTypeface.run();
+
+        // Buttons
         LinearLayout buttons = new LinearLayout(context);
         buttons.setOrientation(LinearLayout.HORIZONTAL);
         buttons.setGravity(Gravity.RIGHT);
@@ -1569,10 +1794,10 @@ public class PhotoEditorPlugin extends Plugin {
             if (!text.isEmpty()) {
                 try {
                     editor.setBrushDrawingMode(false);
-                    addTextOverlay(editorView, text, textColor);
+                    addTextOverlay(editorView, text, currentTextColor[0], finalTypeface[0], currentTextSize[0], isUnderlined[0]);
                 } catch (Throwable t) {
                     logger.error("Failed to add text to canvas", t);
-                    Toast.makeText(context, "Failed to add text: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                    android.widget.Toast.makeText(context, "Failed to add text: " + t.getMessage(), android.widget.Toast.LENGTH_LONG).show();
                 }
             }
             dialog.dismiss();
@@ -2281,14 +2506,17 @@ public class PhotoEditorPlugin extends Plugin {
         }
     }
 
-        private void addTextOverlay(PhotoEditorView editorView, String text, int color) {
+    private void addTextOverlay(PhotoEditorView editorView, String text, int color, android.graphics.Typeface typeface, float textSize, boolean isUnderlined) {
         TextView textView = new TextView(editorView.getContext());
         textView.setTag(OVERLAY_TEXT);
         textView.setText(text);
         textView.setTextColor(color);
-        textView.setTextSize(28f);
+        textView.setTextSize(textSize);
         textView.setGravity(Gravity.CENTER);
-        textView.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        textView.setTypeface(typeface);
+        if (isUnderlined) {
+            textView.setPaintFlags(textView.getPaintFlags() | android.graphics.Paint.UNDERLINE_TEXT_FLAG);
+        }
         textView.setShadowLayer(dp(2), dp(1), dp(1), 0xcc000000);
         textView.setPadding(dp(8), dp(4), dp(8), dp(4));
         addManualOverlay(editorView, textView);
