@@ -12,32 +12,30 @@ aliucord {
     changelog.set(
         """
         # 2.0.0-dev
-        * Added a dedicated Settings Page for the plugin!
-        * Tapping an image to edit it instantly is now an optional toggle in settings (Classic Bottom Sheet is back to being the default)
-        * Added Delete & Spoiler buttons right inside the editor
-        * Moved the Save button to the top header for instant access without scrolling
-        * Added a native Discord-style visual overlay for spoilers that hides when you touch the screen
-        * Restructured the toolbar to make Undo, Redo, and Reset global actions instead of burying them
-        * Added dynamic state tracking so the Undo, Redo, and Reset buttons automatically grey out when there's nothing to undo
-        * Replaced the S/L brush size buttons with a dynamic slider, and locked the sub-toolbar in place to prevent accidental sliding
-        * Added a Custom Color Picker modal featuring HSV sliders, live HEX input, and an Eyedropper tool with drag-to-preview
-        * Completely overhauled the Text Insertion Modal to feature a live preview input box and typography controls
-        * Built a searchable font engine that recursively parses .ttf/.otf files from your system and local storage
-        * Added a live font size slider and toggleable Bold, Italic, and Underline buttons
-        * The font dropdown is now fully theme-aware and flawlessly floats over the keyboard
-        * Created a powerful new Custom Filter engine that lets you build your own effects
-        * Added Brightness, Contrast, Saturation, Hue, Temperature, and Tint sliders that can all be layered simultaneously
-        * Fixed OpenGL occlusion bugs so live previews work instantly with custom ColorMatrix filters
-        * Upgraded the Crop Modal to feature full real-time Free Rotation and Mirroring
-        * Added a smooth -180° to 180° rotation slider, Flip H/V toggles, and a Rotate 90° snap button directly to the crop overlay
-        * Built a downscaled-preview rendering engine so the rotation slider is completely lag-free on all devices
-        * Turned the long-press Delete modal into a dynamic Overlay Options menu
-        * You can now long-press any Image, Sticker, or Emoji overlay and select "Crop" to individually crop and rotate that specific layer without affecting the background image!
-        * Replaced awkward placeholder icons with native Discord vectors
+        
+        # New Features & Enhancements
+        * Added a dedicated Settings Page for the plugin
+        * Added a "Quick Edit" toggle in settings to instantly edit images without opening the attachment menu
+        * Custom Filter Engine: Build your own effects using 6 simultaneous sliders (Brightness, Contrast, Saturation, Hue, Temperature, Tint)
+        * Advanced Cropping: Added a lag-free real-time rotation slider (-180° to 180°), mirroring, and quick-snap rotation to the Crop Modal
+        * Overlay Management: Long-press any sticker, emoji, or image overlay to open an Options Menu where you can individually crop and edit it without affecting the background
+        * Color Picker Modal: A massive new picker with HSV sliders, live HEX input, and a drag-to-preview Eyedropper tool
+        * Typography Engine: The Text Modal now features a live preview box, sizing sliders, and recursively parses local .ttf and .otf files for custom fonts
+        * Global Actions: Undo, Redo, and Reset are now global actions with dynamic state tracking (buttons grey out when there's nothing to undo)
+
+        # UI & UX Polish
+        * Replaced the S/L brush size buttons with a dynamic slider, locking the sub-toolbar in place
+        * Added Delete, Spoiler, and Save buttons directly to the top header for instant access without scrolling
+        * Implemented a native Discord-style visual Spoiler overlay that hides automatically when you touch the screen
+        * Replaced all awkward placeholder graphics with native Discord vector icons
         * The editor now instantly boots up with the Pen tool active and ready to draw
-        * Smoother animations and ripples
-        * Fixed critical bug where selecting a sticker in the editor sent it to chat (caused by conflict with the FakeStickers plugin)
-        * Fixed "Could not open image editor" crashes caused by invalid window tokens by completely bulletproofing Activity fetching
+        * Smoother animations, ripples, and a fully theme-aware layout that elegantly floats above keyboards
+
+        # Bug Fixes & Technical Improvements
+        * Built a downscaled-preview rendering engine so the crop rotation slider is completely lag-free on all devices
+        * Fixed OpenGL occlusion bugs so live previews work instantly with custom ColorMatrix filters
+        * Fixed a critical bug where selecting a sticker in the editor sent it to chat (resolved conflict with the FakeStickers plugin)
+        * Fixed "Could not open image editor" crashes caused by invalid window tokens by bulletproofing Activity fetching
         """.trimIndent(),
     )
 
