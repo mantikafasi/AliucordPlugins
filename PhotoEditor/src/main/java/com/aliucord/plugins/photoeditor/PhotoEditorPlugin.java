@@ -2316,16 +2316,26 @@ public class PhotoEditorPlugin extends Plugin {
             info.setPadding(0, 0, 0, dp(12));
             layout.addView(info);
 
+            float[] rotation = {0f};
+            boolean[] flip = {false, false};
+            
+            // Create downscaled base for smooth preview dragging
+            int maxDim = Math.max(src.getWidth(), src.getHeight());
+            float downscale = maxDim > 800 ? 800f / maxDim : 1f;
+            Bitmap previewBase = downscale == 1f ? src : Bitmap.createScaledBitmap(src, (int)(src.getWidth() * downscale), (int)(src.getHeight() * downscale), true);
+
+            Bitmap[] currentPreview = {previewBase};
+
             // Container for image and crop overlay
             FrameLayout container = new FrameLayout(context) {
                 @Override
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                     int width = View.MeasureSpec.getSize(widthMeasureSpec);
-                    int height = (int) (width * ((float) src.getHeight() / src.getWidth()));
+                    int height = (int) (width * ((float) currentPreview[0].getHeight() / currentPreview[0].getWidth()));
                     int maxHeight = dp(350);
                     if (height > maxHeight) {
                         height = maxHeight;
-                        width = (int) (height * ((float) src.getWidth() / src.getHeight()));
+                        width = (int) (height * ((float) currentPreview[0].getWidth() / currentPreview[0].getHeight()));
                     }
                     int wSpec = View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY);
                     int hSpec = View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY);
@@ -2341,7 +2351,7 @@ public class PhotoEditorPlugin extends Plugin {
             container.setLayoutParams(containerParams);
 
             android.widget.ImageView previewImage = new android.widget.ImageView(context);
-            previewImage.setImageBitmap(src);
+            previewImage.setImageBitmap(currentPreview[0]);
             previewImage.setScaleType(android.widget.ImageView.ScaleType.FIT_XY);
             container.addView(previewImage, new FrameLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
@@ -2355,6 +2365,93 @@ public class PhotoEditorPlugin extends Plugin {
             ));
 
             layout.addView(container);
+
+            Runnable updatePreview = () -> {
+                android.graphics.Matrix m = new android.graphics.Matrix();
+                m.postRotate(rotation[0]);
+                if (flip[0]) m.postScale(-1, 1);
+                if (flip[1]) m.postScale(1, -1);
+                currentPreview[0] = Bitmap.createBitmap(previewBase, 0, 0, previewBase.getWidth(), previewBase.getHeight(), m, true);
+                previewImage.setImageBitmap(currentPreview[0]);
+                container.requestLayout();
+            };
+
+            // Rotation Controls
+            LinearLayout rotateControls = new LinearLayout(context);
+            rotateControls.setOrientation(LinearLayout.VERTICAL);
+            rotateControls.setPadding(0, dp(8), 0, dp(16));
+
+            LinearLayout sliderRow = new LinearLayout(context);
+            sliderRow.setOrientation(LinearLayout.HORIZONTAL);
+            sliderRow.setGravity(Gravity.CENTER_VERTICAL);
+            
+            TextView degreeLabel = new TextView(context);
+            degreeLabel.setText("0°");
+            degreeLabel.setTextColor(Color.WHITE);
+            degreeLabel.setMinWidth(dp(40));
+            degreeLabel.setGravity(Gravity.CENTER);
+            sliderRow.addView(degreeLabel);
+
+            android.widget.SeekBar rotateSlider = new android.widget.SeekBar(context);
+            rotateSlider.setMax(360);
+            rotateSlider.setProgress(180);
+            rotateSlider.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            rotateSlider.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(android.widget.SeekBar seekBar, int progress, boolean fromUser) {
+                    if (fromUser) {
+                        rotation[0] = progress - 180f;
+                        degreeLabel.setText((int)rotation[0] + "°");
+                        updatePreview.run();
+                    }
+                }
+                @Override public void onStartTrackingTouch(android.widget.SeekBar seekBar) {}
+                @Override public void onStopTrackingTouch(android.widget.SeekBar seekBar) {}
+            });
+            sliderRow.addView(rotateSlider);
+            rotateControls.addView(sliderRow);
+
+            LinearLayout mirrorRow = new LinearLayout(context);
+            mirrorRow.setOrientation(LinearLayout.HORIZONTAL);
+            mirrorRow.setGravity(Gravity.CENTER);
+            mirrorRow.setPadding(0, dp(8), 0, 0);
+
+            TextView flipHBtn = new TextView(context);
+            flipHBtn.setText("Flip H");
+            flipHBtn.setTextColor(Color.parseColor("#dbdee1"));
+            flipHBtn.setPadding(dp(16), dp(8), dp(16), dp(8));
+            flipHBtn.setOnClickListener(v -> {
+                flip[0] = !flip[0];
+                updatePreview.run();
+            });
+            mirrorRow.addView(flipHBtn);
+
+            TextView flipVBtn = new TextView(context);
+            flipVBtn.setText("Flip V");
+            flipVBtn.setTextColor(Color.parseColor("#dbdee1"));
+            flipVBtn.setPadding(dp(16), dp(8), dp(16), dp(8));
+            flipVBtn.setOnClickListener(v -> {
+                flip[1] = !flip[1];
+                updatePreview.run();
+            });
+            mirrorRow.addView(flipVBtn);
+
+            TextView rotate90Btn = new TextView(context);
+            rotate90Btn.setText("Rotate 90°");
+            rotate90Btn.setTextColor(Color.parseColor("#dbdee1"));
+            rotate90Btn.setPadding(dp(16), dp(8), dp(16), dp(8));
+            rotate90Btn.setOnClickListener(v -> {
+                float newRot = rotation[0] + 90f;
+                if (newRot > 180f) newRot -= 360f;
+                rotation[0] = newRot;
+                rotateSlider.setProgress((int)newRot + 180);
+                degreeLabel.setText((int)newRot + "°");
+                updatePreview.run();
+            });
+            mirrorRow.addView(rotate90Btn);
+
+            rotateControls.addView(mirrorRow);
+            layout.addView(rotateControls);
 
             Dialog dialog[] = new Dialog[1];
 
@@ -2382,9 +2479,16 @@ public class PhotoEditorPlugin extends Plugin {
 
             applyBtn.setOnClickListener(v -> {
                 try {
+                    // 1. Generate full-res rotated bitmap
+                    android.graphics.Matrix m = new android.graphics.Matrix();
+                    m.postRotate(rotation[0]);
+                    if (flip[0]) m.postScale(-1, 1);
+                    if (flip[1]) m.postScale(1, -1);
+                    Bitmap finalRotatedSrc = Bitmap.createBitmap(src, 0, 0, src.getWidth(), src.getHeight(), m, true);
+
                     RectF percent = cropOverlay.getCropRectPercent();
-                    int w = src.getWidth();
-                    int h = src.getHeight();
+                    int w = finalRotatedSrc.getWidth();
+                    int h = finalRotatedSrc.getHeight();
 
                     int left = (int) (w * percent.left);
                     int top = (int) (h * percent.top);
@@ -2395,7 +2499,7 @@ public class PhotoEditorPlugin extends Plugin {
                     int cropHeight = bottom - top;
 
                     if (cropWidth > 10 && cropHeight > 10) {
-                        Bitmap cropped = Bitmap.createBitmap(src, left, top, cropWidth, cropHeight);
+                        Bitmap cropped = Bitmap.createBitmap(finalRotatedSrc, left, top, cropWidth, cropHeight);
                         editorView.getSource().setScaleType(android.widget.ImageView.ScaleType.FIT_XY);
                         editorView.getSource().setImageBitmap(cropped);
                         fillEditorBaseLayers(editorView);

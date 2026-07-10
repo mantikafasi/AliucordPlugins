@@ -28,6 +28,9 @@ aliucord {
         * Created a powerful new Custom Filter engine that lets you build your own effects
         * Added Brightness, Contrast, Saturation, Hue, Temperature, and Tint sliders that can all be layered simultaneously
         * Fixed OpenGL occlusion bugs so live previews work instantly with custom ColorMatrix filters
+        * Upgraded the Crop Modal to feature full real-time Free Rotation and Mirroring
+        * Added a smooth -180° to 180° rotation slider, Flip H/V toggles, and a Rotate 90° snap button directly to the crop overlay
+        * Built a downscaled-preview rendering engine so the rotation slider is completely lag-free on all devices
         * Replaced awkward placeholder icons with native Discord vectors
         * The editor now instantly boots up with the Pen tool active and ready to draw
         * Smoother animations and ripples
