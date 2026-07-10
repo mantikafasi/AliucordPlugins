@@ -379,7 +379,7 @@ public class PhotoEditorPlugin extends Plugin {
         View imageMainBtn = iconButton(context, "Image", "ic_photo_grey_24dp", v -> showImagePicker(context, editor, editorView));
         mainToolbar.addView(imageMainBtn);
 
-        View cropMainBtn = iconButton(context, "Crop", "ucrop_ic_crop", v -> showCropDialog(context, editorView));
+        View cropMainBtn = iconButton(context, "Crop", "ucrop_ic_crop", v -> showCropDialog(context, editorView.getSource(), editorView));
         mainToolbar.addView(cropMainBtn);
 
         int filterIconId = Utils.getResId("ic_flare_24dp", "drawable");
@@ -2293,9 +2293,9 @@ public class PhotoEditorPlugin extends Plugin {
         });
     }
 
-    private void showCropDialog(Context context, PhotoEditorView editorView) {
+    private void showCropDialog(Context context, android.widget.ImageView targetView, PhotoEditorView editorView) {
         try {
-            android.graphics.drawable.BitmapDrawable drawable = (android.graphics.drawable.BitmapDrawable) editorView.getSource().getDrawable();
+            android.graphics.drawable.BitmapDrawable drawable = (android.graphics.drawable.BitmapDrawable) targetView.getDrawable();
             if (drawable == null) {
                 Toast.makeText(context, "No image to crop", Toast.LENGTH_SHORT).show();
                 return;
@@ -2416,31 +2416,19 @@ public class PhotoEditorPlugin extends Plugin {
             mirrorRow.setGravity(Gravity.CENTER);
             mirrorRow.setPadding(0, dp(8), 0, 0);
 
-            TextView flipHBtn = new TextView(context);
-            flipHBtn.setText("Flip H");
-            flipHBtn.setTextColor(Color.parseColor("#dbdee1"));
-            flipHBtn.setPadding(dp(16), dp(8), dp(16), dp(8));
-            flipHBtn.setOnClickListener(v -> {
+            View flipHBtn = iconButton(context, "Flip H", "ic_swap_horiz_24dp", v -> {
                 flip[0] = !flip[0];
                 updatePreview.run();
             });
             mirrorRow.addView(flipHBtn);
 
-            TextView flipVBtn = new TextView(context);
-            flipVBtn.setText("Flip V");
-            flipVBtn.setTextColor(Color.parseColor("#dbdee1"));
-            flipVBtn.setPadding(dp(16), dp(8), dp(16), dp(8));
-            flipVBtn.setOnClickListener(v -> {
+            View flipVBtn = iconButton(context, "Flip V", "ic_swap_vert_24dp", v -> {
                 flip[1] = !flip[1];
                 updatePreview.run();
             });
             mirrorRow.addView(flipVBtn);
 
-            TextView rotate90Btn = new TextView(context);
-            rotate90Btn.setText("Rotate 90°");
-            rotate90Btn.setTextColor(Color.parseColor("#dbdee1"));
-            rotate90Btn.setPadding(dp(16), dp(8), dp(16), dp(8));
-            rotate90Btn.setOnClickListener(v -> {
+            View rotate90Btn = iconButton(context, "Rotate 90°", "ucrop_ic_rotate", v -> {
                 float newRot = rotation[0] + 90f;
                 if (newRot > 180f) newRot -= 360f;
                 rotation[0] = newRot;
@@ -2500,11 +2488,16 @@ public class PhotoEditorPlugin extends Plugin {
 
                     if (cropWidth > 10 && cropHeight > 10) {
                         Bitmap cropped = Bitmap.createBitmap(finalRotatedSrc, left, top, cropWidth, cropHeight);
-                        editorView.getSource().setScaleType(android.widget.ImageView.ScaleType.FIT_XY);
-                        editorView.getSource().setImageBitmap(cropped);
-                        fillEditorBaseLayers(editorView);
-                        if (editorView.getParent() instanceof View)
-                            fitEditorToBitmap(editorView, (View) editorView.getParent(), cropped);
+                        targetView.setScaleType(android.widget.ImageView.ScaleType.FIT_XY);
+                        targetView.setImageBitmap(cropped);
+                        
+                        if (targetView == editorView.getSource()) {
+                            fillEditorBaseLayers(editorView);
+                            if (editorView.getParent() instanceof View)
+                                fitEditorToBitmap(editorView, (View) editorView.getParent(), cropped);
+                        } else {
+                            targetView.requestLayout();
+                        }
                         Toast.makeText(context, "Cropped successfully", Toast.LENGTH_SHORT).show();
                     }
                 } catch (Throwable e) {
@@ -2658,7 +2651,7 @@ public class PhotoEditorPlugin extends Plugin {
         addManualOverlay(editorView, textView);
     }
 
-    private void showDeleteConfirmDialog(Context context, View viewToRemove, android.view.ViewGroup parent) {
+    private void showOverlayOptionsDialog(Context context, View viewToRemove, android.view.ViewGroup parent) {
         android.app.Dialog dialog = new android.app.Dialog(context);
         dialog.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
 
@@ -2672,14 +2665,14 @@ public class PhotoEditorPlugin extends Plugin {
         layout.setBackground(bg);
 
         android.widget.TextView title = new android.widget.TextView(context);
-        title.setText("Remove item?");
+        title.setText("Overlay Options");
         title.setTextColor(android.graphics.Color.WHITE);
         title.setTextSize(20f);
         title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
         title.setPadding(0, 0, 0, dp(12));
 
         android.widget.TextView message = new android.widget.TextView(context);
-        message.setText("Do you want to delete this item?");
+        message.setText("What would you like to do with this item?");
         message.setTextColor(android.graphics.Color.parseColor("#dbdee1"));
         message.setTextSize(16f);
         message.setPadding(0, 0, 0, dp(24));
@@ -2696,6 +2689,37 @@ public class PhotoEditorPlugin extends Plugin {
         cancel.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
         cancel.setPadding(dp(20), dp(10), dp(20), dp(10));
         cancel.setOnClickListener(v -> dialog.dismiss());
+        buttons.addView(cancel);
+
+        if (viewToRemove instanceof android.widget.ImageView) {
+            android.widget.ImageView iv = (android.widget.ImageView) viewToRemove;
+            if (iv.getDrawable() instanceof android.graphics.drawable.BitmapDrawable) {
+                android.widget.TextView crop = new android.widget.TextView(context);
+                crop.setText("Crop");
+                crop.setTextColor(android.graphics.Color.WHITE);
+                crop.setTextSize(14f);
+                crop.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+                crop.setPadding(dp(24), dp(10), dp(24), dp(10));
+
+                android.graphics.drawable.GradientDrawable cropBg = new android.graphics.drawable.GradientDrawable();
+                cropBg.setColor(0xff5865f2);
+                cropBg.setCornerRadius(dp(6));
+                crop.setBackground(cropBg);
+
+                android.widget.LinearLayout.LayoutParams cropParams = new android.widget.LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                );
+                cropParams.setMargins(dp(8), 0, dp(8), 0);
+                crop.setLayoutParams(cropParams);
+
+                crop.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    showCropDialog(context, iv, (PhotoEditorView) parent);
+                });
+                buttons.addView(crop);
+            }
+        }
 
         android.widget.TextView delete = new android.widget.TextView(context);
         delete.setText("Delete");
@@ -2709,12 +2733,17 @@ public class PhotoEditorPlugin extends Plugin {
         deleteBg.setCornerRadius(dp(6));
         delete.setBackground(deleteBg);
 
+        android.widget.LinearLayout.LayoutParams delParams = new android.widget.LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        delParams.setMargins(dp(8), 0, 0, 0);
+        delete.setLayoutParams(delParams);
+
         delete.setOnClickListener(v -> {
             parent.removeView(viewToRemove);
             dialog.dismiss();
         });
-
-        buttons.addView(cancel);
         buttons.addView(delete);
 
         layout.addView(title);
@@ -2954,7 +2983,7 @@ public class PhotoEditorPlugin extends Plugin {
                     if (longClickRunnable != null) view.removeCallbacks(longClickRunnable);
                     longClickRunnable = () -> {
                         if (!moved) {
-                            showDeleteConfirmDialog(view.getContext(), view, (android.view.ViewGroup) parent);
+                            showOverlayOptionsDialog(view.getContext(), view, (android.view.ViewGroup) parent);
                         }
                     };
                     view.postDelayed(longClickRunnable, 500);

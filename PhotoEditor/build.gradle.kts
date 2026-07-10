@@ -31,6 +31,8 @@ aliucord {
         * Upgraded the Crop Modal to feature full real-time Free Rotation and Mirroring
         * Added a smooth -180° to 180° rotation slider, Flip H/V toggles, and a Rotate 90° snap button directly to the crop overlay
         * Built a downscaled-preview rendering engine so the rotation slider is completely lag-free on all devices
+        * Turned the long-press Delete modal into a dynamic Overlay Options menu
+        * You can now long-press any Image, Sticker, or Emoji overlay and select "Crop" to individually crop and rotate that specific layer without affecting the background image!
         * Replaced awkward placeholder icons with native Discord vectors
         * The editor now instantly boots up with the Pen tool active and ready to draw
         * Smoother animations and ripples
