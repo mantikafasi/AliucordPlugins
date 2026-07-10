@@ -130,19 +130,16 @@ public class PhotoEditorPlugin extends Plugin {
 
         List<View> mainButtons = new ArrayList<>();
         List<View> toolButtons = new ArrayList<>();
-        List<View> sizeButtons = new ArrayList<>();
-        List<View> colorSwatches = new ArrayList<>();
         List<View> filterButtons = new ArrayList<>();
 
         // --- DRAW SUB-TOOLBAR ---
-        android.widget.HorizontalScrollView drawScroll = new android.widget.HorizontalScrollView(context);
-        drawScroll.setHorizontalScrollBarEnabled(false);
+        android.widget.FrameLayout drawScroll = new android.widget.FrameLayout(context);
         LinearLayout drawToolbar = new LinearLayout(context);
         drawToolbar.setOrientation(LinearLayout.HORIZONTAL);
         drawToolbar.setGravity(Gravity.CENTER_VERTICAL);
         drawToolbar.setPadding(dp(8), dp(7), dp(8), dp(7));
-        drawScroll.addView(drawToolbar, new android.widget.HorizontalScrollView.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
+        drawScroll.addView(drawToolbar, new android.widget.FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
         ));
 
@@ -166,38 +163,69 @@ public class PhotoEditorPlugin extends Plugin {
 
         drawToolbar.addView(groupSeparator(context));
 
-        View thinButton = iconButton(context, "S", null, null);
-        thinButton.setOnClickListener(v -> {
-            selectOnly(sizeButtons, thinButton);
-            brushSize = 12;
-            applyBrush(editor);
-        });
-        sizeButtons.add(thinButton);
-        drawToolbar.addView(thinButton);
+        LinearLayout sliderContainer = new LinearLayout(context);
+        sliderContainer.setOrientation(LinearLayout.HORIZONTAL);
+        sliderContainer.setGravity(Gravity.CENTER_VERTICAL);
+        sliderContainer.setPadding(0, 0, dp(8), 0);
+        
+        TextView sizeLabel = new TextView(context);
+        sizeLabel.setTextColor(Color.WHITE);
+        sizeLabel.setTextSize(14f);
+        
+        // initialize label text with current brushSize
+        String initLabelStr = "S";
+        if (brushSize > 45) initLabelStr = "L";
+        else if (brushSize > 20) initLabelStr = "M";
+        sizeLabel.setText(brushSize + "px (" + initLabelStr + ")");
+        
+        sizeLabel.setPadding(dp(8), 0, dp(4), 0);
+        sliderContainer.addView(sizeLabel);
 
-        View thickButton = iconButton(context, "L", null, null);
-        thickButton.setOnClickListener(v -> {
-            selectOnly(sizeButtons, thickButton);
-            brushSize = 42;
-            applyBrush(editor);
+        android.widget.SeekBar brushSlider = new android.widget.SeekBar(context);
+        brushSlider.setMax(75); // Range: 5 to 80
+        brushSlider.setProgress(brushSize - 5);
+        brushSlider.setPadding(dp(8), 0, dp(8), 0);
+        
+        brushSlider.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(android.widget.SeekBar seekBar, int progress, boolean fromUser) {
+                int newSize = progress + 5;
+                brushSize = newSize;
+                
+                String labelStr = "S";
+                if (newSize > 45) labelStr = "L";
+                else if (newSize > 20) labelStr = "M";
+                
+                sizeLabel.setText(newSize + "px (" + labelStr + ")");
+                
+                editor.setBrushSize((float) newSize);
+                editor.setBrushEraserSize((float) newSize);
+            }
+
+            @Override
+            public void onStartTrackingTouch(android.widget.SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(android.widget.SeekBar seekBar) {}
         });
-        sizeButtons.add(thickButton);
-        drawToolbar.addView(thickButton);
+        
+        sliderContainer.addView(brushSlider, new LinearLayout.LayoutParams(dp(130), ViewGroup.LayoutParams.WRAP_CONTENT));
+        drawToolbar.addView(sliderContainer);
 
         drawToolbar.addView(groupSeparator(context));
 
-        for (int color : COLORS) {
-            View swatch = colorSwatch(context, color, v -> {
-                brushColor = color;
-                textColor = color;
-                selectColorOnly(colorSwatches, color);
+        final View currentColorBtn = colorSwatch(context, brushColor, null);
+        currentColorBtn.setOnClickListener(v -> {
+            showColorPickerDialog(context, editorView, editor, brushColor, newColor -> {
+                brushColor = newColor;
+                textColor = newColor;
+                setColorSwatchSelected(currentColorBtn, newColor, true);
                 editor.setBrushDrawingMode(true);
                 applyBrush(editor);
             });
-            swatch.setTag(color);
-            colorSwatches.add(swatch);
-            drawToolbar.addView(swatch);
-        }
+        });
+        setColorSwatchSelected(currentColorBtn, brushColor, true);
+        drawToolbar.addView(currentColorBtn);
 
         // --- FILTER SUB-TOOLBAR ---
         android.widget.HorizontalScrollView filterScroll = new android.widget.HorizontalScrollView(context);
@@ -353,8 +381,6 @@ public class PhotoEditorPlugin extends Plugin {
         subToolbarContainer.addView(drawScroll);
         subToolbarContainer.setVisibility(View.VISIBLE);
         setToolbarButtonSelected(penButton, true);
-        setToolbarButtonSelected(brushSize <= 12 ? thinButton : thickButton, true);
-        selectColorOnly(colorSwatches, brushColor);
         editor.setBrushDrawingMode(true);
         applyBrush(editor);
 
@@ -1111,6 +1137,214 @@ public class PhotoEditorPlugin extends Plugin {
         params.setMargins(0, 0, dp(8), 0);
         swatch.setLayoutParams(params);
         return swatch;
+    }
+    
+    interface ColorCallback {
+        void onColorPicked(int color);
+    }
+    
+    private void showColorPickerDialog(Context context, PhotoEditorView editorView, PhotoEditor editor, int initialColor, ColorCallback callback) {
+        Dialog dialog = new Dialog(context);
+        
+        LinearLayout root = new LinearLayout(context);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(dp(20), dp(20), dp(20), dp(20));
+        
+        android.graphics.drawable.GradientDrawable rootBg = new android.graphics.drawable.GradientDrawable();
+        rootBg.setColor(0xff2b2d31);
+        rootBg.setCornerRadius(dp(16));
+        root.setBackground(rootBg);
+        
+        // 1. Title Row (Title + Eyedropper)
+        LinearLayout titleRow = new LinearLayout(context);
+        titleRow.setOrientation(LinearLayout.HORIZONTAL);
+        titleRow.setGravity(Gravity.CENTER_VERTICAL);
+        
+        TextView title = new TextView(context);
+        title.setText("Custom Color");
+        title.setTextColor(Color.WHITE);
+        title.setTextSize(18f);
+        title.setTypeface(null, android.graphics.Typeface.BOLD);
+        titleRow.addView(title, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        
+        android.widget.ImageView eyedropper = new android.widget.ImageView(context);
+        int dropperId = Utils.getResId("ic_colorize_24dp", "drawable");
+        if (dropperId == 0) dropperId = Utils.getResId("ic_edit_24dp", "drawable");
+        eyedropper.setImageResource(dropperId);
+        eyedropper.setColorFilter(Color.WHITE);
+        eyedropper.setPadding(dp(8), dp(8), dp(8), dp(8));
+        addRippleBorderless(eyedropper);
+        titleRow.addView(eyedropper);
+        root.addView(titleRow);
+
+        // Eyedropper Logic
+        eyedropper.setOnClickListener(v -> {
+            dialog.dismiss();
+            android.widget.Toast.makeText(context, "Tap anywhere on the image to pick a color!", android.widget.Toast.LENGTH_SHORT).show();
+            
+            editor.setBrushDrawingMode(false);
+            editorView.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View view, android.view.MotionEvent event) {
+                    int action = event.getAction();
+                    if (action == android.view.MotionEvent.ACTION_DOWN || action == android.view.MotionEvent.ACTION_MOVE || action == android.view.MotionEvent.ACTION_UP) {
+                        try {
+                            android.widget.ImageView source = editorView.getSource();
+                            android.graphics.drawable.BitmapDrawable drawable = (android.graphics.drawable.BitmapDrawable) source.getDrawable();
+                            android.graphics.Bitmap bitmap = drawable.getBitmap();
+                            
+                            android.graphics.Matrix inverse = new android.graphics.Matrix();
+                            source.getImageMatrix().invert(inverse);
+                            float[] pts = {event.getX(), event.getY()};
+                            inverse.mapPoints(pts);
+                            
+                            int x = (int) pts[0];
+                            int y = (int) pts[1];
+                            
+                            if (x >= 0 && y >= 0 && x < bitmap.getWidth() && y < bitmap.getHeight()) {
+                                int pixel = bitmap.getPixel(x, y);
+                                callback.onColorPicked(pixel);
+                            }
+                        } catch (Throwable t) {
+                            // Silently ignore out of bounds during drag
+                        }
+                        
+                        if (action == android.view.MotionEvent.ACTION_UP) {
+                            editorView.setOnTouchListener(null);
+                            editor.setBrushDrawingMode(true);
+                        }
+                        return true;
+                    }
+                    return false;
+                }
+            });
+        });
+        
+        // 2. Preview Box and HEX
+        LinearLayout previewRow = new LinearLayout(context);
+        previewRow.setOrientation(LinearLayout.HORIZONTAL);
+        previewRow.setGravity(Gravity.CENTER_VERTICAL);
+        previewRow.setPadding(0, dp(16), 0, dp(16));
+        
+        View previewBox = new View(context);
+        android.graphics.drawable.GradientDrawable boxBg = new android.graphics.drawable.GradientDrawable();
+        boxBg.setCornerRadius(dp(8));
+        boxBg.setColor(initialColor);
+        previewBox.setBackground(boxBg);
+        previewRow.addView(previewBox, new LinearLayout.LayoutParams(dp(48), dp(48)));
+        
+        android.widget.EditText hexInput = new android.widget.EditText(context);
+        hexInput.setTextColor(Color.WHITE);
+        hexInput.setText(String.format("#%06X", (0xFFFFFF & initialColor)));
+        hexInput.setSingleLine(true);
+        LinearLayout.LayoutParams hexParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        hexParams.setMargins(dp(16), 0, 0, 0);
+        previewRow.addView(hexInput, hexParams);
+        root.addView(previewRow);
+        
+        // 3. HSV Sliders
+        float[] hsv = new float[3];
+        Color.colorToHSV(initialColor, hsv);
+        
+        TextView hueLabel = new TextView(context); hueLabel.setText("Hue"); hueLabel.setTextColor(Color.LTGRAY); root.addView(hueLabel);
+        android.widget.SeekBar hueSlider = new android.widget.SeekBar(context); hueSlider.setMax(360); hueSlider.setProgress((int) hsv[0]); root.addView(hueSlider);
+        
+        TextView satLabel = new TextView(context); satLabel.setText("Saturation"); satLabel.setTextColor(Color.LTGRAY); satLabel.setPadding(0, dp(8), 0, 0); root.addView(satLabel);
+        android.widget.SeekBar satSlider = new android.widget.SeekBar(context); satSlider.setMax(100); satSlider.setProgress((int) (hsv[1] * 100)); root.addView(satSlider);
+        
+        TextView valLabel = new TextView(context); valLabel.setText("Lightness"); valLabel.setTextColor(Color.LTGRAY); valLabel.setPadding(0, dp(8), 0, 0); root.addView(valLabel);
+        android.widget.SeekBar valSlider = new android.widget.SeekBar(context); valSlider.setMax(100); valSlider.setProgress((int) (hsv[2] * 100)); root.addView(valSlider);
+        
+        // 4. Presets Horizontal Scroll
+        android.widget.HorizontalScrollView presetScroll = new android.widget.HorizontalScrollView(context);
+        presetScroll.setHorizontalScrollBarEnabled(false);
+        LinearLayout presetContainer = new LinearLayout(context);
+        presetContainer.setOrientation(LinearLayout.HORIZONTAL);
+        presetContainer.setPadding(0, dp(16), 0, dp(16));
+        for (int c : COLORS) {
+            View swatch = new View(context);
+            android.graphics.drawable.GradientDrawable swBg = new android.graphics.drawable.GradientDrawable();
+            swBg.setCornerRadius(dp(16)); swBg.setColor(c);
+            swatch.setBackground(swBg);
+            LinearLayout.LayoutParams swParams = new LinearLayout.LayoutParams(dp(32), dp(32));
+            swParams.setMargins(0, 0, dp(8), 0);
+            swatch.setLayoutParams(swParams);
+            swatch.setOnClickListener(v -> {
+                Color.colorToHSV(c, hsv);
+                hueSlider.setProgress((int) hsv[0]);
+                satSlider.setProgress((int) (hsv[1] * 100));
+                valSlider.setProgress((int) (hsv[2] * 100));
+            });
+            presetContainer.addView(swatch);
+        }
+        presetScroll.addView(presetContainer);
+        root.addView(presetScroll);
+        
+        // Updates
+        final int[] currentColor = {initialColor};
+        
+        Runnable updateColor = () -> {
+            try {
+                hsv[0] = hueSlider.getProgress();
+                hsv[1] = satSlider.getProgress() / 100f;
+                hsv[2] = valSlider.getProgress() / 100f;
+                currentColor[0] = Color.HSVToColor(hsv);
+                boxBg.setColor(currentColor[0]);
+                previewBox.invalidate();
+                if (!hexInput.hasFocus()) {
+                    hexInput.setText(String.format("#%06X", (0xFFFFFF & currentColor[0])));
+                }
+            } catch (Exception e) {}
+        };
+        
+        android.widget.SeekBar.OnSeekBarChangeListener sliderListener = new android.widget.SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(android.widget.SeekBar seekBar, int progress, boolean fromUser) { updateColor.run(); }
+            @Override public void onStartTrackingTouch(android.widget.SeekBar seekBar) {}
+            @Override public void onStopTrackingTouch(android.widget.SeekBar seekBar) {}
+        };
+        hueSlider.setOnSeekBarChangeListener(sliderListener);
+        satSlider.setOnSeekBarChangeListener(sliderListener);
+        valSlider.setOnSeekBarChangeListener(sliderListener);
+        
+        hexInput.addTextChangedListener(new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(android.text.Editable s) {
+                if (hexInput.hasFocus() && s.toString().startsWith("#")) {
+                    try {
+                        int c = Color.parseColor(s.toString());
+                        currentColor[0] = c;
+                        boxBg.setColor(c);
+                        Color.colorToHSV(c, hsv);
+                        hueSlider.setProgress((int) hsv[0]);
+                        satSlider.setProgress((int) (hsv[1] * 100));
+                        valSlider.setProgress((int) (hsv[2] * 100));
+                    } catch (Exception ignored) {}
+                }
+            }
+        });
+        
+        // Buttons
+        LinearLayout btnRow = new LinearLayout(context);
+        btnRow.setOrientation(LinearLayout.HORIZONTAL);
+        btnRow.setGravity(Gravity.RIGHT);
+        
+        TextView cancel = new TextView(context); cancel.setText("Cancel"); cancel.setTextColor(Color.GRAY); cancel.setPadding(dp(16), dp(8), dp(16), dp(8));
+        cancel.setOnClickListener(v -> dialog.dismiss());
+        btnRow.addView(cancel);
+        
+        TextView apply = new TextView(context); apply.setText("Select"); apply.setTextColor(0xff5865f2); apply.setPadding(dp(16), dp(8), dp(16), dp(8)); apply.setTypeface(null, android.graphics.Typeface.BOLD);
+        apply.setOnClickListener(v -> {
+            callback.onColorPicked(currentColor[0]);
+            dialog.dismiss();
+        });
+        btnRow.addView(apply);
+        
+        root.addView(btnRow);
+        
+        dialog.setContentView(root);
+        dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
+        dialog.show();
     }
 
     private void setToolbarButtonSelected(View button, boolean selected) {

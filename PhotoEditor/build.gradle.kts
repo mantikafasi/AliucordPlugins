@@ -19,6 +19,8 @@ aliucord {
         * Added a native Discord-style visual overlay for spoilers that hides when you touch the screen
         * Restructured the toolbar to make Undo, Redo, and Reset global actions instead of burying them
         * Added dynamic state tracking so the Undo, Redo, and Reset buttons automatically grey out when there's nothing to undo
+        * Replaced the S/L brush size buttons with a dynamic slider, and locked the sub-toolbar in place to prevent accidental sliding
+        * Added a Custom Color Picker modal featuring HSV sliders, live HEX input, and an Eyedropper tool with drag-to-preview
         * Replaced awkward placeholder icons with native Discord vectors
         * The editor now instantly boots up with the Pen tool active and ready to draw
         * Smoother animations and ripples
