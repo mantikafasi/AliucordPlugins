@@ -96,7 +96,7 @@ public class PhotoEditorPlugin extends Plugin {
         void onSpoilerToggled(boolean isSpoiler);
     }
 
-    private View createToolbar(Context context, PhotoEditor editor, PhotoEditorView editorView, Dialog dialog, Attachment<?>[] currentAttachment, EditRequest editRequest) {
+    private View createToolbar(Context context, PhotoEditor editor, PhotoEditorView editorView, Dialog dialog, Attachment<?>[] currentAttachment, EditRequest editRequest, PhotoFilter[] sessionFilter) {
         LinearLayout rootContainer = new LinearLayout(context);
         rootContainer.setOrientation(LinearLayout.VERTICAL);
         rootContainer.setBackgroundColor(0xff1e1f22);
@@ -104,23 +104,23 @@ public class PhotoEditorPlugin extends Plugin {
             rootContainer.setElevation(dp(8));
         }
 
-        FrameLayout subToolbarContainer = new FrameLayout(context);
-        subToolbarContainer.setBackgroundColor(0xff2b2d31);
-        subToolbarContainer.setVisibility(View.GONE);
-        rootContainer.addView(subToolbarContainer, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-        ));
-
         android.widget.HorizontalScrollView mainScroll = new android.widget.HorizontalScrollView(context);
         mainScroll.setHorizontalScrollBarEnabled(false);
-
         LinearLayout mainToolbar = new LinearLayout(context);
         mainToolbar.setOrientation(LinearLayout.HORIZONTAL);
         mainToolbar.setGravity(Gravity.CENTER_VERTICAL);
-        mainToolbar.setPadding(dp(8), dp(7), dp(8), dp(7));
+        mainToolbar.setPadding(dp(8), dp(12), dp(8), dp(12));
         mainScroll.addView(mainToolbar, new android.widget.HorizontalScrollView.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        ));
+
+        FrameLayout subToolbarContainer = new FrameLayout(context);
+        subToolbarContainer.setVisibility(View.GONE);
+        subToolbarContainer.setBackgroundColor(0xff2b2d31);
+        
+        rootContainer.addView(subToolbarContainer, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
         ));
         rootContainer.addView(mainScroll, new LinearLayout.LayoutParams(
@@ -133,8 +133,6 @@ public class PhotoEditorPlugin extends Plugin {
         List<View> sizeButtons = new ArrayList<>();
         List<View> colorSwatches = new ArrayList<>();
         List<View> filterButtons = new ArrayList<>();
-
-        PhotoFilter[] sessionFilter = {PhotoFilter.NONE};
 
         // --- DRAW SUB-TOOLBAR ---
         android.widget.HorizontalScrollView drawScroll = new android.widget.HorizontalScrollView(context);
@@ -201,23 +199,6 @@ public class PhotoEditorPlugin extends Plugin {
             drawToolbar.addView(swatch);
         }
 
-        drawToolbar.addView(groupSeparator(context));
-        drawToolbar.addView(iconButton(context, "Undo", "material_ic_keyboard_arrow_left_black_24dp", v -> {
-            boolean undidOverlay = false;
-            for (int i = editorView.getChildCount() - 1; i >= 0; i--) {
-                View child = editorView.getChildAt(i);
-                Object tag = child.getTag();
-                if (OVERLAY_IMAGE.equals(tag) || OVERLAY_TEXT.equals(tag) || OVERLAY_EMOJI.equals(tag)) {
-                    editorView.removeViewAt(i);
-                    undidOverlay = true;
-                    break;
-                }
-            }
-            if (!undidOverlay) editor.undo();
-        }));
-        drawToolbar.addView(iconButton(context, "Redo", "material_ic_keyboard_arrow_right_black_24dp", v -> editor.redo()));
-        drawToolbar.addView(iconButton(context, "Clear", "ic_close_24dp", v -> clearAllEditorOverlays(editor, editorView)));
-
         // --- FILTER SUB-TOOLBAR ---
         android.widget.HorizontalScrollView filterScroll = new android.widget.HorizontalScrollView(context);
         filterScroll.setHorizontalScrollBarEnabled(false);
@@ -248,6 +229,30 @@ public class PhotoEditorPlugin extends Plugin {
         }
 
         // --- MAIN TOOLBAR ---
+        mainToolbar.addView(iconButton(context, "Undo", "ic_reply_24dp", v -> {
+            boolean undidOverlay = false;
+            for (int i = editorView.getChildCount() - 1; i >= 0; i--) {
+                View child = editorView.getChildAt(i);
+                Object tag = child.getTag();
+                if (OVERLAY_IMAGE.equals(tag) || OVERLAY_TEXT.equals(tag) || OVERLAY_EMOJI.equals(tag)) {
+                    editorView.removeViewAt(i);
+                    undidOverlay = true;
+                    break;
+                }
+            }
+            if (!undidOverlay) editor.undo();
+        }));
+
+        View redoMainBtn = iconButton(context, "Redo", "ic_reply_24dp", v -> editor.redo());
+        if (redoMainBtn instanceof android.view.ViewGroup && ((android.view.ViewGroup) redoMainBtn).getChildCount() > 0) {
+            ((android.view.ViewGroup) redoMainBtn).getChildAt(0).setScaleX(-1f);
+        }
+        mainToolbar.addView(redoMainBtn);
+
+        mainToolbar.addView(iconButton(context, "Reset", "ic_refresh_white_a60_24dp", v -> clearAllEditorOverlays(editor, editorView)));
+
+        mainToolbar.addView(groupSeparator(context));
+
         View drawMainBtn = iconButton(context, "Draw", "ic_edit_24dp", null);
         drawMainBtn.setOnClickListener(v -> {
             selectOnly(mainButtons, drawMainBtn);
@@ -261,7 +266,7 @@ public class PhotoEditorPlugin extends Plugin {
         mainButtons.add(drawMainBtn);
         mainToolbar.addView(drawMainBtn);
 
-        View textMainBtn = iconButton(context, "Text", "ic_text_channel_white_24dp", v -> showTextDialog(context, editor, editorView));
+        View textMainBtn = iconButton(context, "Text", "ic_text_image_24dp", v -> showTextDialog(context, editor, editorView));
         mainToolbar.addView(textMainBtn);
 
         View emojiMainBtn = iconButton(context, "Emoji", "ic_emoji_24dp", v -> showDiscordEmojiPicker(context, editor, editorView));
@@ -293,10 +298,6 @@ public class PhotoEditorPlugin extends Plugin {
         mainButtons.add(filterMainBtn);
         mainToolbar.addView(filterMainBtn);
 
-        mainToolbar.addView(groupSeparator(context));
-        View saveBtn = iconButton(context, "Save", "ic_check_circle_24dp", v -> saveImage(context, editor, editorView, currentAttachment, editRequest, dialog, sessionFilter));
-        mainToolbar.addView(saveBtn);
-
         // Initial state
         setToolbarButtonSelected(drawMainBtn, true);
         subToolbarContainer.addView(drawScroll);
@@ -304,6 +305,8 @@ public class PhotoEditorPlugin extends Plugin {
         setToolbarButtonSelected(penButton, true);
         setToolbarButtonSelected(brushSize <= 12 ? thinButton : thickButton, true);
         selectColorOnly(colorSwatches, brushColor);
+        editor.setBrushDrawingMode(true);
+        applyBrush(editor);
 
         return rootContainer;
     }
@@ -719,9 +722,11 @@ public class PhotoEditorPlugin extends Plugin {
     }
 
     private void openEditor(Activity passedActivity, Attachment<?> attachment, EditRequest editRequest, SelectionAggregator<?> aggregator) {
-        Activity activity = passedActivity;
-        if (activity == null || activity.isFinishing() || (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1 && activity.isDestroyed())) {
+        final Activity activity;
+        if (passedActivity == null || passedActivity.isFinishing() || (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1 && passedActivity.isDestroyed())) {
             activity = getRealActivity();
+        } else {
+            activity = passedActivity;
         }
         if (activity == null || activity.isFinishing() || (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1 && activity.isDestroyed())) {
             android.widget.Toast.makeText(getRealActivity(), "Could not open image editor (activity null or destroyed)", android.widget.Toast.LENGTH_SHORT).show();
@@ -741,6 +746,7 @@ public class PhotoEditorPlugin extends Plugin {
                 .build();
 
         final Attachment<?>[] currentAttachment = {attachment};
+        final PhotoFilter[] sessionFilter = {PhotoFilter.NONE};
 
         FrameLayout spoilerOverlay = new FrameLayout(activity);
         spoilerOverlay.setBackgroundColor(0x99000000);
@@ -801,6 +807,20 @@ public class PhotoEditorPlugin extends Plugin {
                 }
             }
         });
+        
+        android.widget.ImageView saveBtn = new android.widget.ImageView(activity);
+        int saveId = Utils.getResId("ic_check_white_24dp", "drawable");
+        saveBtn.setImageResource(saveId != 0 ? saveId : android.R.drawable.ic_menu_save);
+        saveBtn.setColorFilter(Color.WHITE);
+        saveBtn.setPadding(dp(8), dp(8), dp(8), dp(8));
+        addRippleBorderless(saveBtn);
+        addPressAnimation(saveBtn);
+        saveBtn.setOnClickListener(v -> saveImage(activity, editor, editorView, currentAttachment, editRequest, dialog, sessionFilter));
+        
+        LinearLayout.LayoutParams saveParams = new LinearLayout.LayoutParams(dp(40), dp(40));
+        saveParams.setMargins(dp(8), 0, 0, 0);
+        ((LinearLayout) header).addView(saveBtn, saveParams);
+
         content.addView(header, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
@@ -832,7 +852,7 @@ public class PhotoEditorPlugin extends Plugin {
                 Gravity.CENTER
         ));
 
-        content.addView(createToolbar(activity, editor, editorView, dialog, currentAttachment, editRequest), new LinearLayout.LayoutParams(
+        content.addView(createToolbar(activity, editor, editorView, dialog, currentAttachment, editRequest, sessionFilter), new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
         ));

@@ -15,7 +15,11 @@ aliucord {
         * Added a dedicated Settings Page for the plugin!
         * Tapping an image to edit it instantly is now an optional toggle in settings (Classic Bottom Sheet is back to being the default)
         * Added Delete & Spoiler buttons right inside the editor
+        * Moved the Save button to the top header for instant access without scrolling
         * Added a native Discord-style visual overlay for spoilers that hides when you touch the screen
+        * Restructured the toolbar to make Undo, Redo, and Reset global actions instead of burying them
+        * Replaced awkward placeholder icons with native Discord vectors
+        * The editor now instantly boots up with the Pen tool active and ready to draw
         * Smoother animations and ripples
         * Fixed critical bug where selecting a sticker in the editor sent it to chat (caused by conflict with the FakeStickers plugin)
         * Fixed "Could not open image editor" crashes caused by invalid window tokens by completely bulletproofing Activity fetching
