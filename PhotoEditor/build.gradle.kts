@@ -17,7 +17,7 @@ aliucord {
         * Added a dedicated Settings Page for the plugin
         * Added a "Quick Edit" toggle in settings to instantly edit images without opening the attachment menu
         * Brush Layer Engine: Added a new "Brush Layer Mode" to settings to control whether strokes draw behind, in front of, or weave between stickers
-        * Custom Filter Engine: Build your own effects using 6 simultaneous sliders (Brightness, Contrast, Saturation, Hue, Temperature, Tint)
+        * Custom Filter Engine: Build your own effects using 6 simultaneous sliders and optionally toggle the filter to apply to the entire image (including stickers/text) or just the background
         * Advanced Cropping: Added a lag-free real-time rotation slider (-180° to 180°), mirroring, and quick-snap rotation to the Crop Modal
         * Overlay Management: Long-press any sticker, emoji, or image overlay to open an Options Menu where you can individually crop and edit it without affecting the background
         * Color Picker Modal: A massive new picker with HSV sliders, live HEX input, and a drag-to-preview Eyedropper tool

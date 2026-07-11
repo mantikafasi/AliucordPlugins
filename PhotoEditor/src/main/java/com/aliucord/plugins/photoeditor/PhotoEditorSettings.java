@@ -60,6 +60,32 @@ public class PhotoEditorSettings extends BottomSheet {
             builder.show();
         });
         addView(brushModeText);
+
+        int currentFilterMode = settings.getInt("filter_apply_mode", 0);
+        android.widget.TextView filterModeText = new android.widget.TextView(ctx);
+        filterModeText.setText("Filter Apply Mode: " + getFilterModeString(currentFilterMode));
+        filterModeText.setTextSize(16f);
+        filterModeText.setPadding(com.aliucord.utils.DimenUtils.dpToPx(16), com.aliucord.utils.DimenUtils.dpToPx(16), com.aliucord.utils.DimenUtils.dpToPx(16), com.aliucord.utils.DimenUtils.dpToPx(16));
+        filterModeText.setOnClickListener(v -> {
+            android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(ctx);
+            builder.setTitle("Filter Apply Mode");
+            String[] options = {"Canvas Only (Background Image)", "Entire Edited Image (Includes Stickers & Text)"};
+            builder.setSingleChoiceItems(options, settings.getInt("filter_apply_mode", 0), (dialog, which) -> {
+                settings.setInt("filter_apply_mode", which);
+                filterModeText.setText("Filter Apply Mode: " + getFilterModeString(which));
+                dialog.dismiss();
+            });
+            builder.show();
+        });
+        addView(filterModeText);
+    }
+
+    private String getFilterModeString(int mode) {
+        switch (mode) {
+            case 0: return "Canvas Only";
+            case 1: return "Entire Edited Image";
+            default: return "Unknown";
+        }
     }
 
     private String getModeString(int mode) {

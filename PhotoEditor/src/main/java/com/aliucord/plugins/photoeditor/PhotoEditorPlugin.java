@@ -255,6 +255,7 @@ public class PhotoEditorPlugin extends Plugin {
                         child.setVisibility(android.view.View.VISIBLE);
                     }
                 }
+                editorView.setLayerType(android.view.View.LAYER_TYPE_NONE, null);
                 editorView.getSource().clearColorFilter();
                 sessionFilter[0] = filter;
                 selectedFilter = filter;
@@ -3186,7 +3187,10 @@ public class PhotoEditorPlugin extends Plugin {
 
             Paint srcPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
             float[] matrix = isCustomFilter != null && isCustomFilter[0] ? buildCustomMatrix(customFilterValues) : getColorMatrixForFilter(activeFilter);
-            if (matrix != null) {
+            
+            boolean applyToEverything = settings.getInt("filter_apply_mode", 0) == 1;
+            
+            if (matrix != null && !applyToEverything) {
                 srcPaint.setColorFilter(new android.graphics.ColorMatrixColorFilter(matrix));
             }
             canvas.drawBitmap(srcBitmap, 0, 0, srcPaint);
@@ -3209,6 +3213,16 @@ public class PhotoEditorPlugin extends Plugin {
                 canvas.restore();
             }
             canvas.restore();
+
+            if (matrix != null && applyToEverything) {
+                Bitmap finalSaveBitmap = Bitmap.createBitmap(outW, outH, Bitmap.Config.ARGB_8888);
+                Canvas finalCanvas = new Canvas(finalSaveBitmap);
+                Paint finalPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+                finalPaint.setColorFilter(new android.graphics.ColorMatrixColorFilter(matrix));
+                finalCanvas.drawBitmap(saveBitmap, 0, 0, finalPaint);
+                saveBitmap.recycle();
+                saveBitmap = finalSaveBitmap;
+            }
 
             writeBitmapToFile(context, currentAttachment, editRequest, dialog, activeFilter, saveBitmap);
         } catch (Throwable throwable) {
@@ -3546,7 +3560,16 @@ public class PhotoEditorPlugin extends Plugin {
                 }
             }
             float[] matrix = buildCustomMatrix(customFilterValues);
-            editorView.getSource().setColorFilter(new android.graphics.ColorMatrixColorFilter(matrix));
+            boolean applyToEverything = settings.getInt("filter_apply_mode", 0) == 1;
+            if (applyToEverything) {
+                Paint p = new Paint();
+                p.setColorFilter(new android.graphics.ColorMatrixColorFilter(matrix));
+                editorView.setLayerType(android.view.View.LAYER_TYPE_HARDWARE, p);
+                editorView.getSource().clearColorFilter();
+            } else {
+                editorView.setLayerType(android.view.View.LAYER_TYPE_NONE, null);
+                editorView.getSource().setColorFilter(new android.graphics.ColorMatrixColorFilter(matrix));
+            }
         };
 
         String[] labels = {"Brightness", "Contrast", "Saturation", "Hue", "Temperature", "Tint"};
