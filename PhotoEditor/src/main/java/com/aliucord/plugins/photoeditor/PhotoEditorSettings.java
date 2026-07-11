@@ -3,7 +3,7 @@ package com.aliucord.plugins.photoeditor;
 import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.LinearLayout;
+
 
 import com.aliucord.Utils;
 import com.aliucord.api.SettingsAPI;

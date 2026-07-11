@@ -311,7 +311,9 @@ public class PhotoEditorPlugin extends Plugin {
         final java.lang.reflect.Method[] undoRedoMethods = new java.lang.reflect.Method[2];
         try {
             undoRedoMethods[0] = editor.getClass().getDeclaredMethod("isUndoAvailable");
+            undoRedoMethods[0].setAccessible(true);
             undoRedoMethods[1] = editor.getClass().getDeclaredMethod("isRedoAvailable");
+            undoRedoMethods[1].setAccessible(true);
         } catch (Throwable ignored) {}
 
         Runnable stateUpdater = new Runnable() {
@@ -545,7 +547,7 @@ public class PhotoEditorPlugin extends Plugin {
 
         for (java.lang.reflect.Method method : StickerPickerViewModel.class.getDeclaredMethods()) {
             Class<?>[] paramTypes = method.getParameterTypes();
-            if (paramTypes.length >= 1 && (paramTypes[0] == Sticker.class || paramTypes[0] == Object.class)) {
+            if (paramTypes.length == 1 && (paramTypes[0] == Sticker.class || paramTypes[0] == Object.class)) {
                 Class<?> retType = method.getReturnType();
                 if (retType == boolean.class || retType == Boolean.class || retType == void.class) {
                     patcher.patch(method, new InsteadHook(callFrame -> {
@@ -1259,7 +1261,7 @@ public class PhotoEditorPlugin extends Plugin {
                 @Override
                 public boolean onTouch(View view, android.view.MotionEvent event) {
                     int action = event.getAction();
-                    if (action == android.view.MotionEvent.ACTION_DOWN || action == android.view.MotionEvent.ACTION_MOVE || action == android.view.MotionEvent.ACTION_UP) {
+                    if (action == android.view.MotionEvent.ACTION_DOWN || action == android.view.MotionEvent.ACTION_MOVE || action == android.view.MotionEvent.ACTION_UP || action == android.view.MotionEvent.ACTION_CANCEL) {
                         try {
                             android.widget.ImageView source = editorView.getSource();
                             android.graphics.drawable.BitmapDrawable drawable = (android.graphics.drawable.BitmapDrawable) source.getDrawable();
@@ -1281,7 +1283,7 @@ public class PhotoEditorPlugin extends Plugin {
                             // Silently ignore out of bounds during drag
                         }
                         
-                        if (action == android.view.MotionEvent.ACTION_UP) {
+                        if (action == android.view.MotionEvent.ACTION_UP || action == android.view.MotionEvent.ACTION_CANCEL) {
                             editorView.setOnTouchListener(null);
                             editor.setBrushDrawingMode(true);
                         }
@@ -2517,7 +2519,7 @@ public class PhotoEditorPlugin extends Plugin {
                     m.postRotate(rotation[0]);
                     if (flip[0]) m.postScale(-1, 1);
                     if (flip[1]) m.postScale(1, -1);
-                    Bitmap finalRotatedSrc = Bitmap.createBitmap(src, 0, 0, src.getWidth(), src.getHeight(), m, true);
+                    Bitmap finalRotatedSrc = (rotation[0] == 0f && !flip[0] && !flip[1]) ? src : Bitmap.createBitmap(src, 0, 0, src.getWidth(), src.getHeight(), m, true);
 
                     RectF percent = cropOverlay.getCropRectPercent();
                     int w = finalRotatedSrc.getWidth();
