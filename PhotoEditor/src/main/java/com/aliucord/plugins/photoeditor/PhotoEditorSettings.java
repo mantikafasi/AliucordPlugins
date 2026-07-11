@@ -64,14 +64,24 @@ public class PhotoEditorSettings extends BottomSheet {
 
     private void addRadioGroup(String title, String[] labels, String[] descriptions, int selectedIndex, SelectionListener listener) {
         int safeSelectedIndex = Math.max(0, Math.min(selectedIndex, labels.length - 1));
+        android.widget.TextView header = new android.widget.TextView(requireContext());
+        header.setText(title);
+        header.setTextColor(android.graphics.Color.WHITE);
+        int headerStyle = Utils.getResId("UiKit_Settings_Item_Header", "style");
+        if (headerStyle != 0) {
+            header.setTextAppearance(requireContext(), headerStyle);
+        }
+        int horizontalPadding = com.aliucord.utils.DimenUtils.dpToPx(16);
+        header.setPadding(horizontalPadding, com.aliucord.utils.DimenUtils.dpToPx(16), horizontalPadding, com.aliucord.utils.DimenUtils.dpToPx(4));
+        addView(header);
+
         CheckedSetting[] options = new CheckedSetting[labels.length];
         List<Checkable> radioButtons = new ArrayList<>();
-
         for (int index = 0; index < labels.length; index++) {
             CheckedSetting option = Utils.createCheckedSetting(
                     requireContext(),
                     CheckedSetting.ViewType.RADIO,
-                    title + ": " + labels[index],
+                    labels[index],
                     descriptions[index]
             );
             option.setChecked(index == safeSelectedIndex);

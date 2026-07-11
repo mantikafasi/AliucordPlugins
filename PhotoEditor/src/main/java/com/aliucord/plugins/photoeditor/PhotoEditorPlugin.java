@@ -71,6 +71,7 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -87,6 +88,7 @@ import kotlin.Unit;
 @AliucordPlugin
 @SuppressWarnings("unused")
 public class PhotoEditorPlugin extends Plugin {
+    private final ArrayDeque<View> overlayRedoStack = new ArrayDeque<>();
 
     public PhotoEditorPlugin() {
         settingsTab = new SettingsTab(PhotoEditorSettings.class, SettingsTab.Type.BOTTOM_SHEET).withArgs(settings);
@@ -173,42 +175,24 @@ public class PhotoEditorPlugin extends Plugin {
         TextView sizeLabel = new TextView(context);
         sizeLabel.setTextColor(Color.WHITE);
         sizeLabel.setTextSize(14f);
+        sizeLabel.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
         
         // initialize label text with current brushSize
-        String initLabelStr = "S";
-        if (brushSize > 45) initLabelStr = "L";
-        else if (brushSize > 20) initLabelStr = "M";
-        sizeLabel.setText(brushSize + "px (" + initLabelStr + ")");
+        sizeLabel.setSingleLine(true);
+        sizeLabel.setText(brushSize + " px");
         
         sizeLabel.setPadding(dp(8), 0, dp(4), 0);
-        sliderContainer.addView(sizeLabel);
+        sliderContainer.addView(sizeLabel, new LinearLayout.LayoutParams(dp(60), ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        android.widget.SeekBar brushSlider = new android.widget.SeekBar(context);
-        brushSlider.setMax(75); // Range: 5 to 80
-        brushSlider.setProgress(brushSize - 5);
+        com.google.android.material.slider.Slider brushSlider = PhotoEditorUi.createDiscordSlider(context, 0, 75, brushSize - 5);
         brushSlider.setPadding(dp(8), 0, dp(8), 0);
         
-        brushSlider.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(android.widget.SeekBar seekBar, int progress, boolean fromUser) {
-                int newSize = progress + 5;
-                brushSize = newSize;
-                
-                String labelStr = "S";
-                if (newSize > 45) labelStr = "L";
-                else if (newSize > 20) labelStr = "M";
-                
-                sizeLabel.setText(newSize + "px (" + labelStr + ")");
-                
-                editor.setBrushSize((float) newSize);
-                editor.setBrushEraserSize((float) newSize);
-            }
-
-            @Override
-            public void onStartTrackingTouch(android.widget.SeekBar seekBar) {}
-
-            @Override
-            public void onStopTrackingTouch(android.widget.SeekBar seekBar) {}
+        brushSlider.addOnChangeListener((slider, value, fromUser) -> {
+            int newSize = Math.round(value) + 5;
+            brushSize = newSize;
+            sizeLabel.setText(newSize + " px");
+            editor.setBrushSize((float) newSize);
+            editor.setBrushEraserSize((float) newSize);
         });
         
         sliderContainer.addView(brushSlider, new LinearLayout.LayoutParams(dp(130), ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -285,21 +269,27 @@ public class PhotoEditorPlugin extends Plugin {
 
         // --- MAIN TOOLBAR ---
         View undoMainBtn = iconButton(context, "Undo", "ic_reply_24dp", v -> {
-            boolean undidOverlay = false;
-            for (int i = editorView.getChildCount() - 1; i >= 0; i--) {
-                View child = editorView.getChildAt(i);
-                Object tag = child.getTag();
-                if (OVERLAY_IMAGE.equals(tag) || OVERLAY_TEXT.equals(tag) || OVERLAY_EMOJI.equals(tag)) {
-                    editorView.removeViewAt(i);
-                    undidOverlay = true;
-                    break;
+            if (!editor.undo()) {
+                for (int i = editorView.getChildCount() - 1; i >= 0; i--) {
+                    View child = editorView.getChildAt(i);
+                    Object tag = child.getTag();
+                    if (OVERLAY_IMAGE.equals(tag) || OVERLAY_TEXT.equals(tag) || OVERLAY_EMOJI.equals(tag)) {
+                        editorView.removeViewAt(i);
+                        overlayRedoStack.push(child);
+                        break;
+                    }
                 }
             }
-            if (!undidOverlay) editor.undo();
         });
         mainToolbar.addView(undoMainBtn);
 
-        View redoMainBtn = iconButton(context, "Redo", "ic_reply_24dp", v -> editor.redo());
+        View redoMainBtn = iconButton(context, "Redo", "ic_reply_24dp", v -> {
+            if (!editor.redo() && !overlayRedoStack.isEmpty()) {
+                View overlay = overlayRedoStack.pop();
+                if (overlay.getParent() == null) editorView.addView(overlay, overlay.getLayoutParams());
+                overlay.bringToFront();
+            }
+        });
         if (redoMainBtn instanceof android.view.ViewGroup && ((android.view.ViewGroup) redoMainBtn).getChildCount() > 0) {
             ((android.view.ViewGroup) redoMainBtn).getChildAt(0).setScaleX(-1f);
         }
@@ -307,14 +297,6 @@ public class PhotoEditorPlugin extends Plugin {
 
         View clearMainBtn = iconButton(context, "Reset", "ucrop_ic_reset", v -> clearAllEditorOverlays(editor, editorView));
         mainToolbar.addView(clearMainBtn);
-
-        final java.lang.reflect.Method[] undoRedoMethods = new java.lang.reflect.Method[2];
-        try {
-            undoRedoMethods[0] = editor.getClass().getDeclaredMethod("isUndoAvailable");
-            undoRedoMethods[0].setAccessible(true);
-            undoRedoMethods[1] = editor.getClass().getDeclaredMethod("isRedoAvailable");
-            undoRedoMethods[1].setAccessible(true);
-        } catch (Throwable ignored) {}
 
         Runnable stateUpdater = new Runnable() {
             @Override
@@ -331,12 +313,8 @@ public class PhotoEditorPlugin extends Plugin {
                     }
                 }
                 
-                boolean canUndo = false;
-                boolean canRedo = false;
-                try {
-                    if (undoRedoMethods[0] != null) canUndo = (boolean) undoRedoMethods[0].invoke(editor);
-                    if (undoRedoMethods[1] != null) canRedo = (boolean) undoRedoMethods[1].invoke(editor);
-                } catch (Throwable ignored) {}
+                boolean canUndo = editor.isUndoAvailable();
+                boolean canRedo = editor.isRedoAvailable() || !overlayRedoStack.isEmpty();
                 
                 boolean undoActive = hasOverlay || canUndo;
                 boolean redoActive = canRedo;
@@ -1315,22 +1293,30 @@ public class PhotoEditorPlugin extends Plugin {
         hexParams.setMargins(dp(16), 0, 0, 0);
         previewRow.addView(hexInput, hexParams);
         root.addView(previewRow);
+
         
         // 3. HSV Sliders
         float[] hsv = new float[3];
         Color.colorToHSV(initialColor, hsv);
         
         TextView hueLabel = new TextView(context); hueLabel.setText("Hue"); hueLabel.setTextColor(Color.LTGRAY); root.addView(hueLabel);
-        android.widget.SeekBar hueSlider = new android.widget.SeekBar(context); hueSlider.setMax(360); hueSlider.setProgress((int) hsv[0]); root.addView(hueSlider);
+        com.google.android.material.slider.Slider hueSlider = PhotoEditorUi.createDiscordSlider(context, 0, 360, hsv[0]); root.addView(hueSlider);
         
         TextView satLabel = new TextView(context); satLabel.setText("Saturation"); satLabel.setTextColor(Color.LTGRAY); satLabel.setPadding(0, dp(8), 0, 0); root.addView(satLabel);
-        android.widget.SeekBar satSlider = new android.widget.SeekBar(context); satSlider.setMax(100); satSlider.setProgress((int) (hsv[1] * 100)); root.addView(satSlider);
+        com.google.android.material.slider.Slider satSlider = PhotoEditorUi.createDiscordSlider(context, 0, 100, hsv[1] * 100); root.addView(satSlider);
         
         TextView valLabel = new TextView(context); valLabel.setText("Lightness"); valLabel.setTextColor(Color.LTGRAY); valLabel.setPadding(0, dp(8), 0, 0); root.addView(valLabel);
-        android.widget.SeekBar valSlider = new android.widget.SeekBar(context); valSlider.setMax(100); valSlider.setProgress((int) (hsv[2] * 100)); root.addView(valSlider);
+        com.google.android.material.slider.Slider valSlider = PhotoEditorUi.createDiscordSlider(context, 0, 100, hsv[2] * 100); root.addView(valSlider);
         
+        final android.widget.ImageView colorPlane = new android.widget.ImageView(context);
+        int colorPlaneSize = dp(180);
+        colorPlane.setImageBitmap(PhotoEditorUi.createColorPlane(colorPlaneSize));
+        colorPlane.setScaleType(android.widget.ImageView.ScaleType.FIT_XY);
+        root.addView(colorPlane, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, colorPlaneSize));
+        colorPlane.setVisibility(View.GONE);
+        previewBox.setOnClickListener(v -> colorPlane.setVisibility(colorPlane.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE));
         TextView alphaLabel = new TextView(context); alphaLabel.setText("Opacity"); alphaLabel.setTextColor(Color.LTGRAY); alphaLabel.setPadding(0, dp(8), 0, 0); root.addView(alphaLabel);
-        android.widget.SeekBar alphaSlider = new android.widget.SeekBar(context); alphaSlider.setMax(255); alphaSlider.setProgress(Color.alpha(initialColor)); root.addView(alphaSlider);
+        com.google.android.material.slider.Slider alphaSlider = PhotoEditorUi.createDiscordSlider(context, 0, 255, Color.alpha(initialColor)); root.addView(alphaSlider);
         
         // 4. Presets Horizontal Scroll
         android.widget.HorizontalScrollView presetScroll = new android.widget.HorizontalScrollView(context);
@@ -1348,10 +1334,10 @@ public class PhotoEditorPlugin extends Plugin {
             swatch.setLayoutParams(swParams);
             swatch.setOnClickListener(v -> {
                 Color.colorToHSV(c, hsv);
-                hueSlider.setProgress((int) hsv[0]);
-                satSlider.setProgress((int) (hsv[1] * 100));
-                valSlider.setProgress((int) (hsv[2] * 100));
-                alphaSlider.setProgress(Color.alpha(c));
+                hueSlider.setValue((int) hsv[0]);
+                satSlider.setValue((int) (hsv[1] * 100));
+                valSlider.setValue((int) (hsv[2] * 100));
+                alphaSlider.setValue(Color.alpha(c));
             });
             presetContainer.addView(swatch);
         }
@@ -1363,10 +1349,10 @@ public class PhotoEditorPlugin extends Plugin {
         
         Runnable updateColor = () -> {
             try {
-                hsv[0] = hueSlider.getProgress();
-                hsv[1] = satSlider.getProgress() / 100f;
-                hsv[2] = valSlider.getProgress() / 100f;
-                int alpha = alphaSlider.getProgress();
+                hsv[0] = hueSlider.getValue();
+                hsv[1] = satSlider.getValue() / 100f;
+                hsv[2] = valSlider.getValue() / 100f;
+                int alpha = Math.round(alphaSlider.getValue());
                 currentColor[0] = Color.HSVToColor(alpha, hsv);
                 boxBg.setColor(currentColor[0]);
                 previewBox.invalidate();
@@ -1376,16 +1362,21 @@ public class PhotoEditorPlugin extends Plugin {
             } catch (Exception e) {}
         };
         
-        android.widget.SeekBar.OnSeekBarChangeListener sliderListener = new android.widget.SeekBar.OnSeekBarChangeListener() {
-            @Override public void onProgressChanged(android.widget.SeekBar seekBar, int progress, boolean fromUser) { updateColor.run(); }
-            @Override public void onStartTrackingTouch(android.widget.SeekBar seekBar) {}
-            @Override public void onStopTrackingTouch(android.widget.SeekBar seekBar) {}
-        };
-        hueSlider.setOnSeekBarChangeListener(sliderListener);
-        satSlider.setOnSeekBarChangeListener(sliderListener);
-        valSlider.setOnSeekBarChangeListener(sliderListener);
-        alphaSlider.setOnSeekBarChangeListener(sliderListener);
-        
+        colorPlane.setOnTouchListener((v, event) -> {
+            float hue = Math.max(0f, Math.min(360f, event.getX() / Math.max(1f, v.getWidth()) * 360f));
+            float position = Math.max(0f, Math.min(1f, event.getY() / Math.max(1f, v.getHeight())));
+            float saturation = position <= 0.5f ? position * 2f : 1f;
+            float value = position <= 0.5f ? 1f : (1f - position) * 2f;
+            hueSlider.setValue(Math.round(hue));
+            satSlider.setValue(Math.round(saturation * 100f));
+            valSlider.setValue(Math.round(value * 100f));
+            return true;
+        });
+        com.google.android.material.slider.Slider.OnChangeListener sliderListener = (slider, value, fromUser) -> updateColor.run();
+        hueSlider.addOnChangeListener(sliderListener);
+        satSlider.addOnChangeListener(sliderListener);
+        valSlider.addOnChangeListener(sliderListener);
+        alphaSlider.addOnChangeListener(sliderListener);
         hexInput.addTextChangedListener(new android.text.TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
@@ -1396,10 +1387,10 @@ public class PhotoEditorPlugin extends Plugin {
                         currentColor[0] = c;
                         boxBg.setColor(c);
                         Color.colorToHSV(c, hsv);
-                        hueSlider.setProgress((int) hsv[0]);
-                        satSlider.setProgress((int) (hsv[1] * 100));
-                        valSlider.setProgress((int) (hsv[2] * 100));
-                        alphaSlider.setProgress(Color.alpha(c));
+                        hueSlider.setValue((int) hsv[0]);
+                        satSlider.setValue((int) (hsv[1] * 100));
+                        valSlider.setValue((int) (hsv[2] * 100));
+                        alphaSlider.setValue(Color.alpha(c));
                     } catch (Exception ignored) {}
                 }
             }
@@ -1795,20 +1786,15 @@ public class PhotoEditorPlugin extends Plugin {
         sizeLabel.setText("Size " + (int) currentTextSize[0]);
         sizeLabel.setTextColor(Color.parseColor("#b5bac1"));
         sizeLabel.setTextSize(14f);
+        sizeLabel.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
         sizeLabel.setMinimumWidth(dp(65)); // Prevent layout jumping
         styleRow.addView(sizeLabel);
         
-        android.widget.SeekBar sizeSlider = new android.widget.SeekBar(context);
-        sizeSlider.setMax(110); // 10 to 120
-        sizeSlider.setProgress((int) currentTextSize[0] - 10);
-        sizeSlider.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
-            @Override public void onProgressChanged(android.widget.SeekBar seekBar, int progress, boolean fromUser) {
-                currentTextSize[0] = progress + 10f;
-                sizeLabel.setText("Size " + (int) currentTextSize[0]);
-                updateTypeface.run();
-            }
-            @Override public void onStartTrackingTouch(android.widget.SeekBar seekBar) {}
-            @Override public void onStopTrackingTouch(android.widget.SeekBar seekBar) {}
+        com.google.android.material.slider.Slider sizeSlider = PhotoEditorUi.createDiscordSlider(context, 0, 110, currentTextSize[0] - 10);
+        sizeSlider.addOnChangeListener((slider, value, fromUser) -> {
+            currentTextSize[0] = Math.round(value) + 10f;
+            sizeLabel.setText("Size " + (int) currentTextSize[0]);
+            updateTypeface.run();
         });
         LinearLayout.LayoutParams sliderParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
         styleRow.addView(sizeSlider, sliderParams);
@@ -2439,21 +2425,14 @@ public class PhotoEditorPlugin extends Plugin {
             degreeLabel.setGravity(Gravity.CENTER);
             sliderRow.addView(degreeLabel);
 
-            android.widget.SeekBar rotateSlider = new android.widget.SeekBar(context);
-            rotateSlider.setMax(360);
-            rotateSlider.setProgress(180);
+            com.google.android.material.slider.Slider rotateSlider = PhotoEditorUi.createDiscordSlider(context, 0, 360, 180);
             rotateSlider.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-            rotateSlider.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
-                @Override
-                public void onProgressChanged(android.widget.SeekBar seekBar, int progress, boolean fromUser) {
-                    if (fromUser) {
-                        rotation[0] = progress - 180f;
-                        degreeLabel.setText((int)rotation[0] + "°");
-                        updatePreview.run();
-                    }
+            rotateSlider.addOnChangeListener((slider, value, fromUser) -> {
+                if (fromUser) {
+                    rotation[0] = value - 180f;
+                    degreeLabel.setText((int) rotation[0] + "°");
+                    updatePreview.run();
                 }
-                @Override public void onStartTrackingTouch(android.widget.SeekBar seekBar) {}
-                @Override public void onStopTrackingTouch(android.widget.SeekBar seekBar) {}
             });
             sliderRow.addView(rotateSlider);
             rotateControls.addView(sliderRow);
@@ -2479,7 +2458,7 @@ public class PhotoEditorPlugin extends Plugin {
                 float newRot = rotation[0] + 90f;
                 if (newRot > 180f) newRot -= 360f;
                 rotation[0] = newRot;
-                rotateSlider.setProgress((int)newRot + 180);
+                rotateSlider.setValue((int)newRot + 180);
                 degreeLabel.setText((int)newRot + "°");
                 updatePreview.run();
             });
@@ -2842,6 +2821,7 @@ public class PhotoEditorPlugin extends Plugin {
     }
 
     private void addManualOverlay(PhotoEditorView editorView, View overlay) {
+        overlayRedoStack.clear();
         Runnable add = () -> {
             if (overlay.getParent() == null) {
                 ViewGroup.LayoutParams existing = overlay.getLayoutParams();
@@ -3130,6 +3110,7 @@ public class PhotoEditorPlugin extends Plugin {
     }
 
     private void clearAllEditorOverlays(PhotoEditor editor, PhotoEditorView editorView) {
+        overlayRedoStack.clear();
         try {
             editor.clearAllViews();
         } catch (Throwable throwable) {
@@ -3621,26 +3602,20 @@ public class PhotoEditorPlugin extends Plugin {
             
             row.addView(header);
 
-            android.widget.SeekBar slider = new android.widget.SeekBar(context);
-            slider.setMax(200); // Normalize to 0-200
+            com.google.android.material.slider.Slider slider = PhotoEditorUi.createDiscordSlider(context, 0, 200, 0);
             
             float current = customFilterValues[i];
             float range = maxs[i] - mins[i];
             int progress = (int) (((current - mins[i]) / range) * 200f);
-            slider.setProgress(progress);
+            slider.setValue(progress);
 
-            slider.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
-                @Override
-                public void onProgressChanged(android.widget.SeekBar seekBar, int prog, boolean fromUser) {
-                    if (fromUser) {
-                        float val = mins[index] + ((float) prog / 200f) * range;
-                        customFilterValues[index] = val;
-                        valueText.setText(String.format(java.util.Locale.US, "%.2f", val));
-                        updateFilter.run();
-                    }
+            slider.addOnChangeListener((view, value, fromUser) -> {
+                if (fromUser) {
+                    float val = mins[index] + (value / 200f) * range;
+                    customFilterValues[index] = val;
+                    valueText.setText(String.format(java.util.Locale.US, "%.2f", val));
+                    updateFilter.run();
                 }
-                @Override public void onStartTrackingTouch(android.widget.SeekBar seekBar) {}
-                @Override public void onStopTrackingTouch(android.widget.SeekBar seekBar) {}
             });
             row.addView(slider);
             content.addView(row);
