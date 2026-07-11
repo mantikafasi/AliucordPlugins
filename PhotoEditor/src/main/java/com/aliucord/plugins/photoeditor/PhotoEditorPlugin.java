@@ -121,7 +121,7 @@ public class PhotoEditorPlugin extends Plugin {
         
         rootContainer.addView(subToolbarContainer, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                dp(52)
+                dp(64)
         ));
         rootContainer.addView(mainScroll, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,

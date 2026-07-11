@@ -3,12 +3,16 @@ package com.aliucord.plugins.photoeditor;
 import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.View;
-
+import android.widget.Checkable;
 
 import com.aliucord.Utils;
 import com.aliucord.api.SettingsAPI;
 import com.aliucord.widgets.BottomSheet;
 import com.discord.views.CheckedSetting;
+import com.discord.views.RadioManager;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @SuppressWarnings("unused")
 @SuppressLint("SetTextI18n")
@@ -23,77 +27,73 @@ public class PhotoEditorSettings extends BottomSheet {
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        
-        android.content.Context ctx = view.getContext();
 
-        try {
-            CheckedSetting quickEditSetting = Utils.createCheckedSetting(ctx, CheckedSetting.ViewType.SWITCH, "Quick Edit from Chat Input", "Instantly open the editor when tapping an image in the chat box, bypassing the attachment bottom sheet.");
-            quickEditSetting.setChecked(settings.getBool("quick_edit", false));
-            quickEditSetting.setOnCheckedListener(isChecked -> {
-                settings.setBool("quick_edit", isChecked);
-            });
-            addView(quickEditSetting);
-        } catch (Throwable t) {
-            // Fallback in case CheckedSetting API is different
-            android.widget.Switch sw = new android.widget.Switch(ctx);
-            sw.setText("Quick Edit from Chat Input (Bypass Bottom Sheet)");
-            sw.setChecked(settings.getBool("quick_edit", false));
-            sw.setOnCheckedChangeListener((btn, isChecked) -> settings.setBool("quick_edit", isChecked));
-            sw.setPadding(com.aliucord.utils.DimenUtils.dpToPx(16), com.aliucord.utils.DimenUtils.dpToPx(16), com.aliucord.utils.DimenUtils.dpToPx(16), com.aliucord.utils.DimenUtils.dpToPx(16));
-            addView(sw);
-        }
+        CheckedSetting quickEditSetting = Utils.createCheckedSetting(
+                view.getContext(),
+                CheckedSetting.ViewType.SWITCH,
+                "Quick Edit from Chat Input",
+                "Open the editor when tapping an image in the chat box, without opening the attachment sheet."
+        );
+        quickEditSetting.setChecked(settings.getBool("quick_edit", false));
+        quickEditSetting.setOnCheckedListener(isChecked -> settings.setBool("quick_edit", isChecked));
+        addView(quickEditSetting);
 
-        int currentMode = settings.getInt("brush_layer_mode", 2);
-        android.widget.TextView brushModeText = new android.widget.TextView(ctx);
-        brushModeText.setText("Brush Layer Mode: " + getModeString(currentMode));
-        brushModeText.setTextSize(16f);
-        brushModeText.setPadding(com.aliucord.utils.DimenUtils.dpToPx(16), com.aliucord.utils.DimenUtils.dpToPx(16), com.aliucord.utils.DimenUtils.dpToPx(16), com.aliucord.utils.DimenUtils.dpToPx(16));
-        brushModeText.setOnClickListener(v -> {
-            android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(ctx);
-            builder.setTitle("Brush Layer Mode");
-            String[] options = {"Always Behind Items", "Always In Front of Items", "Dynamic (Brings to front when drawing)"};
-            builder.setSingleChoiceItems(options, settings.getInt("brush_layer_mode", 2), (dialog, which) -> {
-                settings.setInt("brush_layer_mode", which);
-                brushModeText.setText("Brush Layer Mode: " + getModeString(which));
-                dialog.dismiss();
-            });
-            builder.show();
-        });
-        addView(brushModeText);
+        addRadioGroup(
+                "Brush Layer Mode",
+                new String[]{"Always Behind Items", "Always In Front of Items", "Dynamic"},
+                new String[]{
+                        "Brush strokes stay behind text, stickers, and images.",
+                        "Brush strokes are drawn above text, stickers, and images.",
+                        "Bring brush strokes forward while drawing."
+                },
+                settings.getInt("brush_layer_mode", 2),
+                mode -> settings.setInt("brush_layer_mode", mode)
+        );
 
-        int currentFilterMode = settings.getInt("filter_apply_mode", 0);
-        android.widget.TextView filterModeText = new android.widget.TextView(ctx);
-        filterModeText.setText("Filter Apply Mode: " + getFilterModeString(currentFilterMode));
-        filterModeText.setTextSize(16f);
-        filterModeText.setPadding(com.aliucord.utils.DimenUtils.dpToPx(16), com.aliucord.utils.DimenUtils.dpToPx(16), com.aliucord.utils.DimenUtils.dpToPx(16), com.aliucord.utils.DimenUtils.dpToPx(16));
-        filterModeText.setOnClickListener(v -> {
-            android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(ctx);
-            builder.setTitle("Filter Apply Mode");
-            String[] options = {"Canvas Only (Background Image)", "Entire Edited Image (Includes Stickers & Text)"};
-            builder.setSingleChoiceItems(options, settings.getInt("filter_apply_mode", 0), (dialog, which) -> {
-                settings.setInt("filter_apply_mode", which);
-                filterModeText.setText("Filter Apply Mode: " + getFilterModeString(which));
-                dialog.dismiss();
-            });
-            builder.show();
-        });
-        addView(filterModeText);
+        addRadioGroup(
+                "Filter Apply Mode",
+                new String[]{"Canvas Only", "Entire Edited Image"},
+                new String[]{
+                        "Apply filters only to the background image.",
+                        "Apply filters to the background, text, stickers, and other edits."
+                },
+                settings.getInt("filter_apply_mode", 0),
+                mode -> settings.setInt("filter_apply_mode", mode)
+        );
     }
 
-    private String getFilterModeString(int mode) {
-        switch (mode) {
-            case 0: return "Canvas Only";
-            case 1: return "Entire Edited Image";
-            default: return "Unknown";
+    private void addRadioGroup(String title, String[] labels, String[] descriptions, int selectedIndex, SelectionListener listener) {
+        int safeSelectedIndex = Math.max(0, Math.min(selectedIndex, labels.length - 1));
+        CheckedSetting[] options = new CheckedSetting[labels.length];
+        List<Checkable> radioButtons = new ArrayList<>();
+
+        for (int index = 0; index < labels.length; index++) {
+            CheckedSetting option = Utils.createCheckedSetting(
+                    requireContext(),
+                    CheckedSetting.ViewType.RADIO,
+                    title + ": " + labels[index],
+                    descriptions[index]
+            );
+            option.setChecked(index == safeSelectedIndex);
+            options[index] = option;
+            radioButtons.add(option);
+            addView(option);
+        }
+
+        RadioManager radioManager = new RadioManager(radioButtons);
+        for (int index = 0; index < options.length; index++) {
+            final int optionIndex = index;
+            final CheckedSetting option = options[index];
+            option.setOnCheckedListener(isChecked -> {
+                if (isChecked) {
+                    radioManager.a(option);
+                    listener.onSelected(optionIndex);
+                }
+            });
         }
     }
 
-    private String getModeString(int mode) {
-        switch (mode) {
-            case 0: return "Always Behind Items";
-            case 1: return "Always In Front of Items";
-            case 2: return "Dynamic (Brings to front when drawing)";
-            default: return "Unknown";
-        }
+    private interface SelectionListener {
+        void onSelected(int index);
     }
 }
