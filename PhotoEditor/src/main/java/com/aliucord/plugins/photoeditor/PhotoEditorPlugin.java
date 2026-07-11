@@ -116,12 +116,12 @@ public class PhotoEditorPlugin extends Plugin {
         ));
 
         FrameLayout subToolbarContainer = new FrameLayout(context);
-        subToolbarContainer.setVisibility(View.GONE);
+        subToolbarContainer.setVisibility(View.INVISIBLE);
         subToolbarContainer.setBackgroundColor(0xff2b2d31);
         
         rootContainer.addView(subToolbarContainer, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
+                dp(52)
         ));
         rootContainer.addView(mainScroll, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -380,7 +380,7 @@ public class PhotoEditorPlugin extends Plugin {
 
         View textMainBtn = iconButton(context, "Text", "ic_text_image_24dp", v -> {
             selectOnly(mainButtons, null);
-            subToolbarContainer.setVisibility(View.GONE);
+            subToolbarContainer.setVisibility(View.INVISIBLE);
             editor.setBrushDrawingMode(false);
             showTextDialog(context, editor, editorView);
         });
@@ -388,7 +388,7 @@ public class PhotoEditorPlugin extends Plugin {
 
         View emojiMainBtn = iconButton(context, "Emoji", "ic_emoji_24dp", v -> {
             selectOnly(mainButtons, null);
-            subToolbarContainer.setVisibility(View.GONE);
+            subToolbarContainer.setVisibility(View.INVISIBLE);
             editor.setBrushDrawingMode(false);
             showDiscordEmojiPicker(context, editor, editorView);
         });
@@ -396,7 +396,7 @@ public class PhotoEditorPlugin extends Plugin {
 
         View stickerMainBtn = iconButton(context, "Sticker", "ic_sticker_icon_24dp", v -> {
             selectOnly(mainButtons, null);
-            subToolbarContainer.setVisibility(View.GONE);
+            subToolbarContainer.setVisibility(View.INVISIBLE);
             editor.setBrushDrawingMode(false);
             showDiscordStickerPicker(context, editor, editorView);
         });
@@ -404,7 +404,7 @@ public class PhotoEditorPlugin extends Plugin {
 
         View imageMainBtn = iconButton(context, "Image", "ic_photo_grey_24dp", v -> {
             selectOnly(mainButtons, null);
-            subToolbarContainer.setVisibility(View.GONE);
+            subToolbarContainer.setVisibility(View.INVISIBLE);
             editor.setBrushDrawingMode(false);
             showImagePicker(context, editor, editorView);
         });
@@ -412,7 +412,7 @@ public class PhotoEditorPlugin extends Plugin {
 
         View cropMainBtn = iconButton(context, "Crop", "ucrop_ic_crop", v -> {
             selectOnly(mainButtons, null);
-            subToolbarContainer.setVisibility(View.GONE);
+            subToolbarContainer.setVisibility(View.INVISIBLE);
             editor.setBrushDrawingMode(false);
             showCropDialog(context, editorView.getSource(), editorView);
         });
