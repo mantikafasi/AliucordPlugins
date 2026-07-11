@@ -1,4 +1,4 @@
-version = "2.0.0-dev"
+version = "2.0.0"
 description = "Edit image URLs with PhotoEditor"
 
 
@@ -11,7 +11,7 @@ aliucord {
 
     changelog.set(
         """
-        # 2.0.0-dev
+        # 2.0.0
         
         # New Features & Enhancements
         * Added a dedicated Settings Page for the plugin
