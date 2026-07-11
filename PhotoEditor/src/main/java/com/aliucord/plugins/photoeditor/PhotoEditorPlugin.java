@@ -148,6 +148,7 @@ public class PhotoEditorPlugin extends Plugin {
             selectOnly(toolButtons, penButton);
             editor.setBrushDrawingMode(true);
             applyBrush(editor);
+            applyBrushLayerMode(editorView, true);
         });
         toolButtons.add(penButton);
         drawToolbar.addView(penButton);
@@ -157,6 +158,7 @@ public class PhotoEditorPlugin extends Plugin {
             selectOnly(toolButtons, eraseButton);
             editor.setBrushDrawingMode(true);
             editor.brushEraser();
+            applyBrushLayerMode(editorView, true);
         });
         toolButtons.add(eraseButton);
         drawToolbar.addView(eraseButton);
@@ -222,6 +224,7 @@ public class PhotoEditorPlugin extends Plugin {
                 setColorSwatchSelected(currentColorBtn, newColor, true);
                 editor.setBrushDrawingMode(true);
                 applyBrush(editor);
+                applyBrushLayerMode(editorView, true);
             });
         });
         setColorSwatchSelected(currentColorBtn, brushColor, true);
@@ -363,6 +366,7 @@ public class PhotoEditorPlugin extends Plugin {
             selectOnly(toolButtons, penButton);
             editor.setBrushDrawingMode(true);
             applyBrush(editor);
+            applyBrushLayerMode(editorView, true);
         });
         mainButtons.add(drawMainBtn);
         mainToolbar.addView(drawMainBtn);
@@ -411,6 +415,7 @@ public class PhotoEditorPlugin extends Plugin {
         setToolbarButtonSelected(penButton, true);
         editor.setBrushDrawingMode(true);
         applyBrush(editor);
+        applyBrushLayerMode(editorView, true);
 
         return rootContainer;
     }
@@ -2535,6 +2540,38 @@ public class PhotoEditorPlugin extends Plugin {
     }
 
 
+
+    private void applyBrushLayerMode(ja.burhanrashid52.photoeditor.PhotoEditorView editorView, boolean isDrawing) {
+        int mode = settings.getInt("brush_layer_mode", 2); // 0: Behind, 1: Front, 2: Dynamic
+        View drawingView = null;
+        for (int i = 0; i < editorView.getChildCount(); i++) {
+            View child = editorView.getChildAt(i);
+            if (child.getClass().getName().contains("DrawingView")) {
+                drawingView = child;
+                break;
+            }
+        }
+        if (drawingView != null) {
+            if (mode == 0) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    drawingView.setElevation(0f);
+                }
+            } else if (mode == 1) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    drawingView.setElevation(100f);
+                } else {
+                    drawingView.bringToFront();
+                }
+            } else if (mode == 2) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    drawingView.setElevation(0f);
+                }
+                if (isDrawing) {
+                    drawingView.bringToFront();
+                }
+            }
+        }
+    }
 
     private void applyBrush(PhotoEditor editor) {
         editor.setShape(new ShapeBuilder()

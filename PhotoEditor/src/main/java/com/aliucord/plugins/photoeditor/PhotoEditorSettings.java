@@ -42,5 +42,32 @@ public class PhotoEditorSettings extends BottomSheet {
             sw.setPadding(com.aliucord.utils.DimenUtils.dpToPx(16), com.aliucord.utils.DimenUtils.dpToPx(16), com.aliucord.utils.DimenUtils.dpToPx(16), com.aliucord.utils.DimenUtils.dpToPx(16));
             addView(sw);
         }
+
+        int currentMode = settings.getInt("brush_layer_mode", 2);
+        android.widget.TextView brushModeText = new android.widget.TextView(ctx);
+        brushModeText.setText("Brush Layer Mode: " + getModeString(currentMode));
+        brushModeText.setTextSize(16f);
+        brushModeText.setPadding(com.aliucord.utils.DimenUtils.dpToPx(16), com.aliucord.utils.DimenUtils.dpToPx(16), com.aliucord.utils.DimenUtils.dpToPx(16), com.aliucord.utils.DimenUtils.dpToPx(16));
+        brushModeText.setOnClickListener(v -> {
+            android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(ctx);
+            builder.setTitle("Brush Layer Mode");
+            String[] options = {"Always Behind Items", "Always In Front of Items", "Dynamic (Brings to front when drawing)"};
+            builder.setSingleChoiceItems(options, settings.getInt("brush_layer_mode", 2), (dialog, which) -> {
+                settings.setInt("brush_layer_mode", which);
+                brushModeText.setText("Brush Layer Mode: " + getModeString(which));
+                dialog.dismiss();
+            });
+            builder.show();
+        });
+        addView(brushModeText);
+    }
+
+    private String getModeString(int mode) {
+        switch (mode) {
+            case 0: return "Always Behind Items";
+            case 1: return "Always In Front of Items";
+            case 2: return "Dynamic (Brings to front when drawing)";
+            default: return "Unknown";
+        }
     }
 }
