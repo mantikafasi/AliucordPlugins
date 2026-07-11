@@ -308,6 +308,12 @@ public class PhotoEditorPlugin extends Plugin {
         View clearMainBtn = iconButton(context, "Reset", "ucrop_ic_reset", v -> clearAllEditorOverlays(editor, editorView));
         mainToolbar.addView(clearMainBtn);
 
+        final java.lang.reflect.Method[] undoRedoMethods = new java.lang.reflect.Method[2];
+        try {
+            undoRedoMethods[0] = editor.getClass().getDeclaredMethod("isUndoAvailable");
+            undoRedoMethods[1] = editor.getClass().getDeclaredMethod("isRedoAvailable");
+        } catch (Throwable ignored) {}
+
         Runnable stateUpdater = new Runnable() {
             @Override
             public void run() {
@@ -326,10 +332,8 @@ public class PhotoEditorPlugin extends Plugin {
                 boolean canUndo = false;
                 boolean canRedo = false;
                 try {
-                    java.lang.reflect.Method isUndoAvailable = editor.getClass().getDeclaredMethod("isUndoAvailable");
-                    canUndo = (boolean) isUndoAvailable.invoke(editor);
-                    java.lang.reflect.Method isRedoAvailable = editor.getClass().getDeclaredMethod("isRedoAvailable");
-                    canRedo = (boolean) isRedoAvailable.invoke(editor);
+                    if (undoRedoMethods[0] != null) canUndo = (boolean) undoRedoMethods[0].invoke(editor);
+                    if (undoRedoMethods[1] != null) canRedo = (boolean) undoRedoMethods[1].invoke(editor);
                 } catch (Throwable ignored) {}
                 
                 boolean undoActive = hasOverlay || canUndo;
@@ -351,7 +355,7 @@ public class PhotoEditorPlugin extends Plugin {
                 }
                 clearMainBtn.setEnabled(clearActive);
 
-                undoMainBtn.postDelayed(this, 100);
+                undoMainBtn.postDelayed(this, 300);
             }
         };
         undoMainBtn.post(stateUpdater);
@@ -516,7 +520,8 @@ public class PhotoEditorPlugin extends Plugin {
 
                     FragmentActivity activity = findFragmentActivity(getRealActivity());
                     if (settings.getBool("quick_edit", false) && activity != null && isLikelyImage(attachment)) {
-                        com.aliucord.Utils.mainThread.postDelayed(() -> openEditor(activity, attachment, editRequests.get(attachment), aggregator), 160);
+                        EditRequest editReq = editRequests.get(attachment);
+                        com.aliucord.Utils.mainThread.postDelayed(() -> openEditor(activity, attachment, editReq, aggregator), 160);
                         return null;
                     }
                     try {
@@ -1012,10 +1017,11 @@ public class PhotoEditorPlugin extends Plugin {
             editorStickerPickerOpen = false;
         });
 
-        editorStickerPickerOpen = true;
         try {
+            editorStickerPickerOpen = true;
             dialog.show();
         } catch (android.view.WindowManager.BadTokenException badTokenException) {
+            editorStickerPickerOpen = false;
             logger.error("Failed to show PhotoEditor dialog because the activity window token is invalid", badTokenException);
             Toast.makeText(activity, "Could not open image editor", Toast.LENGTH_SHORT).show();
         }
@@ -2407,6 +2413,9 @@ public class PhotoEditorPlugin extends Plugin {
                 m.postRotate(rotation[0]);
                 if (flip[0]) m.postScale(-1, 1);
                 if (flip[1]) m.postScale(1, -1);
+                if (currentPreview[0] != null && currentPreview[0] != previewBase) {
+                    currentPreview[0].recycle();
+                }
                 currentPreview[0] = Bitmap.createBitmap(previewBase, 0, 0, previewBase.getWidth(), previewBase.getHeight(), m, true);
                 previewImage.setImageBitmap(currentPreview[0]);
                 container.requestLayout();
@@ -2524,6 +2533,9 @@ public class PhotoEditorPlugin extends Plugin {
 
                     if (cropWidth > 10 && cropHeight > 10) {
                         Bitmap cropped = Bitmap.createBitmap(finalRotatedSrc, left, top, cropWidth, cropHeight);
+                        if (finalRotatedSrc != src) {
+                            finalRotatedSrc.recycle();
+                        }
                         targetView.setScaleType(android.widget.ImageView.ScaleType.FIT_XY);
                         targetView.setImageBitmap(cropped);
                         
