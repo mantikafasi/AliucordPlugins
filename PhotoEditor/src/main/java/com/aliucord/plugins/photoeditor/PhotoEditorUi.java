@@ -11,16 +11,26 @@ final class PhotoEditorUi {
     private PhotoEditorUi() {}
 
     static Slider createDiscordSlider(Context context, float from, float to, float value) {
+        final float stepSize = 1f;
         Slider slider = new Slider(context);
         slider.setValueFrom(from);
         slider.setValueTo(to);
-        slider.setStepSize(1f);
-        slider.setValue(value);
+        slider.setStepSize(stepSize);
+        slider.setValue(snapToStep(value, from, to, stepSize));
         ColorStateList blurple = ColorStateList.valueOf(0xff5865f2);
         slider.setThumbTintList(blurple);
         slider.setTrackActiveTintList(blurple);
         slider.setTrackInactiveTintList(ColorStateList.valueOf(0xff4e5058));
         return slider;
+    }
+
+    private static float snapToStep(float value, float from, float to, float stepSize) {
+        if (Float.isNaN(value) || Float.isInfinite(value)) {
+            return from;
+        }
+        float clamped = Math.max(from, Math.min(to, value));
+        float snapped = from + Math.round((clamped - from) / stepSize) * stepSize;
+        return Math.max(from, Math.min(to, snapped));
     }
 
     static Bitmap createColorPlane(int size) {

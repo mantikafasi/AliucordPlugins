@@ -23,6 +23,9 @@ import ja.burhanrashid52.photoeditor.PhotoEditorView;
 import ja.burhanrashid52.photoeditor.PhotoFilter;
 
 final class PhotoEditorSession {
+    private static final int MAX_ACTIVITY_RESOLVE_ATTEMPTS = 5;
+    private static final long ACTIVITY_RETRY_DELAY_MS = 100L;
+
     private PhotoEditorSession() {}
 
     static void open(
@@ -32,20 +35,35 @@ final class PhotoEditorSession {
             PhotoEditorPlugin.EditRequest editRequest,
             SelectionAggregator<?> aggregator
     ) {
-        final Activity activity;
-        if (passedActivity == null || passedActivity.isFinishing() ||
-                (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1 && passedActivity.isDestroyed())) {
-            activity = Utils.getAppActivity();
-        } else {
-            activity = passedActivity;
-        }
+        open(owner, passedActivity, attachment, editRequest, aggregator, 0);
+    }
 
-        if (activity == null || activity.isFinishing() ||
-                (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1 && activity.isDestroyed())) {
+    private static void open(
+            PhotoEditorPlugin owner,
+            Activity passedActivity,
+            Attachment<?> attachment,
+            PhotoEditorPlugin.EditRequest editRequest,
+            SelectionAggregator<?> aggregator,
+            int resolveAttempt
+    ) {
+        Activity activity = resolveActivity(passedActivity);
+        if (activity == null) {
+            if (resolveAttempt < MAX_ACTIVITY_RESOLVE_ATTEMPTS) {
+                Utils.mainThread.postDelayed(
+                        () -> open(owner, passedActivity, attachment, editRequest, aggregator, resolveAttempt + 1),
+                        ACTIVITY_RETRY_DELAY_MS
+                );
+                return;
+            }
+
             Activity appActivity = Utils.getAppActivity();
             if (appActivity != null) {
                 Toast.makeText(appActivity, "Could not open image editor (activity null or destroyed)", Toast.LENGTH_SHORT).show();
             }
+            owner.logError(
+                    "Could not open PhotoEditor because no live activity was available",
+                    new IllegalStateException("Activity unavailable after retry")
+            );
             return;
         }
         if (attachment.getUri() == null) {
@@ -215,5 +233,19 @@ final class PhotoEditorSession {
             owner.logError("Failed to show PhotoEditor dialog because the activity window token is invalid", exception);
             Toast.makeText(activity, "Could not open image editor", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private static Activity resolveActivity(Activity passedActivity) {
+        if (isUsable(passedActivity)) {
+            return passedActivity;
+        }
+        Activity currentActivity = Utils.getAppActivity();
+        return isUsable(currentActivity) ? currentActivity : null;
+    }
+
+    private static boolean isUsable(Activity activity) {
+        return activity != null &&
+                !activity.isFinishing() &&
+                (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.JELLY_BEAN_MR1 || !activity.isDestroyed());
     }
 }

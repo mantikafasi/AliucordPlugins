@@ -502,10 +502,14 @@ public class PhotoEditorPlugin extends Plugin {
                     latestAggregator = new WeakReference<>(aggregator);
                     registerEditRequest(aggregator, attachment);
 
-                    FragmentActivity activity = findFragmentActivity(Utils.getAppActivity());
-                    if (settings.getBool("quick_edit", false) && activity != null && isLikelyImage(attachment)) {
+                    if (settings.getBool("quick_edit", false) && isLikelyImage(attachment)) {
                         EditRequest editReq = editRequests.get(attachment);
-                        com.aliucord.Utils.mainThread.postDelayed(() -> PhotoEditorSession.open(this, activity, attachment, editReq, aggregator), 160);
+                        WidgetChatInputAttachments attachments = latestChatInputAttachments.get();
+                        FlexInputFragment flexInputFragment = attachments == null
+                                ? null
+                                : WidgetChatInputAttachments.access$getFlexInputFragment$p(attachments);
+                        FragmentActivity activity = flexInputFragment == null ? null : flexInputFragment.getActivity();
+                        Utils.mainThread.post(() -> PhotoEditorSession.open(this, activity, attachment, editReq, aggregator));
                         return null;
                     }
                     try {
