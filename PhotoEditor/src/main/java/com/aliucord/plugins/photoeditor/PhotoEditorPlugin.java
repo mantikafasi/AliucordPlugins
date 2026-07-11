@@ -1156,6 +1156,11 @@ public class PhotoEditorPlugin extends Plugin {
         if (listener != null)
             container.setOnClickListener(listener);
 
+        container.setOnLongClickListener(v -> {
+            Toast.makeText(context, label, Toast.LENGTH_SHORT).show();
+            return true;
+        });
+
         addPressAnimation(container);
 
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(

@@ -25,6 +25,7 @@ aliucord {
         * Global Actions: Undo, Redo, and Reset are now global actions with dynamic state tracking (buttons grey out when there's nothing to undo)
 
         # UI & UX Polish
+        * Added long-press tooltips to all editor buttons (Draw, Text, Crop, etc.) to help new users
         * Replaced the S/L brush size buttons with a dynamic slider, locking the sub-toolbar in place
         * Added Delete, Spoiler, and Save buttons directly to the top header for instant access without scrolling
         * Implemented a native Discord-style visual Spoiler overlay that hides automatically when you touch the screen
