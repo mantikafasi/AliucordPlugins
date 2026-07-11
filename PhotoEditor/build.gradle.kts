@@ -35,6 +35,7 @@ aliucord {
         # Bug Fixes & Technical Improvements
         * Built a downscaled-preview rendering engine so the crop rotation slider is completely lag-free on all devices
         * Fixed OpenGL occlusion bugs so live previews work instantly with custom ColorMatrix filters
+        * Fixed a UI synchronization bug where the Draw toolbar would stay highlighted after opening other menus
         * Fixed a critical bug where selecting a sticker in the editor sent it to chat (resolved conflict with the FakeStickers plugin)
         * Fixed "Could not open image editor" crashes caused by invalid window tokens by bulletproofing Activity fetching
         """.trimIndent(),

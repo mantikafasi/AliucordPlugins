@@ -371,19 +371,44 @@ public class PhotoEditorPlugin extends Plugin {
         mainButtons.add(drawMainBtn);
         mainToolbar.addView(drawMainBtn);
 
-        View textMainBtn = iconButton(context, "Text", "ic_text_image_24dp", v -> showTextDialog(context, editor, editorView));
+        View textMainBtn = iconButton(context, "Text", "ic_text_image_24dp", v -> {
+            selectOnly(mainButtons, null);
+            subToolbarContainer.setVisibility(View.GONE);
+            editor.setBrushDrawingMode(false);
+            showTextDialog(context, editor, editorView);
+        });
         mainToolbar.addView(textMainBtn);
 
-        View emojiMainBtn = iconButton(context, "Emoji", "ic_emoji_24dp", v -> showDiscordEmojiPicker(context, editor, editorView));
+        View emojiMainBtn = iconButton(context, "Emoji", "ic_emoji_24dp", v -> {
+            selectOnly(mainButtons, null);
+            subToolbarContainer.setVisibility(View.GONE);
+            editor.setBrushDrawingMode(false);
+            showDiscordEmojiPicker(context, editor, editorView);
+        });
         mainToolbar.addView(emojiMainBtn);
 
-        View stickerMainBtn = iconButton(context, "Sticker", "ic_sticker_icon_24dp", v -> showDiscordStickerPicker(context, editor, editorView));
+        View stickerMainBtn = iconButton(context, "Sticker", "ic_sticker_icon_24dp", v -> {
+            selectOnly(mainButtons, null);
+            subToolbarContainer.setVisibility(View.GONE);
+            editor.setBrushDrawingMode(false);
+            showDiscordStickerPicker(context, editor, editorView);
+        });
         mainToolbar.addView(stickerMainBtn);
 
-        View imageMainBtn = iconButton(context, "Image", "ic_photo_grey_24dp", v -> showImagePicker(context, editor, editorView));
+        View imageMainBtn = iconButton(context, "Image", "ic_photo_grey_24dp", v -> {
+            selectOnly(mainButtons, null);
+            subToolbarContainer.setVisibility(View.GONE);
+            editor.setBrushDrawingMode(false);
+            showImagePicker(context, editor, editorView);
+        });
         mainToolbar.addView(imageMainBtn);
 
-        View cropMainBtn = iconButton(context, "Crop", "ucrop_ic_crop", v -> showCropDialog(context, editorView.getSource(), editorView));
+        View cropMainBtn = iconButton(context, "Crop", "ucrop_ic_crop", v -> {
+            selectOnly(mainButtons, null);
+            subToolbarContainer.setVisibility(View.GONE);
+            editor.setBrushDrawingMode(false);
+            showCropDialog(context, editorView.getSource(), editorView);
+        });
         mainToolbar.addView(cropMainBtn);
 
         int filterIconId = Utils.getResId("ic_flare_24dp", "drawable");
