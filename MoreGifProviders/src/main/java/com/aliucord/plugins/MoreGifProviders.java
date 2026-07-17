@@ -23,12 +23,15 @@ import com.discord.stores.StoreGifPicker;
 import com.discord.stores.StoreStream;
 import com.discord.utilities.color.ColorCompat;
 import com.discord.views.SearchInputView;
+import com.discord.widgets.chat.input.gifpicker.GifAdapter;
+import com.discord.widgets.chat.input.gifpicker.GifAdapterItem;
 import com.discord.widgets.chat.input.gifpicker.GifSearchViewModel;
 import com.discord.widgets.chat.input.gifpicker.WidgetGifPickerSearch;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.textfield.TextInputLayout;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -41,11 +44,42 @@ import java.util.Map;
 public class MoreGifProviders extends Plugin {
     public static final String PROVIDER_KEY = "provider";
     public static final String[] PROVIDERS = {"tenor", "klipy", "giphy"};
+    private static final String TENOR_KEY = "3Z0688EVWYKH";
+    private static final String GIPHY_KEY = "3o6ZsYH6U6Eri53TXy";
     private static final String LOCALE = "en-US";
     private static final int GIF_LIMIT = 50;
     private final int providerRowId = View.generateViewId();
     private volatile String currentSearchQuery;
     private WidgetGifPickerSearch currentGifPickerSearch;
+
+    private static class TenorResponse {
+        public List<TenorResult> results;
+    }
+
+    private static class TenorResult {
+        public String itemurl;
+        public List<Map<String, TenorMedia>> media;
+    }
+
+    private static class TenorMedia {
+        public String url;
+        public int[] dims;
+    }
+
+    private static class GiphyResponse {
+        public List<GiphyGif> data;
+    }
+
+    private static class GiphyGif {
+        public String url;
+        public Map<String, GiphyImage> images;
+    }
+
+    private static class GiphyImage {
+        public String url;
+        public String width;
+        public String height;
+    }
 
     @Override
     public void start(Context context) throws Throwable {
@@ -193,13 +227,18 @@ public class MoreGifProviders extends Plugin {
     }
 
     private void fetchGifsAsync(StoreGifPicker store, String query) {
+        String provider = getProvider();
         new Thread(() -> {
             try {
-                List<ModelGif> gifs = fetchGifs(query);
+                List<ModelGif> gifs = fetchProviderGifs(provider, query);
+                if (gifs.isEmpty()) throw new IOException("No GIFs returned from " + provider);
+                if (!provider.equals(getProvider())) return;
                 runOnStoreThread(() -> handleFetchSuccess(store, query, gifs));
             } catch (Throwable throwable) {
                 logger.error("Failed to fetch GIFs from extra providers", throwable);
-                runOnStoreThread(() -> handleFetchError(store, query));
+                if (provider.equals(getProvider())) {
+                    runOnStoreThread(() -> handleFetchError(store, query));
+                }
             }
         }, "MoreGifProviders").start();
     }
@@ -210,6 +249,7 @@ public class MoreGifProviders extends Plugin {
                 StoreGifPicker.access$handleFetchTrendingGifsOnNext(store, gifs);
             } else {
                 StoreGifPicker.access$handleGifSearchResults(store, query, gifs);
+                updateVisibleResults(query, gifs);
             }
         } catch (Throwable throwable) {
             logger.error("Failed to update GIF picker state", throwable);
@@ -228,16 +268,6 @@ public class MoreGifProviders extends Plugin {
         }
     }
 
-    private List<ModelGif> fetchGifs(String query) throws IOException {
-        String provider = getProvider();
-        List<ModelGif> gifs = fetchProviderGifs(provider, query);
-
-        if (gifs.isEmpty()) {
-            throw new IOException("No GIFs returned from " + provider);
-        }
-        return gifs;
-    }
-
     private String getProvider() {
         String provider = settings.getString(PROVIDER_KEY, PROVIDERS[0]);
         for (String knownProvider : PROVIDERS) {
@@ -247,6 +277,9 @@ public class MoreGifProviders extends Plugin {
     }
 
     private List<ModelGif> fetchProviderGifs(String provider, String query) throws IOException {
+        if ("tenor".equals(provider)) return fetchTenorGifs(query);
+        if ("giphy".equals(provider)) return fetchGiphyGifs(query);
+
         String route = query == null
                 ? "/gifs/trending-gifs?provider=" + provider + "&locale=" + LOCALE + "&media_format=webp"
                 : "/gifs/search?q=" + encode(query) + "&media_format=webp&provider=" + provider + "&locale=" + LOCALE + "&limit=" + GIF_LIMIT;
@@ -260,6 +293,50 @@ public class MoreGifProviders extends Plugin {
         return parseGifResponse(response.text());
     }
 
+    private List<ModelGif> fetchTenorGifs(String query) throws IOException {
+        String route = "https://api.tenor.com/v1/" + (query == null ? "trending" : "search")
+                + "?key=" + TENOR_KEY + "&locale=" + LOCALE + "&limit=" + GIF_LIMIT;
+        if (query != null) route += "&q=" + encode(query);
+
+        try (Http.Response response = new Http.Request(route).execute()) {
+            response.assertOk();
+            TenorResponse result = response.json(TenorResponse.class);
+            ArrayList<ModelGif> gifs = new ArrayList<>();
+            if (result == null || result.results == null) return gifs;
+
+            for (TenorResult item : result.results) {
+                if (item.media == null || item.media.isEmpty() || item.itemurl == null) continue;
+                TenorMedia gif = item.media.get(0).get("gif");
+                if (gif == null || gif.url == null || gif.dims == null || gif.dims.length < 2) continue;
+                gifs.add(new ModelGif(gif.url, item.itemurl, gif.dims[0], gif.dims[1]));
+            }
+            return gifs;
+        }
+    }
+
+    private List<ModelGif> fetchGiphyGifs(String query) throws IOException {
+        String route = "https://api.giphy.com/v1/gifs/" + (query == null ? "trending" : "search")
+                + "?api_key=" + GIPHY_KEY + "&limit=" + GIF_LIMIT + "&rating=pg-13";
+        if (query != null) route += "&q=" + encode(query);
+
+        try (Http.Response response = new Http.Request(route).execute()) {
+            response.assertOk();
+            GiphyResponse result = response.json(GiphyResponse.class);
+            ArrayList<ModelGif> gifs = new ArrayList<>();
+            if (result == null || result.data == null) return gifs;
+
+            for (GiphyGif item : result.data) {
+                GiphyImage image = item.images == null ? null : item.images.get("original");
+                if (item.url == null || image == null || image.url == null) continue;
+                try {
+                    gifs.add(new ModelGif(image.url, item.url,
+                            Integer.parseInt(image.width), Integer.parseInt(image.height)));
+                } catch (NumberFormatException ignored) {}
+            }
+            return gifs;
+        }
+    }
+
     private List<ModelGif> parseGifResponse(String body) {
         GifDto[] gifsJson = GsonUtils.fromJson(body, GifDto[].class);
 
@@ -268,6 +345,22 @@ public class MoreGifProviders extends Plugin {
             gifs.add(ModelGif.Companion.createFromGifDto(gifDTO));
         }
         return gifs;
+    }
+
+    private void updateVisibleResults(String query, List<ModelGif> gifs) {
+        if (currentGifPickerSearch == null) return;
+        try {
+            Field adapterField = WidgetGifPickerSearch.class.getDeclaredField("gifAdapter");
+            adapterField.setAccessible(true);
+            GifAdapter adapter = (GifAdapter) adapterField.get(currentGifPickerSearch);
+            if (adapter == null) return;
+
+            List<GifAdapterItem> items = new ArrayList<>();
+            for (ModelGif gif : gifs) items.add(new GifAdapterItem.GifItem(gif, query));
+            adapter.setItems(items);
+        } catch (Throwable throwable) {
+            logger.error("Failed to refresh visible GIF results", throwable);
+        }
     }
 
     private void runOnStoreThread(Runnable runnable) {
