@@ -147,14 +147,19 @@ public class VoiceMessages extends Plugin {
 
             var viewgroup = ((ViewGroup) input.getView().findViewById(Utils.getResId("main_input_container", "id")));
             detachFromParent(waveFormView);
+            if (waveFormView.getParent() != null) {
+                waveFormView = new WaveFormView(context);
+            }
             viewgroup.addView(waveFormView, 0);
-            waveFormView.setVisibility(View.GONE);
-
-            detachFromParent(recordButton);
-            viewgroup.addView(recordButton);
             var params = (LinearLayout.LayoutParams) waveFormView.getLayoutParams();
             params.height = DimenUtils.dpToPx(30);
             params.gravity = Gravity.CENTER;
+            waveFormView.setVisibility(View.GONE);
+
+            detachFromParent(recordButton);
+            if (recordButton.getParent() != null) {
+                viewgroup.addView(recordButton);
+            }
         });
 
         patcher.patch(WidgetChatInputEditText$setOnTextChangedListener$1.class.getDeclaredMethod("afterTextChanged", Editable.class), cf -> {
@@ -199,7 +204,9 @@ public class VoiceMessages extends Plugin {
         ViewParent parent = view.getParent();
 
         if (parent instanceof ViewGroup) {
-            ((ViewGroup) parent).removeView(view);
+            var group = (ViewGroup) parent;
+            group.endViewTransition(view);
+            group.removeView(view);
         }
     }
 
