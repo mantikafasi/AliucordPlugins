@@ -26,7 +26,7 @@ public class BottomShit extends BottomSheet {
     public void onViewCreated(View view, Bundle bundle) {
         super.onViewCreated(view, bundle);
         var context = requireContext();
-        setPadding(20);
+        getLinearLayout().setPadding(20, 20, 20, 20);
 
         var highSamplingRate = Utils.createCheckedSetting(context, CheckedSetting.ViewType.CHECK, "Increases sampling rate", "This might fix speed up sound problem");
         highSamplingRate.setChecked(settings.getBool("highSamplingRate", false));
